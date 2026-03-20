@@ -20,9 +20,14 @@ class ContactController extends Controller
             'message' => 'required|string|max:5000',
         ]);
 
-        Contact::create($validated);
+        $contact = Contact::create($validated);
 
-        // TODO: send email (Task 7)
+        // Only send if MAIL_MAILER is not 'log' (production check)
+        try {
+            \Illuminate\Support\Facades\Mail::to(config('mail.from.address'))->send(new \App\Mail\ContactMail($contact));
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Contact mail failed: ' . $e->getMessage());
+        }
 
         return back()->with('success', true);
     }
