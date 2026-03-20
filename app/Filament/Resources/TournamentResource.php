@@ -7,6 +7,7 @@ use App\Models\Tournament;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -91,19 +92,41 @@ class TournamentResource extends Resource
                     ->label('Vertimai (LT / EN)')
                     ->columnSpanFull(),
 
-                Repeater::make('photos')
-                    ->relationship('photos')
+                Section::make('Masinis nuotraukų įkėlimas')
+                    ->description('Pasirinkite kelias nuotraukas vienu metu. Jos bus automatiškai sumažintos iki 1920×1080px.')
                     ->schema([
-                        FileUpload::make('path')
-                            ->disk('public')
+                        FileUpload::make('bulk_photos')
+                            ->multiple()
                             ->image()
-                            ->required()
-                            ->directory('tournaments/photos'),
-                        TextInput::make('sort_order')
-                            ->numeric()
-                            ->default(0),
+                            ->disk('public')
+                            ->directory('tournaments/photos')
+                            ->label('Įkelti nuotraukas')
+                            ->maxFiles(50)
+                            ->maxSize(20480)
+                            ->columnSpanFull()
+                            ->dehydrated(false),
                     ])
-                    ->label('Nuotraukos')
+                    ->columnSpanFull(),
+
+                Section::make('Nuotraukų valdymas')
+                    ->description('Čia galite peržiūrėti, pašalinti arba pakeisti eiliškumą atskirų nuotraukų.')
+                    ->schema([
+                        Repeater::make('photos')
+                            ->relationship('photos')
+                            ->schema([
+                                FileUpload::make('path')
+                                    ->disk('public')
+                                    ->image()
+                                    ->required()
+                                    ->directory('tournaments/photos'),
+                                TextInput::make('sort_order')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->label('Eiliškumas'),
+                            ])
+                            ->label('Nuotraukos')
+                            ->columnSpanFull(),
+                    ])
                     ->columnSpanFull(),
             ]);
     }
