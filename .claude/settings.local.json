@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php --version)",
+      "Bash(composer --version)",
+      "Bash(npm --version)",
+      "Bash(mysql --version)",
+      "Bash(git --version)",
+      "Bash(composer create-project:*)"
+    ]
+  }
+}
