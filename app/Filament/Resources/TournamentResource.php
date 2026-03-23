@@ -11,6 +11,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -88,17 +89,62 @@ class TournamentResource extends Resource
                     ])
                     ->columns(2),
 
-                // ── Results ───────────────────────────────────────────────
-                Section::make('Rezultatai')
-                    ->description('Galite nurodyti išorinę nuorodą (bus rodomas mygtukas) ir/arba rašyti rezultatus tekstu vertimuose žemiau.')
+                // ── Groups / Tables ───────────────────────────────────────
+                Section::make('Grupės / Lentelės')
+                    ->description('Nuoroda į išorinį puslapį su grupėmis ar lentelėmis (pvz. Playtomic). Turnyro puslapyje bus rodomas atskiras mygtukas.')
                     ->schema([
                         TextInput::make('results_url')
                             ->label('Grupės / Lentelės — nuoroda')
                             ->nullable()
                             ->url()
-                            ->placeholder('https://playtomic.io/...')
-                            ->helperText('Užpildžius — turnyro puslapyje atsiras mygtukas „Grupės / Lentelės". Jei tuščia — mygtukas nematomas.')
+                            ->placeholder('https://play.padelioturnyrai.lt/...')
+                            ->helperText('Jei tuščia — mygtukas „Grupės / Lentelės" nematomas.')
                             ->columnSpanFull(),
+                    ]),
+
+                // ── Results ───────────────────────────────────────────────
+                Section::make('Rezultatai')
+                    ->description('Rezultatai gali būti rašomi tekstu arba nuoroda į išorinį puslapį — pasirinkite vieną variantą.')
+                    ->schema([
+                        Radio::make('results_type')
+                            ->label('Rezultatų tipas')
+                            ->options([
+                                'none' => 'Nėra rezultatų',
+                                'text' => 'Tekstas (rašyti čia)',
+                                'link' => 'Nuoroda į išorinį puslapį',
+                            ])
+                            ->default('none')
+                            ->live()
+                            ->columnSpanFull()
+                            ->dehydrated(false)
+                            ->afterStateHydrated(function ($state, $record, $set) {
+                                if (! $record) {
+                                    return;
+                                }
+                                if ($record->results_link) {
+                                    $set('results_type', 'link');
+                                } elseif ($record->results_text) {
+                                    $set('results_type', 'text');
+                                } else {
+                                    $set('results_type', 'none');
+                                }
+                            }),
+
+                        Textarea::make('results_text')
+                            ->label('Rezultatai (tekstas)')
+                            ->rows(6)
+                            ->placeholder("1. Jonas Jonaitis / Petras Petraitis\n2. Antanas Antanaitis / Vardenis Pavardenis\n...")
+                            ->columnSpanFull()
+                            ->visible(fn ($get) => $get('results_type') === 'text'),
+
+                        TextInput::make('results_link')
+                            ->label('Rezultatų nuoroda (išorinis puslapis)')
+                            ->url()
+                            ->nullable()
+                            ->placeholder('https://...')
+                            ->helperText('Turnyro puslapyje bus rodoma nuoroda į rezultatus.')
+                            ->columnSpanFull()
+                            ->visible(fn ($get) => $get('results_type') === 'link'),
                     ]),
 
                 // ── Cover image ───────────────────────────────────────────
@@ -134,13 +180,6 @@ class TournamentResource extends Resource
                                 Textarea::make('description')
                                     ->label('Aprašymas')
                                     ->rows(4)
-                                    ->columnSpanFull(),
-
-                                Textarea::make('results_text')
-                                    ->label('Rezultatai (tekstas)')
-                                    ->rows(4)
-                                    ->placeholder("1. Jonas Jonaitis / Petras Petraitis\n2. Antanas Antanaitis / Vardenis Pavardenis\n...")
-                                    ->helperText('Neprivaloma — rašykite tik jei norite rezultatus rodyti tekstu (be išorinės nuorodos).')
                                     ->columnSpanFull(),
                             ])
                             ->minItems(1)

@@ -19,6 +19,8 @@ class Tournament extends Model
         'registration_url',
         'registration_active',
         'results_url',
+        'results_text',
+        'results_link',
         'cover_image',
     ];
 

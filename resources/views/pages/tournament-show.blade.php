@@ -106,12 +106,27 @@
         @endif
 
         {{-- Results --}}
-        @if($trans?->results_text)
+        @if($tournament->results_text || $tournament->results_link)
             <div class="mb-16" data-aos="fade-up">
                 <h2 class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-6">{{ __('messages.results') }}</h2>
-                <div class="bg-dark-card border border-dark-border p-8">
-                    <div class="text-gray-300 leading-relaxed whitespace-pre-line">{{ $trans->results_text }}</div>
-                </div>
+
+                @if($tournament->results_link)
+                    {{-- External results link --}}
+                    <a href="{{ $tournament->results_link }}" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-3 px-6 py-4 bg-dark-card border border-dark-border text-white hover:border-gold hover:text-gold transition-colors">
+                        <svg class="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        {{ __('messages.results') }} →
+                    </a>
+                @endif
+
+                @if($tournament->results_text)
+                    {{-- Text results --}}
+                    <div class="bg-dark-card border border-dark-border p-8 {{ $tournament->results_link ? 'mt-6' : '' }}">
+                        <div class="text-gray-300 leading-relaxed whitespace-pre-line font-mono text-sm">{{ $tournament->results_text }}</div>
+                    </div>
+                @endif
             </div>
         @endif
     </div>
