@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Sponsor extends Model
 {
@@ -13,29 +12,27 @@ class Sponsor extends Model
         'logo',
         'url',
         'category',
-        'tournament_id',
+        'is_general',
         'sort_order',
         'is_active',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'is_active' => 'boolean',
+        'is_general' => 'boolean',
+    ];
+
+    public function tournaments(): BelongsToMany
     {
-        return [
-            'is_active' => 'boolean',
-        ];
+        return $this->belongsToMany(Tournament::class);
     }
 
-    public function tournament(): BelongsTo
+    public function scopeGeneral($query)
     {
-        return $this->belongsTo(Tournament::class);
+        return $query->where('is_general', true);
     }
 
-    public function scopeGlobal(Builder $query): Builder
-    {
-        return $query->whereNull('tournament_id');
-    }
-
-    public function scopeActive(Builder $query): Builder
+    public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tournament extends Model
@@ -39,9 +40,9 @@ class Tournament extends Model
         return $this->hasMany(TournamentPhoto::class);
     }
 
-    public function sponsors(): HasMany
+    public function sponsors(): BelongsToMany
     {
-        return $this->hasMany(Sponsor::class);
+        return $this->belongsToMany(Sponsor::class);
     }
 
     public function translation(?string $locale = null): ?TournamentTranslation

@@ -6,7 +6,19 @@
       "Bash(npm --version)",
       "Bash(mysql --version)",
       "Bash(git --version)",
-      "Bash(composer create-project:*)"
+      "Bash(composer create-project:*)",
+      "Bash(composer require:*)",
+      "Bash(php -m)",
+      "Bash(php artisan:*)",
+      "Bash(/c/xampp/php/php.exe artisan:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(composer show:*)",
+      "Bash(/C/xampp/php/php.exe artisan:*)",
+      "Bash(C:/xampp/php/php.exe artisan:*)",
+      "Bash(C:/xampp/php/php.exe -r \":*)",
+      "Bash(/C/xampp/php/php artisan:*)"
     ]
   }
 }
