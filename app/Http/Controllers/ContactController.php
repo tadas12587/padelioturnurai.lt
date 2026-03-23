@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Contact;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -24,8 +25,8 @@ class ContactController extends Controller
 
         $contact = Contact::create($validated);
 
-        // Send notification to admin
-        $adminEmail = env('ADMIN_EMAIL', config('mail.from.address'));
+        // Send notification to admin (from DB settings or fallback to env)
+        $adminEmail = Setting::get('admin_email', env('ADMIN_EMAIL', config('mail.from.address')));
         try {
             Mail::to($adminEmail)->send(new \App\Mail\ContactMail($contact));
         } catch (\Exception $e) {

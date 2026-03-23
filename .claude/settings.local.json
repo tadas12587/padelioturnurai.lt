@@ -18,7 +18,8 @@
       "Bash(/C/xampp/php/php.exe artisan:*)",
       "Bash(C:/xampp/php/php.exe artisan:*)",
       "Bash(C:/xampp/php/php.exe -r \":*)",
-      "Bash(/C/xampp/php/php artisan:*)"
+      "Bash(/C/xampp/php/php artisan:*)",
+      "Bash(grep -E \"\\\\.php$\")"
     ]
   }
 }
