@@ -40,10 +40,10 @@
         </h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-10 font-light drop-shadow-lg">{{ __('messages.hero_tagline') }}</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ route('tournaments') }}" class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
+            <a href="{{ lroute('tournaments') }}" class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
                 {{ __('messages.all_tournaments') }}
             </a>
-            <a href="{{ route('contact') }}" class="px-8 py-4 border border-gold text-gold font-bold rounded-none hover:bg-gold hover:text-dark transition-colors text-lg">
+            <a href="{{ lroute('contact') }}" class="px-8 py-4 border border-gold text-gold font-bold rounded-none hover:bg-gold hover:text-dark transition-colors text-lg">
                 {{ __('messages.nav_contact') }}
             </a>
         </div>
@@ -168,7 +168,7 @@
                                 {{ __('messages.register_btn') }}
                             </a>
                         @endif
-                        <a href="{{ route('tournament.show', $tournament->slug) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
+                        <a href="{{ lroute('tournament.show', $tournament->slug) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
                             {{ __('messages.learn_more') }}
                         </a>
                     </div>
@@ -193,7 +193,7 @@
 
         {{-- All Tournaments Button --}}
         <div class="text-center mt-16" data-aos="fade-up">
-            <a href="{{ route('tournaments') }}" class="px-10 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-lg tracking-widest uppercase">
+            <a href="{{ lroute('tournaments') }}" class="px-10 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-lg tracking-widest uppercase">
                 {{ __('messages.all_tournaments') }}
             </a>
         </div>

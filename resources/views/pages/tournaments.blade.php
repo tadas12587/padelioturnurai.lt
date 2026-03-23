@@ -77,7 +77,7 @@
                                 <span class="text-gold font-bold">{{ $tournament->participants_count }}</span> {{ __('messages.participants') }}
                             </div>
                             @endif
-                            <a href="{{ route('tournament.show', $tournament->slug) }}"
+                            <a href="{{ lroute('tournament.show', $tournament->slug) }}"
                                class="inline-block w-full text-center py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold text-sm mt-2">
                                 {{ __('messages.learn_more') }} &rarr;
                             </a>
