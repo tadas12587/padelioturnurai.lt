@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SponsorResource\Pages;
 use App\Models\Sponsor;
-use App\Models\Tournament;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -54,11 +53,17 @@ class SponsorResource extends Resource
                         'general' => 'Bendras',
                     ]),
 
-                Select::make('tournament_id')
-                    ->label('Turnyras (palikti tuščią = bendras rėmėjas)')
-                    ->nullable()
-                    ->options(fn () => Tournament::pluck('slug', 'id')->toArray())
-                    ->searchable(),
+                Toggle::make('is_general')
+                    ->label('Bendras rėmėjas')
+                    ->helperText('Jei įjungta — rėmėjas rodomas kaip bendras (nepriklausomai nuo turnyro)')
+                    ->default(false),
+
+                Select::make('tournaments')
+                    ->label('Turnyrai')
+                    ->multiple()
+                    ->relationship('tournaments', 'slug')
+                    ->preload()
+                    ->helperText('Pasirink turnyrą(-us) kuriam šis rėmėjas priklauso'),
 
                 TextInput::make('sort_order')
                     ->numeric()
@@ -92,9 +97,14 @@ class SponsorResource extends Resource
                         default => 'secondary',
                     }),
 
-                TextColumn::make('tournament.slug')
-                    ->label('Turnyras')
-                    ->default('Bendras'),
+                TextColumn::make('tournaments_count')
+                    ->label('Turnyrai')
+                    ->counts('tournaments')
+                    ->badge(),
+
+                IconColumn::make('is_general')
+                    ->label('Bendras')
+                    ->boolean(),
 
                 IconColumn::make('is_active')
                     ->label('Aktyvus')
