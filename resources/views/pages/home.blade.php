@@ -168,7 +168,7 @@
                                 {{ __('messages.register_btn') }}
                             </a>
                         @endif
-                        <a href="{{ lroute('tournament.show', $tournament->slug) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
+                        <a href="{{ lroute('tournament.show', ['slug' => $tournament->slug]) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
                             {{ __('messages.learn_more') }}
                         </a>
                     </div>

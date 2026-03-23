@@ -12,12 +12,10 @@ class SetLocale
     {
         $locale = $request->segment(1);
 
-        if (in_array($locale, ['lt', 'en'])) {
-            App::setLocale($locale);
-            session(['locale' => $locale]);
+        if ($locale === 'en') {
+            App::setLocale('en');
         } else {
-            $sessionLocale = session('locale', 'lt');
-            App::setLocale($sessionLocale);
+            App::setLocale('lt');
         }
 
         return $next($request);
