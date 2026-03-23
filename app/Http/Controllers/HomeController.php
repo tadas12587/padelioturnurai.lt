@@ -15,7 +15,8 @@ class HomeController extends Controller
         $globalSponsors = Sponsor::where('is_general', true)->where('is_active', true)->orderBy('sort_order')->get();
         $goldSponsors = $globalSponsors->where('category', 'gold');
 
-        $heroPhotos = collect(glob(public_path('storage/herofoto/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}'), GLOB_BRACE))
+        $heroDir = rtrim(env('PUBLIC_STORAGE_PATH', public_path('storage')), '/') . '/herofoto';
+        $heroPhotos = collect(glob($heroDir . '/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', GLOB_BRACE))
             ->map(fn($p) => '/storage/herofoto/' . basename($p))
             ->shuffle()
             ->values();

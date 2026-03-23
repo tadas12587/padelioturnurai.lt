@@ -50,8 +50,15 @@
     </div>
 
     {{-- Scroll indicator --}}
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
-        <div class="w-px h-12 bg-gradient-to-b from-gold to-transparent animate-pulse"></div>
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 cursor-pointer" onclick="document.getElementById('stats-section').scrollIntoView({behavior:'smooth'})">
+        <div class="flex flex-col items-center gap-1 text-gold opacity-70 hover:opacity-100 transition-opacity">
+            <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+            <svg class="w-5 h-5 animate-bounce" style="animation-delay:0.15s" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </div>
     </div>
 </section>
 
