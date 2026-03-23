@@ -16,8 +16,12 @@ class TournamentController extends Controller
         return view('pages.tournaments', compact('tournaments'));
     }
 
-    public function show(string $slug)
+    public function show(string $slug = '')
     {
+        // Use named route parameter directly to avoid positional injection
+        // issues when the route has a locale prefix parameter ({locale}/{slug})
+        $slug = request()->route('slug', $slug);
+
         $tournament = Tournament::with(['translations', 'photos', 'sponsors' => function ($q) {
             $q->where('is_active', true)->orderBy('sort_order');
         }])->where('slug', $slug)->firstOrFail();
