@@ -22,6 +22,7 @@ return [
     'contact_email' => 'El. paštas',
     'contact_message' => 'Žinutė',
     'contact_send' => 'Siųsti',
+    'contact_sending' => 'Siunčiama...',
     'contact_success' => 'Žinutė išsiųsta! Susisieksime netrukus.',
     'participants' => 'Dalyviai',
     'location' => 'Vieta',

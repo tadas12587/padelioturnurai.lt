@@ -22,6 +22,7 @@ return [
     'contact_email' => 'Email',
     'contact_message' => 'Message',
     'contact_send' => 'Send',
+    'contact_sending' => 'Sending...',
     'contact_success' => 'Message sent! We\'ll get back to you shortly.',
     'participants' => 'Participants',
     'location' => 'Location',
