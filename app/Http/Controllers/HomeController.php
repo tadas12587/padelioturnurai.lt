@@ -11,7 +11,7 @@ class HomeController extends Controller
     public function index()
     {
         $stats = Stat::all();
-        $globalSponsors = Sponsor::whereNull('tournament_id')->where('is_active', true)->orderBy('sort_order')->get();
+        $globalSponsors = Sponsor::where('is_general', true)->where('is_active', true)->orderBy('sort_order')->get();
         $featuredTournament = Tournament::where('status', 'active')
             ->orWhere('status', 'upcoming')
             ->orderBy('date_start', 'desc')
