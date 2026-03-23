@@ -6,11 +6,25 @@
 
 {{-- Hero Section --}}
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
-    {{-- Background gradient --}}
-    <div class="absolute inset-0 bg-gradient-to-br from-dark via-[#0d1117] to-[#1a1a2e]"></div>
+
+    {{-- Background photos slideshow --}}
+    @if($heroPhotos->count() > 0)
+        <div class="absolute inset-0 z-0" id="hero-slider">
+            @foreach($heroPhotos as $i => $photo)
+                <div class="hero-slide absolute inset-0 transition-opacity duration-[2000ms] ease-in-out {{ $i === 0 ? 'opacity-100' : 'opacity-0' }}">
+                    <img src="{{ $photo }}" alt=""
+                         class="w-full h-full object-cover object-center scale-105"
+                         style="transform-origin: center;">
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- Dark overlay --}}
+    <div class="absolute inset-0 z-10" style="background: linear-gradient(to bottom, rgba(10,10,15,0.65) 0%, rgba(10,10,15,0.45) 50%, rgba(10,10,15,0.85) 100%);"></div>
 
     {{-- Decorative diagonal gold lines --}}
-    <div class="absolute inset-0 opacity-10 overflow-hidden">
+    <div class="absolute inset-0 z-10 opacity-10 overflow-hidden pointer-events-none">
         <svg class="absolute w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
             <line x1="0" y1="100%" x2="60%" y2="0" stroke="#C9A84C" stroke-width="1"/>
             <line x1="30%" y1="100%" x2="90%" y2="0" stroke="#C9A84C" stroke-width="0.5"/>
@@ -19,12 +33,12 @@
     </div>
 
     {{-- Content --}}
-    <div class="relative z-10 text-center px-4 max-w-5xl mx-auto" id="hero-content">
+    <div class="relative z-20 text-center px-4 max-w-5xl mx-auto" id="hero-content">
         <div class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-4">Lietuva &middot; Padelis &middot; Turnyrai</div>
-        <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none">
+        <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none drop-shadow-2xl">
             PADELIO<br><span class="text-gold">TURNYRAI</span>
         </h1>
-        <p class="text-xl md:text-2xl text-gray-400 mb-10 font-light">{{ __('messages.hero_tagline') }}</p>
+        <p class="text-xl md:text-2xl text-gray-300 mb-10 font-light drop-shadow-lg">{{ __('messages.hero_tagline') }}</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="{{ route('tournaments') }}" class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
                 {{ __('messages.all_tournaments') }}
@@ -36,10 +50,27 @@
     </div>
 
     {{-- Scroll indicator --}}
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2">
         <div class="w-px h-12 bg-gradient-to-b from-gold to-transparent animate-pulse"></div>
     </div>
 </section>
+
+@push('scripts')
+<script>
+(function() {
+    const slides = document.querySelectorAll('.hero-slide');
+    if (slides.length < 2) return;
+    let current = 0;
+    setInterval(() => {
+        slides[current].classList.remove('opacity-100');
+        slides[current].classList.add('opacity-0');
+        current = (current + 1) % slides.length;
+        slides[current].classList.remove('opacity-0');
+        slides[current].classList.add('opacity-100');
+    }, 5000);
+})();
+</script>
+@endpush
 
 {{-- Stats Section --}}
 <section id="stats-section" class="py-24 bg-dark-card border-y border-dark-border">
