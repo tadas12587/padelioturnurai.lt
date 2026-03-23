@@ -37,4 +37,5 @@ return [
     'no_results_yet' => 'Rezultatai bus paskelbti po turnyro',
     'registration_closed' => 'Registracija uždaryta',
     'date' => 'Data',
+    'groups_tables_btn' => 'Grupės / Lentelės',
 ];

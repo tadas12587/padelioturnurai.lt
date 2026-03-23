@@ -37,4 +37,5 @@ return [
     'no_results_yet' => 'Results will be published after the tournament',
     'registration_closed' => 'Registration closed',
     'date' => 'Date',
+    'groups_tables_btn' => 'Groups / Tables',
 ];
