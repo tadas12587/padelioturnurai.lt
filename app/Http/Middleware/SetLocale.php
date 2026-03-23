@@ -14,8 +14,10 @@ class SetLocale
 
         if (in_array($locale, ['lt', 'en'])) {
             App::setLocale($locale);
+            session(['locale' => $locale]);
         } else {
-            App::setLocale('lt');
+            $sessionLocale = session('locale', 'lt');
+            App::setLocale($sessionLocale);
         }
 
         return $next($request);

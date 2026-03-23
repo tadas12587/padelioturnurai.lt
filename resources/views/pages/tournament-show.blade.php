@@ -60,7 +60,7 @@
 <div class="bg-dark">
     <div class="max-w-4xl mx-auto px-4 py-12">
         {{-- Back link --}}
-        <a href="{{ route('tournaments') }}" class="inline-flex items-center gap-2 text-gold hover:text-gold-light transition-colors text-sm font-medium mb-12">
+        <a href="{{ lroute('tournaments') }}" class="inline-flex items-center gap-2 text-gold hover:text-gold-light transition-colors text-sm font-medium mb-12">
             {{ __('messages.back_to_tournaments') }}
         </a>
 

@@ -88,19 +88,19 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-20">
                 {{-- Logo --}}
-                <a href="{{ route('home') }}" class="text-gold font-black text-xl tracking-widest">
+                <a href="{{ lroute('home') }}" class="text-gold font-black text-xl tracking-widest">
                     PADELIO TURNYRAI
                 </a>
 
                 {{-- Desktop Nav Links --}}
                 <div class="hidden md:flex items-center gap-8">
-                    <a href="{{ route('home') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                    <a href="{{ lroute('home') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                         {{ __('messages.nav_home') }}
                     </a>
-                    <a href="{{ route('tournaments') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                    <a href="{{ lroute('tournaments') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                         {{ __('messages.nav_tournaments') }}
                     </a>
-                    <a href="{{ route('contact') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                    <a href="{{ lroute('contact') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                         {{ __('messages.nav_contact') }}
                     </a>
 
@@ -149,13 +149,13 @@
              x-transition:leave-end="opacity-0 -translate-y-2"
              class="md:hidden bg-dark-card/95 backdrop-blur-md border-t border-dark-border">
             <div class="px-4 py-6 space-y-4">
-                <a href="{{ route('home') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                <a href="{{ lroute('home') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                     {{ __('messages.nav_home') }}
                 </a>
-                <a href="{{ route('tournaments') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                <a href="{{ lroute('tournaments') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                     {{ __('messages.nav_tournaments') }}
                 </a>
-                <a href="{{ route('contact') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                <a href="{{ lroute('contact') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                     {{ __('messages.nav_contact') }}
                 </a>
                 <div class="flex items-center gap-2 pt-4 border-t border-dark-border">
@@ -178,7 +178,7 @@
             <div class="flex flex-col md:flex-row items-center justify-between gap-8">
                 {{-- Logo --}}
                 <div class="text-center md:text-left">
-                    <a href="{{ route('home') }}" class="text-gold font-black text-lg tracking-widest">PADELIO TURNYRAI</a>
+                    <a href="{{ lroute('home') }}" class="text-gold font-black text-lg tracking-widest">PADELIO TURNYRAI</a>
                     <p class="text-gray-600 text-sm mt-2">&copy; {{ date('Y') }} Padelioturnyrai.lt. {{ __('messages.footer_rights') }}.</p>
                 </div>
 
