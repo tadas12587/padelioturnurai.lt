@@ -123,13 +123,26 @@
     @if($tournament->sponsors->count() > 0)
         <div class="max-w-6xl mx-auto px-4 pb-24" data-aos="fade-up">
             <h2 class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-8">{{ __('messages.tournament_sponsors') }}</h2>
-            <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16 bg-dark-card border border-dark-border p-10">
-                @foreach($tournament->sponsors as $sponsor)
-                    <a href="{{ $sponsor->url ?: '#' }}" target="{{ $sponsor->url ? '_blank' : '_self' }}"
-                       class="opacity-60 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0">
-                        <img src="{{ Storage::url($sponsor->logo) }}" alt="{{ $sponsor->name }}"
-                             class="h-12 md:h-16 w-auto object-contain max-w-[160px]">
-                    </a>
+            @php
+                $sponsorsByCategory = $tournament->sponsors->groupBy('category');
+                $catOrder = ['gold', 'silver', 'bronze', 'general'];
+            @endphp
+            <div class="bg-dark-card border border-dark-border p-10 space-y-8">
+                @foreach($catOrder as $cat)
+                    @if(isset($sponsorsByCategory[$cat]) && $sponsorsByCategory[$cat]->count() > 0)
+                        <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+                            @foreach($sponsorsByCategory[$cat] as $sponsor)
+                                <a href="{{ $sponsor->url ?: '#' }}" target="{{ $sponsor->url ? '_blank' : '_self' }}"
+                                   class="opacity-60 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0">
+                                    <img src="{{ Storage::url($sponsor->logo) }}" alt="{{ $sponsor->name }}"
+                                         class="h-12 md:h-16 w-auto object-contain max-w-[160px]">
+                                </a>
+                            @endforeach
+                        </div>
+                        @if(!$loop->last)
+                            <div class="border-t border-dark-border"></div>
+                        @endif
+                    @endif
                 @endforeach
             </div>
         </div>
