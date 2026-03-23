@@ -21,6 +21,7 @@ class Tournament extends Model
         'results_url',
         'results_text',
         'results_link',
+        'gallery_url',
         'cover_image',
     ];
 

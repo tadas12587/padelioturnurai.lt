@@ -37,5 +37,9 @@ return [
     'no_results_yet' => 'Rezultatai bus paskelbti po turnyro',
     'registration_closed' => 'Registracija uždaryta',
     'date' => 'Data',
-    'groups_tables_btn' => 'Grupės / Lentelės',
+    'groups_tables_btn'      => 'Grupės / Lentelės',
+    'gallery_photos_count'   => 'nuotraukos',
+    'gallery_more'           => 'daugiau',
+    'gallery_show_all'       => 'Rodyti visas nuotraukas',
+    'gallery_full'           => 'Visa galerija',
 ];

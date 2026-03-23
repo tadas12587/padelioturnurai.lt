@@ -147,6 +147,19 @@ class TournamentResource extends Resource
                             ->visible(fn ($get) => $get('results_type') === 'link'),
                     ]),
 
+                // ── Gallery ───────────────────────────────────────────────
+                Section::make('Galerija')
+                    ->description('Turnyro puslapyje rodomos pirmosios nuotraukos. Jei yra išorinė galerija — nurodykite nuorodą, bus rodomas mygtukas „Visa galerija".')
+                    ->schema([
+                        TextInput::make('gallery_url')
+                            ->label('Pilnos galerijos nuoroda (išorinis puslapis)')
+                            ->url()
+                            ->nullable()
+                            ->placeholder('https://photos.google.com/... arba Dropbox, OneDrive ir kt.')
+                            ->helperText('Neprivaloma. Jei užpildyta — po nuotraukomis atsiras mygtukas „Visa galerija".')
+                            ->columnSpanFull(),
+                    ]),
+
                 // ── Cover image ───────────────────────────────────────────
                 Section::make('Viršelio nuotrauka')
                     ->schema([
