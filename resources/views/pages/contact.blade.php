@@ -20,7 +20,7 @@
 
         {{-- Contact Form --}}
         <div class="bg-dark-card border border-dark-border p-8 md:p-12" data-aos="fade-up" data-aos-delay="100">
-            <form action="{{ route('contact.store') }}" method="POST" class="space-y-6">
+            <form action="{{ lroute('contact.store') }}" method="POST" class="space-y-6" id="contactForm" x-data="{ sending: false }" @submit="sending = true">
                 @csrf
 
                 {{-- Name --}}
@@ -65,8 +65,11 @@
                 {{-- Submit --}}
                 <div>
                     <button type="submit"
-                            class="w-full py-4 bg-gold text-dark font-bold text-lg hover:bg-gold-light transition-colors tracking-wide uppercase">
-                        {{ __('messages.contact_send') }}
+                            :disabled="sending"
+                            :class="sending ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gold-light'"
+                            class="w-full py-4 bg-gold text-dark font-bold text-lg transition-colors tracking-wide uppercase flex items-center justify-center gap-3">
+                        <span x-show="sending" class="inline-block w-5 h-5 border-2 border-dark border-t-transparent rounded-full animate-spin"></span>
+                        <span x-text="sending ? '{{ __('messages.contact_sending') }}' : '{{ __('messages.contact_send') }}'"></span>
                     </button>
                 </div>
             </form>
