@@ -52,6 +52,11 @@ class Setting extends Model
                 ]);
             }
 
+            // phpmail uses our custom NativeMailTransport — no extra config needed
+            if ($mailer === 'phpmail') {
+                config(['mail.mailers.phpmail' => ['transport' => 'phpmail']]);
+            }
+
             if ($from = static::get('mail_from_address')) {
                 config(['mail.from.address' => $from]);
             }
