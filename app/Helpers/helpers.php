@@ -10,7 +10,7 @@ if (!function_exists('lroute')) {
             if (\Illuminate\Support\Facades\Route::has($localeName)) {
                 $params = is_array($parameters)
                     ? array_merge(['locale' => $locale], $parameters)
-                    : ['locale' => $locale, $parameters];
+                    : array_merge(['locale' => $locale], (array) $parameters);
                 return route($localeName, $params, $absolute);
             }
         }
