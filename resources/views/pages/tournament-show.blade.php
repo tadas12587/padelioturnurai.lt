@@ -133,22 +133,69 @@
 
     {{-- Photo Gallery --}}
     @if($tournament->photos->count() > 0)
+        @php
+            $previewLimit = 8;
+            $allPhotos    = $tournament->photos->sortBy('sort_order')->values();
+            $previewPhotos = $allPhotos->take($previewLimit);
+            $remaining    = $allPhotos->count() - $previewLimit;
+        @endphp
         <div class="max-w-6xl mx-auto px-4 pb-16" data-aos="fade-up">
-            <h2 class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-8">{{ __('messages.gallery') }}</h2>
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-gold text-sm font-semibold tracking-[0.3em] uppercase">{{ __('messages.gallery') }}</h2>
+                @if($tournament->photos->count() > 0)
+                    <span class="text-gray-500 text-sm">{{ $tournament->photos->count() }} {{ __('messages.gallery_photos_count') }}</span>
+                @endif
+            </div>
+
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                @foreach($tournament->photos as $photo)
-                    <a href="{{ Storage::url($photo->path) }}" class="glightbox relative overflow-hidden aspect-square group"
+                {{-- Visible preview photos (all go into lightbox) --}}
+                @foreach($allPhotos as $i => $photo)
+                    <a href="{{ Storage::url($photo->path) }}"
+                       class="glightbox relative overflow-hidden aspect-square group {{ $i >= $previewLimit ? 'hidden' : '' }}"
                        data-gallery="tournament-gallery">
                         <img src="{{ Storage::url($photo->path) }}" alt=""
-                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                             loading="lazy">
                         <div class="absolute inset-0 bg-dark/0 group-hover:bg-dark/30 transition-colors duration-300 flex items-center justify-center">
                             <svg class="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
                             </svg>
                         </div>
+                        {{-- "+N daugiau" overlay on 8th tile if there are more --}}
+                        @if($i === $previewLimit - 1 && $remaining > 0)
+                            <div class="absolute inset-0 bg-dark/70 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-white text-3xl font-black">+{{ $remaining }}</span>
+                                <span class="text-gray-300 text-xs mt-1 tracking-widest uppercase">{{ __('messages.gallery_more') }}</span>
+                            </div>
+                        @endif
                     </a>
                 @endforeach
             </div>
+
+            {{-- Bottom row: show all in lightbox + optional external gallery --}}
+            @if($remaining > 0 || $tournament->gallery_url)
+                <div class="flex flex-wrap gap-4 mt-6">
+                    @if($remaining > 0)
+                        <button id="gallery-show-all"
+                                class="inline-flex items-center gap-2 px-6 py-3 border border-dark-border text-gray-300 hover:border-gold hover:text-gold transition-colors text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                            </svg>
+                            {{ __('messages.gallery_show_all') }} ({{ $allPhotos->count() }})
+                        </button>
+                    @endif
+
+                    @if($tournament->gallery_url)
+                        <a href="{{ $tournament->gallery_url }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-2 px-6 py-3 bg-dark-card border border-gold text-gold hover:bg-gold hover:text-dark transition-colors text-sm font-semibold">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            {{ __('messages.gallery_full') }}
+                        </a>
+                    @endif
+                </div>
+            @endif
         </div>
     @endif
 
@@ -187,5 +234,24 @@
 @push('scripts')
 <script>
     const lightbox = GLightbox({ selector: '.glightbox' });
+
+    // "Show all" button — reveals hidden photos and re-inits lightbox
+    const showAllBtn = document.getElementById('gallery-show-all');
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', function () {
+            // Remove overlay from 8th tile
+            document.querySelectorAll('.glightbox .bg-dark\\/70').forEach(el => el.remove());
+
+            // Show hidden tiles
+            document.querySelectorAll('.glightbox.hidden').forEach(el => el.classList.remove('hidden'));
+
+            // Hide the button
+            showAllBtn.style.display = 'none';
+
+            // Re-init lightbox so new items are included
+            lightbox.destroy();
+            window._lb = GLightbox({ selector: '.glightbox' });
+        });
+    }
 </script>
 @endpush

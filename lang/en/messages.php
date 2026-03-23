@@ -37,5 +37,9 @@ return [
     'no_results_yet' => 'Results will be published after the tournament',
     'registration_closed' => 'Registration closed',
     'date' => 'Date',
-    'groups_tables_btn' => 'Groups / Tables',
+    'groups_tables_btn'      => 'Groups / Tables',
+    'gallery_photos_count'   => 'photos',
+    'gallery_more'           => 'more',
+    'gallery_show_all'       => 'Show all photos',
+    'gallery_full'           => 'Full gallery',
 ];
