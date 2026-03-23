@@ -64,19 +64,37 @@
             {{ __('messages.back_to_tournaments') }}
         </a>
 
-        {{-- Registration button --}}
-        @if($tournament->registration_active && $tournament->registration_url)
-            <div class="mb-12" data-aos="fade-up">
+        {{-- Action buttons row --}}
+        <div class="flex flex-wrap gap-4 mb-12" data-aos="fade-up">
+
+            {{-- Registration button --}}
+            @if($tournament->registration_active && $tournament->registration_url)
                 <a href="{{ $tournament->registration_url }}" target="_blank"
-                   class="inline-block px-8 py-4 bg-gold text-dark font-bold text-lg hover:bg-gold-light transition-colors">
+                   class="inline-flex items-center gap-2 px-8 py-4 bg-gold text-dark font-bold text-lg hover:bg-gold-light transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
                     {{ __('messages.register_btn') }}
                 </a>
-            </div>
-        @elseif($tournament->status !== 'past' && !$tournament->registration_active)
-            <div class="mb-12 text-gray-500" data-aos="fade-up">
-                <span class="px-6 py-3 border border-dark-border inline-block">{{ __('messages.registration_closed') }}</span>
-            </div>
-        @endif
+            @elseif($tournament->status !== 'past' && !$tournament->registration_active)
+                <span class="inline-flex items-center px-6 py-3 border border-dark-border text-gray-500">
+                    {{ __('messages.registration_closed') }}
+                </span>
+            @endif
+
+            {{-- Groups / Tables button — shown only when results_url is set --}}
+            @if($tournament->results_url)
+                <a href="{{ $tournament->results_url }}" target="_blank" rel="noopener"
+                   class="inline-flex items-center gap-2 px-8 py-4 bg-dark-card border border-gold text-gold font-bold text-lg hover:bg-gold hover:text-dark transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18M10 3v18M14 3v18"/>
+                        <rect x="3" y="3" width="18" height="18" rx="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    {{ __('messages.groups_tables_btn') }}
+                </a>
+            @endif
+
+        </div>
 
         {{-- Description --}}
         @if($trans?->description)
