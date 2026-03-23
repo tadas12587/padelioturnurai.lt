@@ -36,8 +36,7 @@
     </div>
 
     {{-- Scroll indicator --}}
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-gray-500">
-        <span class="text-xs tracking-widest uppercase">Scroll</span>
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
         <div class="w-px h-12 bg-gradient-to-b from-gold to-transparent animate-pulse"></div>
     </div>
 </section>
@@ -59,60 +58,106 @@
     </div>
 </section>
 
-{{-- Featured Tournament Section --}}
-@if($featuredTournament)
+{{-- Gold Sponsors Block (after stats) --}}
+@if($goldSponsors->count() > 0)
+<section class="py-16 bg-dark border-b border-dark-border">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex flex-wrap justify-center items-center gap-10 md:gap-20" data-aos="fade-up">
+            @foreach($goldSponsors as $sponsor)
+                <a href="{{ $sponsor->url ?: '#' }}" target="{{ $sponsor->url ? '_blank' : '_self' }}"
+                   class="opacity-70 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0">
+                    <img src="{{ Storage::url($sponsor->logo) }}" alt="{{ $sponsor->name }}"
+                         class="h-14 md:h-20 w-auto object-contain max-w-[200px]">
+                </a>
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
+{{-- Tournaments Section --}}
+@if($tournaments->count() > 0)
 <section class="py-24 bg-dark">
     <div class="max-w-6xl mx-auto px-4">
-        <div class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-4 text-center" data-aos="fade-up">
+        <div class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-16 text-center" data-aos="fade-up">
             {{ __('messages.featured_tournament') }}
         </div>
-        <div class="grid md:grid-cols-2 gap-0 items-center" data-aos="fade-up" data-aos-delay="100">
-            {{-- Image side --}}
-            <div class="relative overflow-hidden aspect-[4/3]">
-                @if($featuredTournament->cover_image)
-                    <img src="{{ Storage::url($featuredTournament->cover_image) }}" alt="" class="w-full h-full object-cover">
+        <div class="space-y-8">
+            @foreach($tournaments as $tournament)
+            @php $trans = $tournament->translation(app()->getLocale()); @endphp
+            <div class="grid md:grid-cols-2 gap-0 items-center" data-aos="fade-up" data-aos-delay="{{ $loop->index * 80 }}">
+                @if($loop->even)
+                {{-- Image left --}}
+                <div class="relative overflow-hidden aspect-[4/3]">
+                    @if($tournament->cover_image)
+                        <img src="{{ Storage::url($tournament->cover_image) }}" alt="" class="w-full h-full object-cover">
+                    @else
+                        <div class="w-full h-full bg-dark-card flex items-center justify-center min-h-[240px]">
+                            <svg class="w-16 h-16 text-gold opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                    @endif
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent to-dark/40"></div>
+                </div>
+                <div class="bg-dark-card p-10 md:p-12 border border-dark-border">
                 @else
-                    <div class="w-full h-full bg-dark-card flex items-center justify-center">
-                        <svg class="w-16 h-16 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
+                {{-- Text left --}}
+                <div class="bg-dark-card p-10 md:p-12 border border-dark-border order-2 md:order-1">
+                @endif
+                    <div class="text-gold text-xs tracking-widest uppercase mb-4">
+                        @if($tournament->status === 'active') {{ __('messages.tournament_status_active') }}
+                        @elseif($tournament->status === 'upcoming') {{ __('messages.tournament_status_upcoming') }}
+                        @else {{ __('messages.tournament_status_past') }}
+                        @endif
                     </div>
-                @endif
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent to-dark/50"></div>
-            </div>
-            {{-- Text side --}}
-            <div class="bg-dark-card p-10 md:p-14 border border-dark-border">
-                @php $trans = $featuredTournament->translation(app()->getLocale()); @endphp
-                <div class="text-gold text-xs tracking-widest uppercase mb-4">
-                    @if($featuredTournament->status === 'active') {{ __('messages.tournament_status_active') }}
-                    @elseif($featuredTournament->status === 'upcoming') {{ __('messages.tournament_status_upcoming') }}
-                    @else {{ __('messages.tournament_status_past') }}
+                    <h2 class="text-2xl md:text-3xl font-black text-white mb-4">{{ $trans?->title ?? $tournament->slug }}</h2>
+                    <div class="text-gray-400 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        {{ $tournament->date_start->format('Y-m-d') }}
+                        @if($tournament->date_end) &mdash; {{ $tournament->date_end->format('Y-m-d') }} @endif
+                    </div>
+                    <div class="text-gray-400 mb-6 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        {{ $tournament->location }}
+                    </div>
+                    @if($trans?->description)
+                        <p class="text-gray-300 mb-6 leading-relaxed">{{ Str::limit($trans->description, 160) }}</p>
                     @endif
-                </div>
-                <h2 class="text-3xl md:text-4xl font-black text-white mb-4">{{ $trans?->title ?? $featuredTournament->slug }}</h2>
-                <div class="text-gray-400 mb-2 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    {{ $featuredTournament->date_start->format('Y-m-d') }}
-                    @if($featuredTournament->date_end) &mdash; {{ $featuredTournament->date_end->format('Y-m-d') }} @endif
-                </div>
-                <div class="text-gray-400 mb-6 flex items-center gap-2">
-                    <svg class="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    {{ $featuredTournament->location }}
-                </div>
-                @if($trans?->description)
-                    <p class="text-gray-300 mb-8 leading-relaxed">{{ Str::limit($trans->description, 200) }}</p>
-                @endif
-                <div class="flex gap-4 flex-wrap">
-                    @if($featuredTournament->registration_active && $featuredTournament->registration_url)
-                        <a href="{{ $featuredTournament->registration_url }}" target="_blank" class="px-6 py-3 bg-gold text-dark font-bold hover:bg-gold-light transition-colors">
-                            {{ __('messages.register_btn') }}
+                    <div class="flex gap-4 flex-wrap">
+                        @if($tournament->registration_active && $tournament->registration_url)
+                            <a href="{{ $tournament->registration_url }}" target="_blank" class="px-6 py-3 bg-gold text-dark font-bold hover:bg-gold-light transition-colors">
+                                {{ __('messages.register_btn') }}
+                            </a>
+                        @endif
+                        <a href="{{ route('tournament.show', $tournament->slug) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
+                            {{ __('messages.learn_more') }}
                         </a>
-                    @endif
-                    <a href="{{ route('tournament.show', $featuredTournament->slug) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
-                        {{ __('messages.learn_more') }}
-                    </a>
+                    </div>
                 </div>
+                @if($loop->odd)
+                <div class="relative overflow-hidden aspect-[4/3] order-1 md:order-2">
+                    @if($tournament->cover_image)
+                        <img src="{{ Storage::url($tournament->cover_image) }}" alt="" class="w-full h-full object-cover">
+                    @else
+                        <div class="w-full h-full bg-dark-card flex items-center justify-center min-h-[240px]">
+                            <svg class="w-16 h-16 text-gold opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                    @endif
+                    <div class="absolute inset-0 bg-gradient-to-l from-transparent to-dark/40"></div>
+                </div>
+                @endif
             </div>
+            @endforeach
+        </div>
+
+        {{-- All Tournaments Button --}}
+        <div class="text-center mt-16" data-aos="fade-up">
+            <a href="{{ route('tournaments') }}" class="px-10 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-lg tracking-widest uppercase">
+                {{ __('messages.all_tournaments') }}
+            </a>
         </div>
     </div>
 </section>
@@ -139,12 +184,7 @@
 
         @foreach($order as $cat)
             @if(isset($grouped[$cat]) && $grouped[$cat]->count() > 0)
-                <div class="mb-12" data-aos="fade-up">
-                    @if($cat !== 'general')
-                        <div class="text-center text-xs tracking-widest uppercase text-gray-600 mb-8">
-                            {{ $categoryLabels[$cat] ?? ucfirst($cat) }}
-                        </div>
-                    @endif
+                <div class="mb-10" data-aos="fade-up">
                     <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16">
                         @foreach($grouped[$cat] as $sponsor)
                             <a href="{{ $sponsor->url ?: '#' }}" target="{{ $sponsor->url ? '_blank' : '_self' }}"
@@ -154,6 +194,9 @@
                             </a>
                         @endforeach
                     </div>
+                    @if(!$loop->last)
+                        <div class="border-t border-dark-border mt-10"></div>
+                    @endif
                 </div>
             @endif
         @endforeach
