@@ -8,12 +8,34 @@
 @section('title', $title . ' - Padelio Turnyrai')
 
 @php
-    $ogDesc = $trans?->description
-        ? Str::limit(strip_tags($trans->description), 160)
-        : ($title . ' — padelio turnyras Lietuvoje. Registracija, rezultatai ir informacija.');
+    $locale = app()->getLocale();
+
+    // Structured description: "Padelio turnyras • 28.03 – 29.03.2026 • Vilnius"
+    $ogParts = [];
+    $ogParts[] = $locale === 'en' ? 'Padel Tournament' : 'Padelio turnyras';
+
+    if ($tournament->date_start && $tournament->date_end) {
+        $start = $tournament->date_start->format('d.m');
+        $end   = $tournament->date_end->format('d.m.Y');
+        $ogParts[] = $start . ' – ' . $end;
+    } elseif ($tournament->date_start) {
+        $ogParts[] = $tournament->date_start->format('d.m.Y');
+    }
+
+    if ($tournament->location) {
+        $ogParts[] = $tournament->location;
+    }
+
+    $ogDesc = implode(' • ', $ogParts);
+
+    // Append short description if available
+    if ($trans?->description) {
+        $short = Str::limit(strip_tags($trans->description), 80);
+        $ogDesc .= ' — ' . $short;
+    }
 @endphp
 @section('og_type', 'article')
-@section('og_title', $title . ' — Padelio Turnyrai')
+@section('og_title', $title . ' | Padelio Turnyrai')
 @section('og_description', $ogDesc)
 @if($tournament->cover_image)
     @section('og_image', asset('storage/' . $tournament->cover_image))
