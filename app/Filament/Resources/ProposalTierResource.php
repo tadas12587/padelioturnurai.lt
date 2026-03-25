@@ -21,26 +21,40 @@ class ProposalTierResource extends Resource
 {
     protected static ?string $model = ProposalTier::class;
 
-    protected static ?string $navigationIcon  = 'heroicon-o-currency-euro';
-    protected static ?string $navigationLabel = 'Rėmimo paketai';
-    protected static ?string $modelLabel      = 'Paketas';
+    protected static ?string $navigationIcon   = 'heroicon-o-currency-euro';
+    protected static ?string $navigationLabel  = 'Rėmimo paketai';
+    protected static ?string $modelLabel       = 'Paketas';
     protected static ?string $pluralModelLabel = 'Paketai';
-    protected static ?int    $navigationSort  = 51;
+    protected static ?int    $navigationSort   = 51;
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Section::make('Paketo informacija')
+
+            // ── Name & tagline LT / EN ────────────────────────────────────
+            Section::make('Pavadinimas ir aprašymas')
+                ->description('🇱🇹 kairėje — lietuviškai · 🇬🇧 dešinėje — angliškai')
                 ->schema([
                     TextInput::make('name')
-                        ->label('Pavadinimas')
+                        ->label('🇱🇹 Pavadinimas')
                         ->required()
-                        ->placeholder('Start / Growth / Title'),
+                        ->placeholder('Start'),
+                    TextInput::make('name_en')
+                        ->label('🇬🇧 Name')
+                        ->placeholder('Start'),
 
                     TextInput::make('tagline')
-                        ->label('Aprašymas (kam tinka)')
+                        ->label('🇱🇹 Aprašymas (kam tinka)')
                         ->placeholder('Mažam verslui, vietinei rinkai'),
+                    TextInput::make('tagline_en')
+                        ->label('🇬🇧 Tagline')
+                        ->placeholder('Small business, local market'),
+                ])
+                ->columns(2),
 
+            // ── Price & slots ─────────────────────────────────────────────
+            Section::make('Kaina ir vietos')
+                ->schema([
                     TextInput::make('price')
                         ->label('Kaina (€)')
                         ->numeric()
@@ -50,13 +64,13 @@ class ProposalTierResource extends Resource
                     TextInput::make('price_suffix')
                         ->label('Kainos papildymas')
                         ->placeholder('+ PVM')
-                        ->helperText('Pvz. "+ PVM", "/ mėn.", "nuo". Rodoma šalia kainos.'),
+                        ->helperText('Pvz. "+ PVM", "nuo". Rodoma šalia kainos.'),
 
                     TextInput::make('slots_total')
                         ->label('Iš viso vietų')
                         ->numeric()
                         ->nullable()
-                        ->helperText('Palikite tuščią jei vietų skaičius neribotas.'),
+                        ->helperText('Tuščia = neribota.'),
 
                     TextInput::make('slots_taken')
                         ->label('Užimtų vietų')
@@ -70,10 +84,11 @@ class ProposalTierResource extends Resource
                 ])
                 ->columns(2),
 
-            Section::make('Privalumai')
+            // ── Benefits LT ───────────────────────────────────────────────
+            Section::make('🇱🇹 Privalumai (lietuviškai)')
                 ->schema([
                     Repeater::make('benefits')
-                        ->label('Privalumų sąrašas')
+                        ->label('')
                         ->schema([
                             TextInput::make('benefit')
                                 ->label('Privalumas')
@@ -86,12 +101,30 @@ class ProposalTierResource extends Resource
                         ->columnSpanFull(),
                 ]),
 
+            // ── Benefits EN ───────────────────────────────────────────────
+            Section::make('🇬🇧 Benefits (English)')
+                ->description('Jei tuščia — rodomi LT privalumai abiem kalbom.')
+                ->schema([
+                    Repeater::make('benefits_en')
+                        ->label('')
+                        ->schema([
+                            TextInput::make('benefit')
+                                ->label('Benefit')
+                                ->required()
+                                ->placeholder('Logo on t-shirts'),
+                        ])
+                        ->itemLabel(fn (array $state) => $state['benefit'] ?? null)
+                        ->collapsible()
+                        ->reorderable()
+                        ->columnSpanFull(),
+                ]),
+
+            // ── Display ───────────────────────────────────────────────────
             Section::make('Vizualiniai nustatymai')
                 ->schema([
                     Toggle::make('highlighted')
-                        ->label('Rekomenduojamas (aukso spalvos rėmelis)')
-                        ->helperText('Pažymėkite vieną paketo kaip rekomenduojamą — jis išskiriamas vizualiai.'),
-
+                        ->label('Rekomenduojamas (aukso rėmelis)')
+                        ->helperText('Išskiria šį paketą vizualiai.'),
                     Toggle::make('is_active')
                         ->label('Aktyvus (rodomas puslapyje)')
                         ->default(true),
@@ -104,44 +137,21 @@ class ProposalTierResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('sort_order')
-                    ->label('#')
-                    ->sortable()
-                    ->width(40),
-
-                TextColumn::make('name')
-                    ->label('Pavadinimas')
-                    ->weight('bold')
-                    ->searchable(),
-
+                TextColumn::make('sort_order')->label('#')->sortable()->width(40),
+                TextColumn::make('name')->label('Pavadinimas 🇱🇹')->weight('bold')->searchable(),
+                TextColumn::make('name_en')->label('Name 🇬🇧')->color('gray')->limit(20),
                 TextColumn::make('price')
                     ->label('Kaina')
                     ->formatStateUsing(fn ($state, $record) =>
                         number_format($state, 0, '.', ' ') . ' €' .
-                        ($record->price_suffix ? ' ' . $record->price_suffix : '')
-                    )
+                        ($record->price_suffix ? ' ' . $record->price_suffix : ''))
                     ->sortable(),
-
-                TextColumn::make('tagline')
-                    ->label('Aprašymas')
-                    ->limit(40)
-                    ->color('gray'),
-
                 TextColumn::make('slots_info')
                     ->label('Vietos')
                     ->getStateUsing(fn ($record) =>
-                        $record->slots_total
-                            ? "{$record->slots_taken} / {$record->slots_total}"
-                            : '∞'
-                    ),
-
-                IconColumn::make('highlighted')
-                    ->label('Rekomenduojamas')
-                    ->boolean(),
-
-                IconColumn::make('is_active')
-                    ->label('Aktyvus')
-                    ->boolean(),
+                        $record->slots_total ? "{$record->slots_taken} / {$record->slots_total}" : '∞'),
+                IconColumn::make('highlighted')->label('Rekomenduojamas')->boolean(),
+                IconColumn::make('is_active')->label('Aktyvus')->boolean(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
