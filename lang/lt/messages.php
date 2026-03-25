@@ -83,4 +83,7 @@ return [
     'proposal_stat_video'          => 'Video peržiūros',
     'proposal_stat_partners'       => 'Partnerių',
     'proposal_stat_media'          => 'Media publikacijos',
+    'proposal_current_sponsors_label' => 'Dabartiniai partneriai',
+    'proposal_current_sponsors_title' => 'Jie jau yra su mumis',
+    'proposal_current_sponsors_sub'   => 'Šios įmonės jau patvirtino partnerystę šiam turnyrui.',
 ];

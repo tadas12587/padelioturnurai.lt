@@ -83,4 +83,7 @@ return [
     'proposal_stat_video'          => 'Video views',
     'proposal_stat_partners'       => 'Partners',
     'proposal_stat_media'          => 'Media publications',
+    'proposal_current_sponsors_label' => 'Current partners',
+    'proposal_current_sponsors_title' => 'They are already with us',
+    'proposal_current_sponsors_sub'   => 'These companies have already confirmed their partnership for this tournament.',
 ];
