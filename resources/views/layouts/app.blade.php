@@ -6,6 +6,41 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Padelio Turnyrai')</title>
 
+    {{-- SEO & Social Sharing (Open Graph + Twitter Cards) --}}
+    @php
+        $ogTitle       = trim(strip_tags(View::yieldContent('og_title') ?: View::yieldContent('title') ?: 'Padelio Turnyrai'));
+        $ogDescription = trim(strip_tags(View::yieldContent('og_description') ?: 'Lietuvos padelio turnyrai – registracija, rezultatai, reitingai ir naujienos viename puslapyje.'));
+        $ogImage       = trim(View::yieldContent('og_image'));
+        $ogUrl         = url()->current();
+        $ogType        = trim(View::yieldContent('og_type') ?: 'website');
+        $hasOgImage    = $ogImage !== '';
+    @endphp
+    <meta name="description" content="{{ $ogDescription }}">
+
+    {{-- Open Graph --}}
+    <meta property="og:type"        content="{{ $ogType }}">
+    <meta property="og:site_name"   content="Padelio Turnyrai">
+    <meta property="og:locale"      content="{{ app()->getLocale() === 'en' ? 'en_US' : 'lt_LT' }}">
+    <meta property="og:url"         content="{{ $ogUrl }}">
+    <meta property="og:title"       content="{{ $ogTitle }}">
+    <meta property="og:description" content="{{ $ogDescription }}">
+    @if($hasOgImage)
+    <meta property="og:image"        content="{{ $ogImage }}">
+    <meta property="og:image:width"  content="1200">
+    <meta property="og:image:height" content="630">
+    @endif
+
+    {{-- Twitter Card --}}
+    <meta name="twitter:card"        content="{{ $hasOgImage ? 'summary_large_image' : 'summary' }}">
+    <meta name="twitter:title"       content="{{ $ogTitle }}">
+    <meta name="twitter:description" content="{{ $ogDescription }}">
+    @if($hasOgImage)
+    <meta name="twitter:image"       content="{{ $ogImage }}">
+    @endif
+
+    {{-- Canonical URL --}}
+    <link rel="canonical" href="{{ $ogUrl }}">
+
     {{-- Google Fonts --}}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 

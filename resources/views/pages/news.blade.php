@@ -2,6 +2,9 @@
 
 @section('title', __('messages.nav_news') . ' - Padelio Turnyrai')
 
+@section('og_title', __('messages.nav_news') . ' — Padelio Turnyrai')
+@section('og_description', 'Padelio turnyrai Lietuvoje – naujausios naujienos, turnyrų rezultatai ir reitingų atnaujinimai.')
+
 @section('content')
 <div class="pt-24 pb-16 bg-dark min-h-screen">
     <div class="max-w-6xl mx-auto px-4">

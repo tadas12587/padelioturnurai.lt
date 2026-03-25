@@ -7,6 +7,18 @@
 
 @section('title', $title . ' - Padelio Turnyrai')
 
+@php
+    $ogDesc = $trans?->description
+        ? Str::limit(strip_tags($trans->description), 160)
+        : ($title . ' — padelio turnyras Lietuvoje. Registracija, rezultatai ir informacija.');
+@endphp
+@section('og_type', 'article')
+@section('og_title', $title . ' — Padelio Turnyrai')
+@section('og_description', $ogDesc)
+@if($tournament->cover_image)
+    @section('og_image', asset('storage/' . $tournament->cover_image))
+@endif
+
 @section('content')
 
 {{-- Hero with cover image --}}
