@@ -3,6 +3,7 @@
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\ProposalController;
 use Illuminate\Support\Facades\Route;
 
 // Routes without locale prefix (default lt)
@@ -12,6 +13,7 @@ Route::middleware('setlocale')->group(function () {
     Route::get('/turnyrai/{slug}', [TournamentController::class, 'show'])->name('tournament.show');
     Route::get('/kontaktai', [ContactController::class, 'index'])->name('contact');
     Route::post('/kontaktai', [ContactController::class, 'store'])->name('contact.store');
+    Route::get('/tapk-remeju', [ProposalController::class, 'index'])->name('proposal');
 });
 
 // Routes with locale prefix (lt or en)
@@ -21,4 +23,5 @@ Route::prefix('{locale}')->where(['locale' => 'lt|en'])->middleware('setlocale')
     Route::get('/turnyrai/{slug}', [TournamentController::class, 'show'])->name('tournament.show.locale');
     Route::get('/kontaktai', [ContactController::class, 'index'])->name('contact.locale');
     Route::post('/kontaktai', [ContactController::class, 'store'])->name('contact.store.locale');
+    Route::get('/tapk-remeju', [ProposalController::class, 'index'])->name('proposal.locale');
 });

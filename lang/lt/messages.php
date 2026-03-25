@@ -3,6 +3,7 @@
 return [
     'nav_home' => 'Pradžia',
     'nav_tournaments' => 'Turnyrai',
+    'nav_proposal' => 'Tapk rėmėju',
     'nav_contact' => 'Kontaktai',
     'hero_tagline' => 'Profesionalūs padelio turnyrai Lietuvoje',
     'stats_section_title' => 'Skaičiai kalba patys',
