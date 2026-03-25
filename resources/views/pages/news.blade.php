@@ -30,20 +30,22 @@
                 @php $featuredTrans = $featured->translation(app()->getLocale()); @endphp
                 <div class="mb-16" data-aos="fade-up">
                     <a href="{{ lroute('news.show', ['slug' => $featured->slug]) }}"
-                       class="group block relative overflow-hidden bg-dark-card border border-dark-border hover:border-gold/50 transition-all duration-300">
+                       class="group block bg-dark-card border border-dark-border hover:border-gold/50 transition-all duration-300">
+
                         {{-- Cover image --}}
-                        <div class="relative aspect-[21/9] overflow-hidden">
+                        <div class="relative aspect-video md:aspect-[21/9] overflow-hidden">
                             @if($featured->cover_image)
                                 <img src="{{ Storage::url($featured->cover_image) }}" alt="{{ $featuredTrans?->title }}"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             @else
                                 <div class="w-full h-full bg-gradient-to-br from-dark via-[#0d1117] to-[#1a1a2e]"></div>
                             @endif
-                            <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/50 to-transparent"></div>
+                            {{-- Gradient overlay (desktop only — content is below on mobile) --}}
+                            <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/50 to-transparent hidden md:block"></div>
 
-                            {{-- Content overlay --}}
-                            <div class="absolute inset-0 flex items-end">
-                                <div class="p-8 md:p-12 w-full">
+                            {{-- Content overlay — desktop only --}}
+                            <div class="absolute inset-0 items-end hidden md:flex">
+                                <div class="p-12 w-full">
                                     <div class="flex items-center gap-3 mb-4">
                                         <span class="px-3 py-1 bg-gold text-dark text-xs font-bold uppercase tracking-wider">
                                             {{ app()->getLocale() === 'en' ? 'Featured' : 'Rekomenduojama' }}
@@ -75,6 +77,39 @@
                                 </div>
                             </div>
                         </div>
+
+                        {{-- Content block — mobile only --}}
+                        <div class="md:hidden p-6">
+                            <div class="flex items-center gap-2 mb-3 flex-wrap">
+                                <span class="px-3 py-1 bg-gold text-dark text-xs font-bold uppercase tracking-wider">
+                                    {{ app()->getLocale() === 'en' ? 'Featured' : 'Rekomenduojama' }}
+                                </span>
+                                @if($featured->tournament)
+                                    <span class="px-2 py-1 border border-gold/50 text-gold text-xs font-semibold uppercase tracking-wide">
+                                        {{ $featured->tournament->translation(app()->getLocale())?->title ?? $featured->tournament->slug }}
+                                    </span>
+                                @endif
+                            </div>
+                            @if($featured->published_at)
+                                <div class="text-gray-500 text-xs mb-2">
+                                    {{ $featured->published_at->format('Y-m-d') }}
+                                    &nbsp;&bull;&nbsp;
+                                    {{ __('messages.news_reading_time', ['min' => $featured->readingTime(app()->getLocale())]) }}
+                                </div>
+                            @endif
+                            <h2 class="text-xl font-black text-white mb-3 leading-snug group-hover:text-gold transition-colors">
+                                {{ $featuredTrans?->title ?? $featured->slug }}
+                            </h2>
+                            @if($featuredTrans?->excerpt)
+                                <p class="text-gray-400 text-sm line-clamp-3 mb-4 leading-relaxed">
+                                    {{ $featuredTrans->excerpt }}
+                                </p>
+                            @endif
+                            <span class="inline-flex items-center gap-1 text-gold text-sm font-semibold">
+                                {{ __('messages.news_read_more') }}
+                            </span>
+                        </div>
+
                     </a>
                 </div>
             @endif
