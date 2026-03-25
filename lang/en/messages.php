@@ -3,6 +3,7 @@
 return [
     'nav_home' => 'Home',
     'nav_tournaments' => 'Tournaments',
+    'nav_proposal' => 'Become a Sponsor',
     'nav_contact' => 'Contact',
     'hero_tagline' => 'Professional Padel Tournaments in Lithuania',
     'stats_section_title' => 'Numbers speak for themselves',

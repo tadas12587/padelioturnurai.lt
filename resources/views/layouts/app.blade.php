@@ -103,6 +103,9 @@
                     <a href="{{ lroute('contact') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                         {{ __('messages.nav_contact') }}
                     </a>
+                    <a href="{{ lroute('proposal') }}" class="px-4 py-2 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors text-xs font-black tracking-widest uppercase">
+                        {{ __('messages.nav_proposal') }}
+                    </a>
 
                     {{-- Language Switcher --}}
                     @php
@@ -157,6 +160,9 @@
                 </a>
                 <a href="{{ lroute('contact') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                     {{ __('messages.nav_contact') }}
+                </a>
+                <a href="{{ lroute('proposal') }}" class="block text-gold font-black text-sm tracking-widest uppercase">
+                    {{ __('messages.nav_proposal') }}
                 </a>
                 <div class="flex items-center gap-2 pt-4 border-t border-dark-border">
                     <a href="{{ $ltUrl }}" class="px-3 py-1 text-xs font-bold {{ $currentLocale === 'lt' ? 'text-gold' : 'text-gray-500' }}">LT</a>
