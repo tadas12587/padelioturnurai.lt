@@ -86,4 +86,13 @@ return [
     'proposal_current_sponsors_label' => 'Current partners',
     'proposal_current_sponsors_title' => 'They are already with us',
     'proposal_current_sponsors_sub'   => 'These companies have already confirmed their partnership for this tournament.',
+
+    // News
+    'nav_news'              => 'News',
+    'news_reading_time'     => ':min min read',
+    'news_related'          => 'Related news',
+    'news_back'             => '← All news',
+    'news_read_more'        => 'Read more →',
+    'news_empty'            => 'No news yet',
+    'news_tournament_news'  => 'Tournament news',
 ];

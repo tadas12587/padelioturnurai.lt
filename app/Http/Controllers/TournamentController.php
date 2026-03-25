@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\News;
 use App\Models\Tournament;
 
 class TournamentController extends Controller
@@ -26,6 +27,13 @@ class TournamentController extends Controller
             $q->where('is_active', true)->orderBy('sort_order');
         }])->where('slug', $slug)->firstOrFail();
 
-        return view('pages.tournament-show', compact('tournament'));
+        $relatedNews = News::with('translations')
+            ->published()
+            ->where('tournament_id', $tournament->id)
+            ->latest('published_at')
+            ->limit(3)
+            ->get();
+
+        return view('pages.tournament-show', compact('tournament', 'relatedNews'));
     }
 }
