@@ -7,6 +7,20 @@
 
 @section('title', $title . ' - ' . __('messages.nav_news'))
 
+@php
+    $ogNewsDesc = $trans?->excerpt
+        ? Str::limit(strip_tags($trans->excerpt), 160)
+        : ($trans?->content
+            ? Str::limit(strip_tags($trans->content), 160)
+            : $title . ' — padelio naujiena iš padelioturnyrai.lt');
+@endphp
+@section('og_type', 'article')
+@section('og_title', $title . ' — Padelio Turnyrai')
+@section('og_description', $ogNewsDesc)
+@if($news->cover_image)
+    @section('og_image', asset('storage/' . $news->cover_image))
+@endif
+
 @push('styles')
 <style>
     .news-content h2 { color: white; font-size: 1.75rem; font-weight: 800; margin: 2rem 0 1rem; }

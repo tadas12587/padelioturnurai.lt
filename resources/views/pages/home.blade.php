@@ -2,6 +2,12 @@
 
 @section('title', 'Padelio Turnyrai - ' . __('messages.nav_home'))
 
+@section('og_title', 'Padelio Turnyrai — Oficialus Lietuvos Padelio Turnyrai')
+@section('og_description', 'Lietuvos padelio turnyrai – registracija, tvarkaraštis, rezultatai, reitingai ir naujienos viename puslapyje. Tapkite dalimi!')
+@if($heroPhotos->isNotEmpty())
+    @section('og_image', $heroPhotos->first())
+@endif
+
 @section('content')
 
 {{-- Hero Section --}}

@@ -37,6 +37,13 @@
 
 @section('title', __('messages.proposal_become_sponsor') . ' · ' . $tournamentName)
 
+@section('og_type', 'website')
+@section('og_title', __('messages.proposal_become_sponsor') . ' — ' . $tournamentName)
+@section('og_description', Str::limit(strip_tags($subheadline ?: 'Tapkite oficialiu padelio turnyro rėmėju. Pasiekite aktyvią sporto auditoriją ir padidinkite savo prekės ženklo matomumą.'), 160))
+@if(count($photos) > 0)
+    @section('og_image', $photos[0])
+@endif
+
 @section('content')
 
 {{-- ═══ HERO ═══════════════════════════════════════════════════════════════ --}}
