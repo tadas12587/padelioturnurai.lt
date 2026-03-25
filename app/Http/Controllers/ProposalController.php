@@ -32,8 +32,10 @@ class ProposalController extends Controller
 
         $tournamentId = $s('proposal_tournament_id');
         $tournament   = $tournamentId
-            ? Tournament::with('translations')->find($tournamentId)
+            ? Tournament::with(['translations', 'sponsors' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])->find($tournamentId)
             : null;
+
+        $currentSponsors = $tournament?->sponsors ?? collect();
 
         // General photos
         $photosJson = $s('proposal_photos', '[]');
@@ -53,6 +55,7 @@ class ProposalController extends Controller
         return view('pages.sponsor-proposal', compact(
             'tiers', 'tournament', 'photos',
             'streamPhoto', 'streamStats',
+            'currentSponsors',
             's', 'st'
         ));
     }
