@@ -303,9 +303,10 @@
                             </div>
                         @endif
 
-                        <h3 class="text-2xl font-black text-white mb-1">{{ $tier->name }}</h3>
-                        @if($tier->tagline)
-                            <p class="text-gray-500 text-sm mb-6">{{ $tier->tagline }}</p>
+                        <h3 class="text-2xl font-black text-white mb-1">{{ $tier->localeName() }}</h3>
+                        @php $tierTagline = $tier->localeTagline(); @endphp
+                        @if($tierTagline)
+                            <p class="text-gray-500 text-sm mb-6">{{ $tierTagline }}</p>
                         @else
                             <div class="mb-6"></div>
                         @endif
@@ -319,9 +320,10 @@
                             @endif
                         </div>
 
-                        @if($tier->benefits)
+                        @php $tierBenefits = $tier->localeBenefits(); @endphp
+                        @if($tierBenefits)
                             <ul class="space-y-3 flex-1 mb-8">
-                                @foreach($tier->benefits as $benefit)
+                                @foreach($tierBenefits as $benefit)
                                     <li class="flex items-start gap-3 text-gray-300 text-sm">
                                         <svg class="w-4 h-4 text-gold flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
@@ -333,7 +335,7 @@
                         @endif
 
                         @if($contactEmail || $contactPhone)
-                            <a href="{{ $contactEmail ? 'mailto:'.$contactEmail.'?subject='.urlencode('Rėmimas: '.$tier->name.' paketas') : '#kontaktai' }}"
+                            <a href="{{ $contactEmail ? 'mailto:'.$contactEmail.'?subject='.urlencode('Rėmimas: '.$tier->localeName().' paketas') : '#kontaktai' }}"
                                class="block text-center py-3.5 font-black text-sm uppercase tracking-wider transition-colors
                                       {{ $tier->highlighted ? 'bg-gold text-dark hover:bg-gold-light' : 'border border-dark-border text-gray-300 hover:border-gold hover:text-gold' }}
                                       {{ $slotsLeft === 0 ? 'opacity-40 pointer-events-none' : '' }}">
