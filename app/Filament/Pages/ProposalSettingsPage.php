@@ -41,8 +41,9 @@ class ProposalSettingsPage extends Page implements HasForms
 
         $this->form->fill([
             // ── General ───────────────────────────────────────────────────
-            'proposal_active'            => (bool) Setting::get('proposal_active', '1'),
-            'proposal_tournament_id'     => Setting::get('proposal_tournament_id'),
+            'proposal_active'                => (bool) Setting::get('proposal_active', '1'),
+            'proposal_show_current_sponsors' => (bool) Setting::get('proposal_show_current_sponsors', '1'),
+            'proposal_tournament_id'         => Setting::get('proposal_tournament_id'),
 
             // ── Hero (LT / EN) ────────────────────────────────────────────
             'proposal_headline'          => Setting::get('proposal_headline', 'Didžiausias padelio turnyras Lietuvoje'),
@@ -117,6 +118,10 @@ class ProposalSettingsPage extends Page implements HasForms
                         Toggle::make('proposal_active')
                             ->label('Puslapis matomas viešai')
                             ->helperText('Išjunkite jei puslapis dar nepasirengęs.'),
+
+                        Toggle::make('proposal_show_current_sponsors')
+                            ->label('Rodyti dabartinius rėmėjus')
+                            ->helperText('Rodo rėmėjus, jau prisegus prie pasirinkto turnyro.'),
 
                         Select::make('proposal_tournament_id')
                             ->label('Turnyras, kuriam ieškome rėmėjų')
