@@ -86,4 +86,13 @@ return [
     'proposal_current_sponsors_label' => 'Dabartiniai partneriai',
     'proposal_current_sponsors_title' => 'Jie jau yra su mumis',
     'proposal_current_sponsors_sub'   => 'Šios įmonės jau patvirtino partnerystę šiam turnyrui.',
+
+    // News
+    'nav_news'              => 'Naujienos',
+    'news_reading_time'     => ':min min. skaitymas',
+    'news_related'          => 'Susijusios naujienos',
+    'news_back'             => '← Visos naujienos',
+    'news_read_more'        => 'Skaityti →',
+    'news_empty'            => 'Naujienų dar nėra',
+    'news_tournament_news'  => 'Turnyro naujienos',
 ];

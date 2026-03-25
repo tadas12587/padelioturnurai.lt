@@ -19,7 +19,9 @@
       "Bash(C:/xampp/php/php.exe artisan:*)",
       "Bash(C:/xampp/php/php.exe -r \":*)",
       "Bash(/C/xampp/php/php artisan:*)",
-      "Bash(grep -E \"\\\\.php$\")"
+      "Bash(grep -E \"\\\\.php$\")",
+      "Bash(ls \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\\\\database\\\\migrations\"\" | grep news && ls \"C:UsersTadasDesktopWEB-zinovaiappModels\"\")",
+      "Bash(ls \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\\\\app\\\\Filament\\\\Resources\"\" | grep -i news && ls \"C:UsersTadasDesktopWEB-zinovaiappFilamentResourcesNewsResourcePages\"\")"
     ]
   }
 }

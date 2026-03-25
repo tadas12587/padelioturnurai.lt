@@ -100,6 +100,9 @@
                     <a href="{{ lroute('tournaments') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                         {{ __('messages.nav_tournaments') }}
                     </a>
+                    <a href="{{ lroute('news.index') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                        {{ __('messages.nav_news') }}
+                    </a>
                     <a href="{{ lroute('contact') }}" class="text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                         {{ __('messages.nav_contact') }}
                     </a>
@@ -157,6 +160,9 @@
                 </a>
                 <a href="{{ lroute('tournaments') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                     {{ __('messages.nav_tournaments') }}
+                </a>
+                <a href="{{ lroute('news.index') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
+                    {{ __('messages.nav_news') }}
                 </a>
                 <a href="{{ lroute('contact') }}" class="block text-gray-300 hover:text-gold transition-colors text-sm font-medium tracking-wide uppercase">
                     {{ __('messages.nav_contact') }}

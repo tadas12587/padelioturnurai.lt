@@ -199,6 +199,42 @@
         </div>
     @endif
 
+    {{-- Related News --}}
+    @if(isset($relatedNews) && $relatedNews->count() > 0)
+        <div class="max-w-6xl mx-auto px-4 pb-16" data-aos="fade-up">
+            <h2 class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-8">{{ __('messages.news_tournament_news') }}</h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach($relatedNews as $article)
+                    @php $newsTrans = $article->translation(app()->getLocale()); @endphp
+                    <a href="{{ lroute('news.show', ['slug' => $article->slug]) }}"
+                       class="group block bg-dark-card border border-dark-border hover:border-gold/50 transition-all duration-300">
+                        <div class="relative overflow-hidden aspect-video">
+                            @if($article->cover_image)
+                                <img src="{{ Storage::url($article->cover_image) }}" alt="{{ $newsTrans?->title }}"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            @else
+                                <div class="w-full h-full bg-dark flex items-center justify-center">
+                                    <svg class="w-10 h-10 text-gold/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 12h6m-6-4h2"/>
+                                    </svg>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="p-5">
+                            @if($article->published_at)
+                                <div class="text-gray-500 text-xs mb-2">{{ $article->published_at->format('Y-m-d') }}</div>
+                            @endif
+                            <h3 class="text-base font-bold text-white group-hover:text-gold transition-colors line-clamp-2 leading-snug mb-2">
+                                {{ $newsTrans?->title ?? $article->slug }}
+                            </h3>
+                            <span class="text-gold text-xs font-semibold">{{ __('messages.news_read_more') }}</span>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Tournament Sponsors --}}
     @if($tournament->sponsors->count() > 0)
         <div class="max-w-6xl mx-auto px-4 pb-24" data-aos="fade-up">
