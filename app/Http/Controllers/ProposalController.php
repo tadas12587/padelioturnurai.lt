@@ -35,7 +35,10 @@ class ProposalController extends Controller
             ? Tournament::with(['translations', 'sponsors' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])->find($tournamentId)
             : null;
 
-        $currentSponsors = $tournament?->sponsors ?? collect();
+        $showCurrentSponsors = (bool) $s('proposal_show_current_sponsors', '1');
+        $currentSponsors     = ($showCurrentSponsors && $tournament)
+            ? $tournament->sponsors
+            : collect();
 
         // General photos
         $photosJson = $s('proposal_photos', '[]');

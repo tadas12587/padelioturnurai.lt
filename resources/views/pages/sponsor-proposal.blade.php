@@ -177,65 +177,6 @@
 </section>
 @endif
 
-{{-- ═══ CURRENT SPONSORS ═══════════════════════════════════════════════════ --}}
-@if($currentSponsors->count() > 0)
-<section class="py-20 bg-dark-card" data-aos="fade-up">
-    <div class="max-w-5xl mx-auto px-6 text-center">
-        <p class="text-gold text-xs font-bold uppercase tracking-[0.4em] mb-2">
-            {{ __('messages.proposal_current_sponsors_label') }}
-        </p>
-        <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
-            {{ __('messages.proposal_current_sponsors_title') }}
-        </h2>
-        <p class="text-gray-500 text-sm mb-12 max-w-lg mx-auto">
-            {{ __('messages.proposal_current_sponsors_sub') }}
-        </p>
-
-        {{-- Group by category --}}
-        @php
-            $grouped = $currentSponsors->groupBy('category');
-            $order   = ['gold', 'silver', 'bronze', 'general'];
-            $catNames = [
-                'gold'    => ['lt' => 'Auksiniai rėmėjai',   'en' => 'Gold sponsors'],
-                'silver'  => ['lt' => 'Sidabriniai rėmėjai', 'en' => 'Silver sponsors'],
-                'bronze'  => ['lt' => 'Bronziniai rėmėjai',  'en' => 'Bronze sponsors'],
-                'general' => ['lt' => 'Rėmėjai',             'en' => 'Sponsors'],
-            ];
-            $locale  = app()->getLocale();
-        @endphp
-
-        @foreach($order as $cat)
-            @if($grouped->has($cat))
-                @php $catSponsors = $grouped[$cat]; @endphp
-                <div class="mb-10">
-                    <p class="text-gray-600 text-xs uppercase tracking-widest mb-6">
-                        {{ $catNames[$cat][$locale] ?? $cat }}
-                    </p>
-                    <div class="flex flex-wrap justify-center items-center gap-6">
-                        @foreach($catSponsors as $sponsor)
-                            <div class="group relative flex items-center justify-center
-                                        {{ $cat === 'gold' ? 'w-44 h-20' : ($cat === 'silver' ? 'w-36 h-16' : 'w-28 h-12') }}
-                                        bg-dark border border-dark-border hover:border-gold/40 transition-colors px-4">
-                                @if($sponsor->logo)
-                                    <img src="{{ Storage::url($sponsor->logo) }}"
-                                         alt="{{ $sponsor->name }}"
-                                         class="max-w-full max-h-full object-contain opacity-60 group-hover:opacity-100 transition-opacity"
-                                         style="filter: grayscale(1) brightness(1.8);"
-                                         onmouseover="this.style.filter='none'"
-                                         onmouseout="this.style.filter='grayscale(1) brightness(1.8)'">
-                                @else
-                                    <span class="text-gray-500 text-xs font-semibold text-center">{{ $sponsor->name }}</span>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            @endif
-        @endforeach
-    </div>
-</section>
-@endif
-
 {{-- ═══ LIVE STREAMING ══════════════════════════════════════════════════════ --}}
 @if($hasStream)
 <section class="py-24" data-aos="fade-up">
@@ -302,6 +243,54 @@
                 </div>
             @endif
         </div>
+    </div>
+</section>
+@endif
+
+{{-- ═══ CURRENT SPONSORS ═══════════════════════════════════════════════════ --}}
+@if($currentSponsors->count() > 0)
+<section class="py-20" data-aos="fade-up">
+    <div class="max-w-5xl mx-auto px-6 text-center">
+        <p class="text-gold text-xs font-bold uppercase tracking-[0.4em] mb-2">
+            {{ __('messages.proposal_current_sponsors_label') }}
+        </p>
+        <h2 class="text-3xl md:text-4xl font-black text-white mb-3">
+            {{ __('messages.proposal_current_sponsors_title') }}
+        </h2>
+        <p class="text-gray-500 text-sm mb-12 max-w-lg mx-auto">
+            {{ __('messages.proposal_current_sponsors_sub') }}
+        </p>
+
+        @php
+            $grouped = $currentSponsors->sortBy('sort_order')->groupBy('category');
+            $order   = ['gold', 'silver', 'bronze', 'general'];
+        @endphp
+
+        @foreach($order as $cat)
+            @if($grouped->has($cat))
+                <div class="{{ !$loop->first ? 'mt-8' : '' }}">
+                    <div class="flex flex-wrap justify-center items-center gap-5">
+                        @foreach($grouped[$cat] as $sponsor)
+                            <div class="group flex items-center justify-center
+                                        {{ $cat === 'gold'   ? 'w-44 h-20' :
+                                           ($cat === 'silver' ? 'w-36 h-16' : 'w-28 h-12') }}
+                                        bg-dark-card border border-dark-border hover:border-gold/40 transition-colors px-4">
+                                @if($sponsor->logo)
+                                    <img src="{{ Storage::url($sponsor->logo) }}"
+                                         alt="{{ $sponsor->name }}"
+                                         class="max-w-full max-h-full object-contain"
+                                         style="filter:grayscale(1) brightness(1.8); transition:filter .3s"
+                                         onmouseover="this.style.filter='none'"
+                                         onmouseout="this.style.filter='grayscale(1) brightness(1.8)'">
+                                @else
+                                    <span class="text-gray-400 text-xs font-semibold text-center leading-tight">{{ $sponsor->name }}</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        @endforeach
     </div>
 </section>
 @endif
