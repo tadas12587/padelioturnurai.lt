@@ -70,27 +70,27 @@ class ProposalSettingsPage extends Page implements HasForms
             'proposal_case_study_en'     => Setting::get('proposal_case_study_en', ''),
 
             // ── Streaming section (LT / EN) ───────────────────────────────
-            'proposal_stream_title_lt'      => Setting::get('proposal_stream_title_lt', 'Pasiekiame žiūrovus per tiesioginę transliaciją'),
+            'proposal_stream_title'         => Setting::get('proposal_stream_title', 'Pasiekiame žiūrovus per tiesioginę transliaciją'),
             'proposal_stream_title_en'      => Setting::get('proposal_stream_title_en', 'Reaching viewers through live streaming'),
-            'proposal_stream_text_lt'       => Setting::get('proposal_stream_text_lt', ''),
+            'proposal_stream_text'          => Setting::get('proposal_stream_text', ''),
             'proposal_stream_text_en'       => Setting::get('proposal_stream_text_en', ''),
             'proposal_stream_photo'         => $streamPhoto ? [$streamPhoto] : [],
             'proposal_stream_url'           => Setting::get('proposal_stream_url', ''),
-            'proposal_stream_url_label_lt'  => Setting::get('proposal_stream_url_label_lt', 'Žiūrėti transliaciją'),
+            'proposal_stream_url_label'     => Setting::get('proposal_stream_url_label', 'Žiūrėti transliaciją'),
             'proposal_stream_url_label_en'  => Setting::get('proposal_stream_url_label_en', 'Watch stream'),
             // Streaming stats (4 rows: value + LT label + EN label)
-            'proposal_stream_stat1_value'     => Setting::get('proposal_stream_stat1_value', ''),
-            'proposal_stream_stat1_label_lt'  => Setting::get('proposal_stream_stat1_label_lt', 'Transliacijos kanalų'),
-            'proposal_stream_stat1_label_en'  => Setting::get('proposal_stream_stat1_label_en', 'Streaming channels'),
-            'proposal_stream_stat2_value'     => Setting::get('proposal_stream_stat2_value', ''),
-            'proposal_stream_stat2_label_lt'  => Setting::get('proposal_stream_stat2_label_lt', 'Live žiūrovų'),
-            'proposal_stream_stat2_label_en'  => Setting::get('proposal_stream_stat2_label_en', 'Live viewers'),
-            'proposal_stream_stat3_value'     => Setting::get('proposal_stream_stat3_value', ''),
-            'proposal_stream_stat3_label_lt'  => Setting::get('proposal_stream_stat3_label_lt', 'Peržiūrų vėliau'),
-            'proposal_stream_stat3_label_en'  => Setting::get('proposal_stream_stat3_label_en', 'Views after event'),
-            'proposal_stream_stat4_value'     => Setting::get('proposal_stream_stat4_value', ''),
-            'proposal_stream_stat4_label_lt'  => Setting::get('proposal_stream_stat4_label_lt', ''),
-            'proposal_stream_stat4_label_en'  => Setting::get('proposal_stream_stat4_label_en', ''),
+            'proposal_stream_stat1_value'    => Setting::get('proposal_stream_stat1_value', ''),
+            'proposal_stream_stat1_label'    => Setting::get('proposal_stream_stat1_label', 'Transliacijos kanalų'),
+            'proposal_stream_stat1_label_en' => Setting::get('proposal_stream_stat1_label_en', 'Streaming channels'),
+            'proposal_stream_stat2_value'    => Setting::get('proposal_stream_stat2_value', ''),
+            'proposal_stream_stat2_label'    => Setting::get('proposal_stream_stat2_label', 'Live žiūrovų'),
+            'proposal_stream_stat2_label_en' => Setting::get('proposal_stream_stat2_label_en', 'Live viewers'),
+            'proposal_stream_stat3_value'    => Setting::get('proposal_stream_stat3_value', ''),
+            'proposal_stream_stat3_label'    => Setting::get('proposal_stream_stat3_label', 'Peržiūrų vėliau'),
+            'proposal_stream_stat3_label_en' => Setting::get('proposal_stream_stat3_label_en', 'Views after event'),
+            'proposal_stream_stat4_value'    => Setting::get('proposal_stream_stat4_value', ''),
+            'proposal_stream_stat4_label'    => Setting::get('proposal_stream_stat4_label', ''),
+            'proposal_stream_stat4_label_en' => Setting::get('proposal_stream_stat4_label_en', ''),
 
             // ── Value anchor (LT / EN) ────────────────────────────────────
             'proposal_value_anchor'      => Setting::get('proposal_value_anchor', 'Investicijos į reklamą panašiuose renginiuose įprastai: 3 000 – 15 000 €'),
@@ -212,7 +212,7 @@ class ProposalSettingsPage extends Page implements HasForms
                     ->schema([
 
                         // Title LT / EN
-                        TextInput::make('proposal_stream_title_lt')
+                        TextInput::make('proposal_stream_title')
                             ->label('🇱🇹 Sekcijos antraštė')
                             ->placeholder('Pasiekiame žiūrovus per tiesioginę transliaciją'),
                         TextInput::make('proposal_stream_title_en')
@@ -220,7 +220,7 @@ class ProposalSettingsPage extends Page implements HasForms
                             ->placeholder('Reaching viewers through live streaming'),
 
                         // Text LT / EN
-                        Textarea::make('proposal_stream_text_lt')
+                        Textarea::make('proposal_stream_text')
                             ->label('🇱🇹 Tekstas')
                             ->rows(4)
                             ->placeholder("Mūsų turnyrai transliuojami per kelis kanalus ir pasiekia tūkstančius žiūrovų..."),
@@ -244,7 +244,7 @@ class ProposalSettingsPage extends Page implements HasForms
                                     ->url()
                                     ->placeholder('https://youtube.com/...')
                                     ->helperText('Jei tuščia — mygtukas nematomas.'),
-                                TextInput::make('proposal_stream_url_label_lt')
+                                TextInput::make('proposal_stream_url_label')
                                     ->label('🇱🇹 Mygtuko tekstas')
                                     ->placeholder('Žiūrėti transliaciją'),
                                 TextInput::make('proposal_stream_url_label_en')
@@ -260,19 +260,19 @@ class ProposalSettingsPage extends Page implements HasForms
                             ->columnSpanFull(),
 
                         TextInput::make('proposal_stream_stat1_value')->label('1 — Skaičius')->placeholder('3'),
-                        TextInput::make('proposal_stream_stat1_label_lt')->label('1 — 🇱🇹 Etiketė')->placeholder('Transliacijos kanalų'),
+                        TextInput::make('proposal_stream_stat1_label')->label('1 — 🇱🇹 Etiketė')->placeholder('Transliacijos kanalų'),
                         TextInput::make('proposal_stream_stat1_label_en')->label('1 — 🇬🇧 Label')->placeholder('Streaming channels'),
 
                         TextInput::make('proposal_stream_stat2_value')->label('2 — Skaičius')->placeholder('2 400+'),
-                        TextInput::make('proposal_stream_stat2_label_lt')->label('2 — 🇱🇹 Etiketė')->placeholder('Live žiūrovų'),
+                        TextInput::make('proposal_stream_stat2_label')->label('2 — 🇱🇹 Etiketė')->placeholder('Live žiūrovų'),
                         TextInput::make('proposal_stream_stat2_label_en')->label('2 — 🇬🇧 Label')->placeholder('Live viewers'),
 
                         TextInput::make('proposal_stream_stat3_value')->label('3 — Skaičius')->placeholder('8 500+'),
-                        TextInput::make('proposal_stream_stat3_label_lt')->label('3 — 🇱🇹 Etiketė')->placeholder('Peržiūrų vėliau'),
+                        TextInput::make('proposal_stream_stat3_label')->label('3 — 🇱🇹 Etiketė')->placeholder('Peržiūrų vėliau'),
                         TextInput::make('proposal_stream_stat3_label_en')->label('3 — 🇬🇧 Label')->placeholder('Views after event'),
 
                         TextInput::make('proposal_stream_stat4_value')->label('4 — Skaičius')->placeholder(''),
-                        TextInput::make('proposal_stream_stat4_label_lt')->label('4 — 🇱🇹 Etiketė')->placeholder(''),
+                        TextInput::make('proposal_stream_stat4_label')->label('4 — 🇱🇹 Etiketė')->placeholder(''),
                         TextInput::make('proposal_stream_stat4_label_en')->label('4 — 🇬🇧 Label')->placeholder(''),
                     ])
                     ->columns(3),
