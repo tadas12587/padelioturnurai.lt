@@ -5,7 +5,16 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\RegistrationInterestController;
 use Illuminate\Support\Facades\Route;
+
+// Interest notification endpoint (locale-agnostic JSON API)
+Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 'store'])->name('interest.store');
+
+// Admin CSV export — protected by Filament auth
+Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])
+    ->middleware(['auth'])
+    ->name('admin.interests.export');
 
 // Routes without locale prefix (default lt)
 Route::middleware('setlocale')->group(function () {

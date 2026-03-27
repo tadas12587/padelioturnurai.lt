@@ -87,6 +87,18 @@ return [
     'proposal_current_sponsors_title' => 'They are already with us',
     'proposal_current_sponsors_sub'   => 'These companies have already confirmed their partnership for this tournament.',
 
+    // Registration interest / notify me
+    'notify_btn'            => 'Notify me when registration opens',
+    'notify_modal_title'    => 'Notify me when registration opens',
+    'notify_modal_sub'      => 'Enter your details and we will notify you as soon as registration opens.',
+    'notify_name_label'     => 'Full Name',
+    'notify_email_label'    => 'Email address',
+    'notify_submit'         => 'Notify me!',
+    'notify_submitting'     => 'Sending...',
+    'notify_success'        => 'Thank you! We\'ll notify you when registration opens.',
+    'notify_already'        => 'This email is already registered for this tournament.',
+    'notify_error'          => 'Error. Please try again.',
+
     // News
     'nav_news'              => 'News',
     'news_reading_time'     => ':min min read',
