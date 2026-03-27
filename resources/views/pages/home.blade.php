@@ -168,7 +168,7 @@
                     @if($trans?->description)
                         <p class="text-gray-300 mb-6 leading-relaxed">{{ Str::limit($trans->description, 160) }}</p>
                     @endif
-                    <div class="flex gap-4 flex-wrap">
+                    <div class="flex gap-4 flex-wrap items-center">
                         @if($tournament->registration_active && $tournament->registration_url)
                             <a href="{{ $tournament->registration_url }}" target="_blank" class="px-6 py-3 bg-gold text-dark font-bold hover:bg-gold-light transition-colors">
                                 {{ __('messages.register_btn') }}
@@ -177,6 +177,13 @@
                         <a href="{{ lroute('tournament.show', ['slug' => $tournament->slug]) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
                             {{ __('messages.learn_more') }}
                         </a>
+                        @if($tournament->notify_enabled && $tournament->status === 'upcoming' && !$tournament->registration_active)
+                            @include('partials.notify-btn', [
+                                'tournamentId'   => $tournament->id,
+                                'tournamentName' => $trans?->title ?? $tournament->slug,
+                                'compact'        => false,
+                            ])
+                        @endif
                     </div>
                 </div>
                 @if($loop->odd)

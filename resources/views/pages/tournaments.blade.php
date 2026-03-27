@@ -85,8 +85,8 @@
                                 {{ __('messages.learn_more') }} &rarr;
                             </a>
 
-                            {{-- Notify me — upcoming only --}}
-                            @if($tournament->status === 'upcoming' && !$tournament->registration_active)
+                            {{-- Notify me — controlled by admin toggle --}}
+                            @if($tournament->notify_enabled && $tournament->status === 'upcoming' && !$tournament->registration_active)
                                 <div class="mt-2">
                                     @include('partials.notify-btn', [
                                         'tournamentId'   => $tournament->id,

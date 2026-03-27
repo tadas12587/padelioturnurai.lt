@@ -116,8 +116,8 @@
                 </span>
             @endif
 
-            {{-- Notify me button — for upcoming tournaments (registration not yet open) --}}
-            @if($tournament->status === 'upcoming' && !$tournament->registration_active)
+            {{-- Notify me button — controlled by admin toggle --}}
+            @if($tournament->notify_enabled && $tournament->status === 'upcoming' && !$tournament->registration_active)
                 @include('partials.notify-btn', [
                     'tournamentId'   => $tournament->id,
                     'tournamentName' => $title,

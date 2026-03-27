@@ -23,14 +23,16 @@ class Tournament extends Model
         'results_link',
         'gallery_url',
         'cover_image',
+        'notify_enabled',
     ];
 
     protected function casts(): array
     {
         return [
-            'date_start' => 'date',
-            'date_end' => 'date',
+            'date_start'          => 'date',
+            'date_end'            => 'date',
             'registration_active' => 'boolean',
+            'notify_enabled'      => 'boolean',
         ];
     }
 
