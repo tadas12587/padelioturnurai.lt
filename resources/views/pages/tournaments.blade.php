@@ -84,6 +84,17 @@
                                class="inline-block w-full text-center py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold text-sm mt-2">
                                 {{ __('messages.learn_more') }} &rarr;
                             </a>
+
+                            {{-- Notify me — upcoming only --}}
+                            @if($tournament->status === 'upcoming' && !$tournament->registration_active)
+                                <div class="mt-2">
+                                    @include('partials.notify-btn', [
+                                        'tournamentId'   => $tournament->id,
+                                        'tournamentName' => $trans?->title ?? $tournament->slug,
+                                        'compact'        => true,
+                                    ])
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @empty

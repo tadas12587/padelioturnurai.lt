@@ -116,6 +116,14 @@
                 </span>
             @endif
 
+            {{-- Notify me button — for upcoming tournaments (registration not yet open) --}}
+            @if($tournament->status === 'upcoming' && !$tournament->registration_active)
+                @include('partials.notify-btn', [
+                    'tournamentId'   => $tournament->id,
+                    'tournamentName' => $title,
+                ])
+            @endif
+
             {{-- Groups / Tables button — shown only when results_url is set --}}
             @if($tournament->results_url)
                 <a href="{{ $tournament->results_url }}" target="_blank" rel="noopener"

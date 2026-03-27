@@ -87,6 +87,18 @@ return [
     'proposal_current_sponsors_title' => 'Jie jau yra su mumis',
     'proposal_current_sponsors_sub'   => 'Šios įmonės jau patvirtino partnerystę šiam turnyrui.',
 
+    // Registration interest / notify me
+    'notify_btn'            => 'Pranešk kai prasidės registracija',
+    'notify_modal_title'    => 'Pranešti apie registracijos pradžią',
+    'notify_modal_sub'      => 'Įveskite savo duomenis ir mes jums pranešime, kai atsidarys registracija.',
+    'notify_name_label'     => 'Vardas Pavardė',
+    'notify_email_label'    => 'El. paštas',
+    'notify_submit'         => 'Pranešk man!',
+    'notify_submitting'     => 'Siunčiama...',
+    'notify_success'        => 'Ačiū! Pranešime kai atsidarys registracija.',
+    'notify_already'        => 'Šis el. paštas jau užregistruotas šiam turnyrui.',
+    'notify_error'          => 'Klaida. Pabandykite dar kartą.',
+
     // News
     'nav_news'              => 'Naujienos',
     'news_reading_time'     => ':min min. skaitymas',
