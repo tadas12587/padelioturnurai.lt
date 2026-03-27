@@ -100,6 +100,29 @@
             <span class="text-gray-400 truncate max-w-[200px]">{{ $title }}</span>
         </nav>
 
+        {{-- Notify me — when news is linked to an upcoming tournament with notify enabled --}}
+        @if($news->tournament && $news->tournament->notify_enabled && $news->tournament->status === 'upcoming' && !$news->tournament->registration_active)
+            <div class="mb-8" data-aos="fade-up">
+                <div class="border border-gold/20 bg-gold/5 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                        <p class="text-gold text-xs font-bold uppercase tracking-widest mb-1">
+                            {{ $news->tournament->translation(app()->getLocale())?->title ?? $news->tournament->slug }}
+                        </p>
+                        <p class="text-white font-semibold text-sm">
+                            {{ app()->getLocale() === 'en'
+                                ? 'Registration is not yet open for this tournament.'
+                                : 'Registracija šiam turnyrui dar neatidaryta.' }}
+                        </p>
+                    </div>
+                    @include('partials.notify-btn', [
+                        'tournamentId'   => $news->tournament->id,
+                        'tournamentName' => $news->tournament->translation(app()->getLocale())?->title ?? $news->tournament->slug,
+                        'compact'        => false,
+                    ])
+                </div>
+            </div>
+        @endif
+
         {{-- Excerpt (lead paragraph) --}}
         @if($trans?->excerpt)
             <div class="text-xl text-gray-300 leading-relaxed mb-10 border-l-4 border-gold pl-6" data-aos="fade-up">

@@ -19,6 +19,7 @@ class RegistrationInterestController extends Controller
             'tournament_id' => 'nullable|exists:tournaments,id',
             'name'          => 'required|string|max:120',
             'email'         => 'required|email|max:150',
+            'locale'        => 'nullable|string|max:5',
         ]);
 
         $alreadyExists = RegistrationInterest::where('tournament_id', $data['tournament_id'] ?? null)
@@ -33,7 +34,7 @@ class RegistrationInterestController extends Controller
             'tournament_id' => $data['tournament_id'] ?? null,
             'name'          => $data['name'],
             'email'         => $data['email'],
-            'locale'        => app()->getLocale(),
+            'locale'        => $data['locale'] ?? 'lt',
         ]);
 
         return response()->json(['success' => true, 'status' => 'saved']);

@@ -78,6 +78,12 @@ class TournamentResource extends Resource
                     ->schema([
                         Toggle::make('registration_active')
                             ->label('Registracija aktyvi')
+                            ->helperText('Įjungus — rodomas mygtukas „Registruotis" su nuoroda žemiau.')
+                            ->columnSpanFull(),
+
+                        Toggle::make('notify_enabled')
+                            ->label('Išankstinė registracija (pranešimas)')
+                            ->helperText('Įjungus — visur prie šio turnyro rodomas mygtukas „Pranešk kai prasidės registracija".')
                             ->columnSpanFull(),
 
                         TextInput::make('registration_url')
