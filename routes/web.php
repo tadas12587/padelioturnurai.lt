@@ -24,7 +24,7 @@ Route::middleware('setlocale')->group(function () {
     Route::get('/naujienos', [NewsController::class, 'index'])->name('news.index');
     Route::get('/naujienos/{slug}', [NewsController::class, 'show'])->name('news.show');
     Route::get('/kontaktai', [ContactController::class, 'index'])->name('contact');
-    Route::post('/kontaktai', [ContactController::class, 'store'])->name('contact.store');
+    Route::post('/kontaktai', [ContactController::class, 'store'])->middleware('throttle:3,10')->name('contact.store');
     Route::get('/tapk-remeju', [ProposalController::class, 'index'])->name('proposal');
 });
 
@@ -36,6 +36,6 @@ Route::prefix('{locale}')->where(['locale' => 'lt|en'])->middleware('setlocale')
     Route::get('/naujienos', [NewsController::class, 'index'])->name('news.index.locale');
     Route::get('/naujienos/{slug}', [NewsController::class, 'show'])->name('news.show.locale');
     Route::get('/kontaktai', [ContactController::class, 'index'])->name('contact.locale');
-    Route::post('/kontaktai', [ContactController::class, 'store'])->name('contact.store.locale');
+    Route::post('/kontaktai', [ContactController::class, 'store'])->middleware('throttle:3,10')->name('contact.store.locale');
     Route::get('/tapk-remeju', [ProposalController::class, 'index'])->name('proposal.locale');
 });

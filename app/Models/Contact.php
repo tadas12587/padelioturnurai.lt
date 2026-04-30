@@ -10,5 +10,10 @@ class Contact extends Model
         'name',
         'email',
         'message',
+        'read_at',
+    ];
+
+    protected $casts = [
+        'read_at' => 'datetime',
     ];
 }
