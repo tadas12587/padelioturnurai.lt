@@ -18,99 +18,90 @@ $featuredTrans = $featuredTournament?->translation(app()->getLocale());
 @endphp
 
 @if($featuredTournament)
-{{-- Featured Tournament Hero (replaces default hero when active tournament exists) --}}
-<section class="min-h-screen flex flex-col md:grid md:grid-cols-2">
-
-    {{-- Image half --}}
-    <div class="relative overflow-hidden min-h-[55vw] md:min-h-screen">
-        @if($featuredTournament->cover_image)
-            <img src="{{ Storage::url($featuredTournament->cover_image) }}"
-                 alt="{{ $featuredTrans?->title }}"
-                 class="absolute inset-0 w-full h-full object-cover">
-        @elseif($heroPhotos->count() > 0)
-            <img src="{{ $heroPhotos->first() }}" alt=""
-                 class="absolute inset-0 w-full h-full object-cover">
-        @else
-            <div class="absolute inset-0 bg-dark-card"></div>
-        @endif
-        <div class="absolute inset-0" style="background: linear-gradient(to right, rgba(10,10,15,0.15) 0%, rgba(10,10,15,0.55) 100%);"></div>
-        {{-- Active badge --}}
-        <div class="absolute top-20 left-6 md:top-24 md:left-8">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-bold uppercase tracking-wider">
-                <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                {{ __('messages.tournament_status_active') }}
+{{-- Featured Tournament Header (same card style as /turnyrai page) --}}
+<section class="pt-24 pb-16 bg-dark">
+    <div class="max-w-6xl mx-auto px-4">
+        {{-- Label --}}
+        <div class="flex items-center gap-3 mb-6" data-aos="fade-up">
+            <span class="relative flex h-2.5 w-2.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-60"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold"></span>
             </span>
+            <span class="text-gold text-xs font-bold tracking-[0.25em] uppercase">{{ __('messages.featured_tournament') }}</span>
+            <div class="flex-1 h-px bg-gold/20"></div>
         </div>
-    </div>
 
-    {{-- Info half --}}
-    <div class="bg-dark relative flex flex-col justify-center px-8 md:px-16 py-16 md:py-0 md:min-h-screen">
-        {{-- Decorative diagonal gold lines --}}
-        <div class="absolute inset-0 opacity-10 overflow-hidden pointer-events-none">
-            <svg class="absolute w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-                <line x1="0" y1="100%" x2="60%" y2="0" stroke="#C9A84C" stroke-width="1"/>
-                <line x1="30%" y1="100%" x2="90%" y2="0" stroke="#C9A84C" stroke-width="0.5"/>
-            </svg>
-        </div>
-        <div class="relative max-w-xl">
-            <div class="text-gold text-xs font-semibold tracking-[0.3em] uppercase mb-6">
-                Lietuva &middot; Padelis &middot; Turnyrai
-            </div>
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-none drop-shadow-2xl">
-                {{ $featuredTrans?->title ?? $featuredTournament->slug }}
-            </h1>
-            <div class="space-y-2 mb-6">
-                <div class="flex items-center gap-2 text-gray-400">
-                    <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                    </svg>
-                    {{ $featuredTournament->date_start->format('Y-m-d') }}
-                    @if($featuredTournament->date_end) &mdash; {{ $featuredTournament->date_end->format('Y-m-d') }} @endif
-                </div>
-                <div class="flex items-center gap-2 text-gray-400">
-                    <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    {{ $featuredTournament->location }}
-                </div>
-                @if($featuredTournament->participants_count > 0)
-                <div class="flex items-center gap-2 text-gray-400">
-                    <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
-                    <span class="text-gold font-bold">{{ $featuredTournament->participants_count }}</span>
-                    &nbsp;{{ __('messages.participants') }}
-                </div>
+        {{-- Card --}}
+        <div class="grid md:grid-cols-2 border border-gold/50 hover:border-gold/80 transition-colors" data-aos="fade-up">
+            {{-- Cover image --}}
+            <div class="relative overflow-hidden min-h-[260px] md:min-h-[380px]">
+                @if($featuredTournament->cover_image)
+                    <img src="{{ Storage::url($featuredTournament->cover_image) }}"
+                         alt="{{ $featuredTrans?->title }}"
+                         class="absolute inset-0 w-full h-full object-cover">
+                @else
+                    <div class="absolute inset-0 bg-dark-card flex items-center justify-center">
+                        <svg class="w-20 h-20 text-gold/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
                 @endif
+                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark/60"></div>
+                <div class="absolute top-4 left-4">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-bold uppercase tracking-wider">
+                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                        {{ __('messages.tournament_status_active') }}
+                    </span>
+                </div>
             </div>
-            @if($featuredTrans?->description)
-                <p class="text-gray-300 mb-8 leading-relaxed">
-                    {{ Str::limit($featuredTrans->description, 220) }}
-                </p>
-            @endif
-            <div class="flex flex-col sm:flex-row gap-4">
-                <a href="{{ $featuredTournament->registration_url }}" target="_blank"
-                   class="px-8 py-4 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-lg text-center">
-                    {{ __('messages.register_btn') }}
-                </a>
-                <a href="{{ lroute('tournament.show', ['slug' => $featuredTournament->slug]) }}"
-                   class="px-8 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-lg text-center">
-                    {{ __('messages.learn_more') }}
-                </a>
+
+            {{-- Info --}}
+            <div class="bg-dark-card p-8 md:p-12 flex flex-col justify-center">
+                <h2 class="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
+                    {{ $featuredTrans?->title ?? $featuredTournament->slug }}
+                </h2>
+                <div class="space-y-2 mb-6">
+                    <div class="flex items-center gap-2 text-gray-400 text-sm">
+                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        {{ $featuredTournament->date_start->format('Y-m-d') }}
+                        @if($featuredTournament->date_end) &mdash; {{ $featuredTournament->date_end->format('Y-m-d') }} @endif
+                    </div>
+                    <div class="flex items-center gap-2 text-gray-400 text-sm">
+                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        {{ $featuredTournament->location }}
+                    </div>
+                    @if($featuredTournament->participants_count > 0)
+                    <div class="flex items-center gap-2 text-gray-400 text-sm">
+                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span class="text-gold font-bold">{{ $featuredTournament->participants_count }}</span>
+                        &nbsp;{{ __('messages.participants') }}
+                    </div>
+                    @endif
+                </div>
+                @if($featuredTrans?->description)
+                    <p class="text-gray-300 mb-8 leading-relaxed text-sm">
+                        {{ Str::limit($featuredTrans->description, 220) }}
+                    </p>
+                @endif
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ $featuredTournament->registration_url }}" target="_blank"
+                       class="px-8 py-4 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-base">
+                        {{ __('messages.register_btn') }} &rarr;
+                    </a>
+                    <a href="{{ lroute('tournament.show', ['slug' => $featuredTournament->slug]) }}"
+                       class="px-8 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-base">
+                        {{ __('messages.learn_more') }}
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-
-    {{-- Scroll indicator --}}
-    <div class="hidden md:flex absolute bottom-8 right-8 z-20 flex-col items-center gap-1 cursor-pointer text-gold opacity-60 hover:opacity-100 transition-opacity"
-         onclick="document.getElementById('stats-section').scrollIntoView({behavior:'smooth'})">
-        <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
-        </svg>
-        <svg class="w-5 h-5 animate-bounce" style="animation-delay:0.15s" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
-        </svg>
     </div>
 </section>
 @else
