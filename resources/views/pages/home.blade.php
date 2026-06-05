@@ -10,6 +10,13 @@
 
 @section('content')
 
+@php
+$featuredTournament = $tournaments->first(
+    fn($t) => $t->status === 'active' && $t->registration_active && $t->registration_url
+);
+$featuredTrans = $featuredTournament?->translation(app()->getLocale());
+@endphp
+
 {{-- Hero Section --}}
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
 
@@ -46,12 +53,25 @@
         </h1>
         <p class="text-xl md:text-2xl text-gray-300 mb-10 font-light drop-shadow-lg">{{ __('messages.hero_tagline') }}</p>
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ lroute('tournaments') }}" class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
-                {{ __('messages.all_tournaments') }}
-            </a>
-            <a href="{{ lroute('contact') }}" class="px-8 py-4 border border-gold text-gold font-bold rounded-none hover:bg-gold hover:text-dark transition-colors text-lg">
-                {{ __('messages.nav_contact') }}
-            </a>
+            @if($featuredTournament)
+                <a href="{{ $featuredTournament->registration_url }}" target="_blank"
+                   class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
+                    {{ __('messages.register_btn') }}
+                </a>
+                <a href="{{ lroute('tournaments') }}"
+                   class="px-8 py-4 border border-gold text-gold font-bold rounded-none hover:bg-gold hover:text-dark transition-colors text-lg">
+                    {{ __('messages.all_tournaments') }}
+                </a>
+            @else
+                <a href="{{ lroute('tournaments') }}"
+                   class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
+                    {{ __('messages.all_tournaments') }}
+                </a>
+                <a href="{{ lroute('contact') }}"
+                   class="px-8 py-4 border border-gold text-gold font-bold rounded-none hover:bg-gold hover:text-dark transition-colors text-lg">
+                    {{ __('messages.nav_contact') }}
+                </a>
+            @endif
         </div>
     </div>
 
@@ -84,6 +104,53 @@
 })();
 </script>
 @endpush
+
+{{-- Featured Tournament Banner --}}
+@if($featuredTournament)
+<section class="bg-dark-card border-b border-gold/40 relative overflow-hidden">
+    <div class="absolute inset-0 pointer-events-none opacity-5"
+         style="background: linear-gradient(120deg, #C9A84C 0%, transparent 55%);"></div>
+    <div class="max-w-6xl mx-auto px-4 py-6 relative">
+        <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
+            {{-- Pulsing label --}}
+            <div class="flex items-center gap-2.5 flex-shrink-0">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-60"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold"></span>
+                </span>
+                <span class="text-gold text-xs font-bold tracking-[0.25em] uppercase whitespace-nowrap">
+                    {{ __('messages.tournament_status_active') }}
+                </span>
+            </div>
+            <div class="hidden sm:block h-7 w-px bg-gold/25 flex-shrink-0"></div>
+            {{-- Tournament info --}}
+            <div class="flex-1 min-w-0 text-center sm:text-left">
+                <div class="text-white font-bold text-base sm:text-lg truncate">
+                    {{ $featuredTrans?->title ?? $featuredTournament->slug }}
+                </div>
+                <div class="text-gray-400 text-sm mt-0.5">
+                    {{ $featuredTournament->date_start->format('Y-m-d') }}
+                    @if($featuredTournament->date_end) &mdash; {{ $featuredTournament->date_end->format('Y-m-d') }} @endif
+                    @if($featuredTournament->location)
+                        &nbsp;·&nbsp;{{ $featuredTournament->location }}
+                    @endif
+                </div>
+            </div>
+            {{-- CTAs --}}
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <a href="{{ lroute('tournament.show', ['slug' => $featuredTournament->slug]) }}"
+                   class="px-5 py-2.5 border border-gold/60 text-gold text-sm font-semibold hover:border-gold hover:bg-gold hover:text-dark transition-colors">
+                    {{ __('messages.learn_more') }}
+                </a>
+                <a href="{{ $featuredTournament->registration_url }}" target="_blank"
+                   class="px-6 py-2.5 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-sm whitespace-nowrap">
+                    {{ __('messages.register_btn') }} &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
 
 {{-- Stats Section --}}
 <section id="stats-section" class="py-24 bg-dark-card border-y border-dark-border">
