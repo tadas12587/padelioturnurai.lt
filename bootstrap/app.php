@@ -4,7 +4,10 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+// APP_BASE_PATH override is needed on shared hosting where the SSH shell is
+// chrooted: dirname(__DIR__) resolves to /private/laravel in CLI, but the web
+// server needs the full /var/www/... path baked into cached config files.
+return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
