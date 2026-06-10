@@ -21,7 +21,15 @@
       "Bash(/C/xampp/php/php artisan:*)",
       "Bash(grep -E \"\\\\.php$\")",
       "Bash(ls \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\\\\database\\\\migrations\"\" | grep news && ls \"C:UsersTadasDesktopWEB-zinovaiappModels\"\")",
-      "Bash(ls \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\\\\app\\\\Filament\\\\Resources\"\" | grep -i news && ls \"C:UsersTadasDesktopWEB-zinovaiappFilamentResourcesNewsResourcePages\"\")"
+      "Bash(ls \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\\\\app\\\\Filament\\\\Resources\"\" | grep -i news && ls \"C:UsersTadasDesktopWEB-zinovaiappFilamentResourcesNewsResourcePages\"\")",
+      "WebFetch(domain:padelioturnurai.lt)",
+      "WebFetch(domain:padelioturnyrai.lt)",
+      "PowerShell(\\(Get-Item \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\\\\public\\\\favicon.ico\"\\).Length)",
+      "PowerShell(php -l app\\\\Http\\\\Controllers\\\\SitemapController.php)",
+      "PowerShell(php -l app\\\\Filament\\\\Pages\\\\SeoSettingsPage.php)",
+      "PowerShell(php -l routes\\\\web.php)",
+      "PowerShell(php -l lang\\\\lt\\\\messages.php)",
+      "PowerShell(php -l lang\\\\en\\\\messages.php)"
     ]
   }
 }

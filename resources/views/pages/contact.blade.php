@@ -74,6 +74,41 @@
                 </div>
             </form>
         </div>
+
+        {{-- Direct contact info (admin-managed; shown only when set) --}}
+        @php
+            try {
+                $contactEmail = \App\Models\Setting::get('contact_email');
+                $contactPhone = \App\Models\Setting::get('contact_phone');
+            } catch (\Throwable) {
+                $contactEmail = $contactPhone = null;
+            }
+        @endphp
+        @if($contactEmail || $contactPhone)
+        <div class="mt-10 text-center" data-aos="fade-up">
+            <div class="text-gray-500 text-sm tracking-widest uppercase mb-4">{{ __('messages.contact_direct') }}</div>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                @if($contactEmail)
+                    <a href="mailto:{{ $contactEmail }}"
+                       class="inline-flex items-center gap-2 px-6 py-3 border border-dark-border text-gray-300 hover:border-gold hover:text-gold transition-colors">
+                        <svg class="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        {{ $contactEmail }}
+                    </a>
+                @endif
+                @if($contactPhone)
+                    <a href="tel:{{ preg_replace('/[^+0-9]/', '', $contactPhone) }}"
+                       class="inline-flex items-center gap-2 px-6 py-3 border border-dark-border text-gray-300 hover:border-gold hover:text-gold transition-colors">
+                        <svg class="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                        </svg>
+                        {{ $contactPhone }}
+                    </a>
+                @endif
+            </div>
+        </div>
+        @endif
     </div>
 </div>
 @endsection

@@ -43,6 +43,50 @@
 
 @section('content')
 
+{{-- Structured data: SportsEvent --}}
+@php
+    $eventSchema = [
+        '@context'    => 'https://schema.org',
+        '@type'       => 'SportsEvent',
+        'name'        => $title,
+        'sport'       => 'Padel',
+        'startDate'   => $tournament->date_start?->toDateString(),
+        'eventStatus' => 'https://schema.org/EventScheduled',
+        'eventAttendanceMode' => 'https://schema.org/OfflineEventAttendanceMode',
+        'organizer'   => [
+            '@type' => 'Organization',
+            'name'  => 'Padelio Turnyrai',
+            'url'   => url('/'),
+        ],
+    ];
+    if ($tournament->date_end) {
+        $eventSchema['endDate'] = $tournament->date_end->toDateString();
+    }
+    if ($tournament->location) {
+        $eventSchema['location'] = [
+            '@type'   => 'Place',
+            'name'    => $tournament->location,
+            'address' => $tournament->location,
+        ];
+    }
+    if ($tournament->cover_image) {
+        $eventSchema['image'] = asset('storage/' . $tournament->cover_image);
+    }
+    if ($trans?->description) {
+        $eventSchema['description'] = Str::limit(strip_tags($trans->description), 300);
+    }
+    if ($tournament->registration_active && $tournament->registration_url) {
+        $eventSchema['offers'] = [
+            '@type'        => 'Offer',
+            'url'          => $tournament->registration_url,
+            'availability' => 'https://schema.org/InStock',
+        ];
+    }
+@endphp
+<script type="application/ld+json">
+{!! json_encode($eventSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+
 {{-- Hero with cover image --}}
 <section class="relative h-[70vh] min-h-[400px] flex items-end overflow-hidden">
     @if($tournament->cover_image)

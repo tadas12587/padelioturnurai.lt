@@ -6,10 +6,14 @@ use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\RegistrationInterestController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
 // Interest notification endpoint (locale-agnostic JSON API)
-Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 'store'])->name('interest.store');
+Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 'store'])->middleware('throttle:5,10')->name('interest.store');
+
+// Sitemap for search engines
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])
