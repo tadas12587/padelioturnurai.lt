@@ -36,6 +36,42 @@
 
 @section('content')
 
+{{-- Structured data: NewsArticle --}}
+@php
+    $articleSchema = [
+        '@context' => 'https://schema.org',
+        '@type'    => 'NewsArticle',
+        'headline' => $title,
+        'mainEntityOfPage' => url()->current(),
+        'inLanguage' => app()->getLocale() === 'en' ? 'en' : 'lt',
+        'author' => [
+            '@type' => 'Organization',
+            'name'  => 'Padelio Turnyrai',
+            'url'   => url('/'),
+        ],
+        'publisher' => [
+            '@type' => 'Organization',
+            'name'  => 'Padelio Turnyrai',
+            'url'   => url('/'),
+        ],
+    ];
+    if ($news->published_at) {
+        $articleSchema['datePublished'] = $news->published_at->toAtomString();
+    }
+    if ($news->updated_at) {
+        $articleSchema['dateModified'] = $news->updated_at->toAtomString();
+    }
+    if ($news->cover_image) {
+        $articleSchema['image'] = asset('storage/' . $news->cover_image);
+    }
+    if ($trans?->excerpt) {
+        $articleSchema['description'] = Str::limit(strip_tags($trans->excerpt), 200);
+    }
+@endphp
+<script type="application/ld+json">
+{!! json_encode($articleSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+
 {{-- Hero with cover image --}}
 <section class="relative h-[60vh] min-h-[380px] flex items-end overflow-hidden">
     @if($news->cover_image)

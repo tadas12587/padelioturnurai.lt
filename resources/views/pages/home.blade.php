@@ -17,6 +17,29 @@ $featuredTournament = $tournaments->first(
 $featuredTrans = $featuredTournament?->translation(app()->getLocale());
 @endphp
 
+{{-- Structured data: Organization + WebSite --}}
+<script type="application/ld+json">
+{!! json_encode([
+    '@context' => 'https://schema.org',
+    '@graph' => [
+        [
+            '@type' => 'Organization',
+            '@id'   => url('/') . '#organization',
+            'name'  => 'Padelio Turnyrai',
+            'url'   => url('/'),
+        ],
+        [
+            '@type'     => 'WebSite',
+            '@id'       => url('/') . '#website',
+            'name'      => 'Padelio Turnyrai',
+            'url'       => url('/'),
+            'inLanguage' => app()->getLocale() === 'en' ? 'en' : 'lt',
+            'publisher' => ['@id' => url('/') . '#organization'],
+        ],
+    ],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
+</script>
+
 @if($featuredTournament)
 {{-- Featured Tournament Header (same card style as /turnyrai page) --}}
 <section class="pt-24 pb-16 bg-dark">
