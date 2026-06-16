@@ -76,10 +76,12 @@
         font-size: 15px; color: var(--ov-text); }
     .team + .team { border-top: 1px solid rgba(127,127,127,.16); }
     .team .nm { font-family: 'Barlow', sans-serif; font-weight: 500; }
-    .team .sc { font-family: 'Oswald', sans-serif; font-variant-numeric: tabular-nums; color: var(--ov-muted); }
+    .team .sets { display: flex; gap: 6px; }
+    .team .g { font-family: 'Oswald', sans-serif; font-variant-numeric: tabular-nums;
+        min-width: 14px; text-align: center; color: var(--ov-muted); }
     .team.win { background: rgba(127,127,127,.12); }
     .team.win .nm { font-weight: 700; color: var(--ov-accent); }
-    .team.win .sc { color: var(--ov-accent); }
+    .team.win .g { color: var(--ov-accent); }
     /* connectors: out from each slot → vertical join per pair → in to next match */
     .round:not(.is-last) .match-slot::after { content: ''; position: absolute; right: -30px; top: 50%;
         width: 30px; height: 2px; background: rgba(127,127,127,.5); }
@@ -162,10 +164,12 @@
     // ── Bracket window (tournament tree) ────────────────────────
     if ((d.window_type || 'groups') === 'bracket') {
         const b = d.bracket || { rounds: [], third: null };
-        const team = (name, score, win) =>
-            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name || 'TBD'}</span><span class="sc">${score ?? ''}</span></div>`;
+        const setCells = (sets) => (sets || '').trim().split(/\s+/).filter(Boolean)
+            .map((g) => `<span class="g">${g}</span>`).join('');
+        const team = (name, sets, win) =>
+            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name || 'TBD'}</span><span class="sets">${setCells(sets)}</span></div>`;
         const matchBox = (m) =>
-            `<div class="match">${team(m.team1, m.score1, m.winner === 1)}${team(m.team2, m.score2, m.winner === 2)}</div>`;
+            `<div class="match">${team(m.team1, m.sets1, m.winner === 1)}${team(m.team2, m.sets2, m.winner === 2)}</div>`;
 
         let html = headerHtml + `<div class="bracket">`;
         b.rounds.forEach((round, ri) => {
