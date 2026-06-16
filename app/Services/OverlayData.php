@@ -62,6 +62,47 @@ class OverlayData
         return $byCategory[(string) $categoryId] ?? [];
     }
 
+    /** @return array<string,mixed> */
+    public function categoryStages(string $tournamentId): array
+    {
+        return $this->payload($tournamentId)['category_stages'] ?? [];
+    }
+
+    /**
+     * Resolve a groups-window's selected subgroups from the snapshot.
+     *
+     * @param  array<string,mixed>  $window
+     * @return array{groups:list<array<string,mixed>>,subgroup_count:int}
+     */
+    public function resolveWindow(string $tournamentId, array $window): array
+    {
+        $groups = [];
+
+        foreach ($window['subgroups'] ?? [] as $sel) {
+            $catId = $sel['category_id'] ?? null;
+            if (! $catId) {
+                continue;
+            }
+
+            $raw = $this->groups($tournamentId, (int) $catId);
+
+            $groupId = $sel['group_id'] ?? null;
+            if ($groupId) {
+                $raw = array_values(array_filter($raw, fn ($g) => $g['id'] == $groupId));
+            }
+
+            foreach ($raw as $g) {
+                $groups[] = [
+                    'id'   => $g['id'],
+                    'name' => $g['name'] ?? '',
+                    'rows' => $this->computeStandings($g),
+                ];
+            }
+        }
+
+        return ['groups' => $groups, 'subgroup_count' => count($groups)];
+    }
+
     public function updatedAt(string $tournamentId): ?Carbon
     {
         return OverlaySnapshot::where('tournament_external_id', $tournamentId)->value('updated_at');
@@ -103,6 +144,7 @@ class OverlayData
                 'place'  => $e['place'] ?? null,
                 'name'   => $this->pairName($e),
                 'wins'   => $w,
+                'points' => $w,
                 'losses' => $allDone ? ($n - 1 - $w) : null,
                 'played' => $allDone ? ($n - 1) : $w,
             ];
