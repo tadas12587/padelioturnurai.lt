@@ -99,7 +99,7 @@
                 applyScrim(d);
                 root.className = 'pos-' + (d.position || 'bottom-left');
 
-                const sig = JSON.stringify({ w: d.window_id, g: d.groups, r: d.rounds,
+                const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
                     it: d.items, nm: d.next_match, v: d.variant, tt: d.tournament_title,
                     ti: d.title, lg: d.logo, c: d.columns });
 
