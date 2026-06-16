@@ -17,8 +17,9 @@ class OverlayEndpointTest extends TestCase
 
         $this->assertNotEmpty($overlay->token);
         $this->assertSame(8, strlen($overlay->token));
-        $this->assertSame('#C9A84C', $overlay->config['accent_color']);
-        $this->assertFalse($overlay->state['visible']);
+        $this->assertSame('#C9A84C', $overlay->config['colors']['accent']);
+        $this->assertNull($overlay->state['active_window_id']);
+        $this->assertSame([], $overlay->windows);
     }
 
     public function test_data_endpoint_404_for_unknown_token(): void
