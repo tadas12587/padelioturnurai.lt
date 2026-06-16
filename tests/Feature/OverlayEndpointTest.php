@@ -34,6 +34,21 @@ class OverlayEndpointTest extends TestCase
             ->assertJson(['visible' => false]);
     }
 
+    public function test_data_endpoint_marks_stale_when_api_down_and_no_cache(): void
+    {
+        \Illuminate\Support\Facades\Http::fake(['api.tournated.com/*' => \Illuminate\Support\Facades\Http::response(null, 500)]);
+
+        $overlay = Overlay::create([
+            'name' => 'G', 'type' => 'group_standings',
+            'tournament_external_id' => '10229',
+            'state' => ['active_category_id' => 47817, 'visible' => true],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson(['visible' => true, 'groups' => [], 'stale' => true]);
+    }
+
     public function test_data_endpoint_returns_groups_when_visible(): void
     {
         \Illuminate\Support\Facades\Http::fake([

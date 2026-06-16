@@ -37,9 +37,9 @@ class OverlayController extends Controller
         }
 
         if ($overlay->type === 'group_standings') {
-            $payload += $this->groupPayload($overlay, $state, $client);
+            $payload = array_merge($payload, $this->groupPayload($overlay, $state, $client));
         } else {
-            $payload += $this->bracketPayload($overlay);
+            $payload = array_merge($payload, $this->bracketPayload($overlay));
         }
 
         return response()->json($payload);
@@ -54,6 +54,10 @@ class OverlayController extends Controller
         }
 
         $raw = $client->groups((int) $categoryId);
+
+        if (empty($raw)) {
+            return ['groups' => [], 'subgroup_count' => 0, 'stale' => true];
+        }
 
         if ($state['active_group_id']) {
             $raw = array_values(array_filter($raw, fn ($g) => $g['id'] == $state['active_group_id']));
