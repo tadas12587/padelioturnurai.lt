@@ -12,9 +12,7 @@ class OverlayController extends Controller
 {
     public function show(Overlay $overlay)
     {
-        $view = $overlay->type === 'bracket' ? 'overlays.bracket' : 'overlays.group_standings';
-
-        return view($view, ['overlay' => $overlay]);
+        return view('overlays.window', ['overlay' => $overlay]);
     }
 
     public function data(Overlay $overlay, OverlayData $data): JsonResponse
