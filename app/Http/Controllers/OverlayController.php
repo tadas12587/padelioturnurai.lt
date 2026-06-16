@@ -85,6 +85,7 @@ class OverlayController extends Controller
             'title'              => 'nullable|string',
             'categories'         => 'array',
             'groups_by_category' => 'array',
+            'category_stages'    => 'array',
         ]);
 
         OverlaySnapshot::updateOrCreate(
@@ -93,6 +94,7 @@ class OverlayController extends Controller
                 'title'              => $validated['title'] ?? null,
                 'categories'         => $validated['categories'] ?? [],
                 'groups_by_category' => $validated['groups_by_category'] ?? [],
+                'category_stages'    => $validated['category_stages'] ?? [],
             ]],
         );
 
