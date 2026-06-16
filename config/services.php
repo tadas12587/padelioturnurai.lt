@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'overlay' => [
+        // Shared secret the external bridge sends in X-Overlay-Token to push
+        // tournament snapshots to POST /overlay/ingest.
+        'ingest_token' => env('OVERLAY_INGEST_TOKEN'),
+    ],
+
 ];

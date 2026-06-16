@@ -6,14 +6,14 @@
 <div class="space-y-4 text-sm">
     @if(empty($info))
         <div class="rounded-lg bg-danger-50 dark:bg-danger-500/10 p-4 text-danger-700 dark:text-danger-400">
-            <p class="font-semibold">Negauta duomenų.</p>
+            <p class="font-semibold">Duomenų kopija dar neatsiųsta.</p>
             <p class="mt-1">
-                Turnyro ID <strong>{{ $id }}</strong> nieko negrąžino. Patikrink:
+                Turnyrui ID <strong>{{ $id ?: '—' }}</strong> serveryje nėra išsaugotos duomenų kopijos. Patikrink:
             </p>
             <ul class="mt-2 list-disc list-inside space-y-1">
-                <li>ar teisingas Tournated turnyro ID;</li>
-                <li>ar serveris pasiekia <code>api.tournated.com</code> (kartais shared hostingas blokuoja išeinančias užklausas);</li>
-                <li>ar turnyras turi sukurtų kategorijų.</li>
+                <li>ar paleistas „push" scenarijus tavo kompiuteryje (jis siunčia duomenis į serverį);</li>
+                <li>ar scenarijuje nurodytas tas pats turnyro ID (<strong>{{ $id ?: '—' }}</strong>);</li>
+                <li>ar scenarijus naudoja teisingą slaptą raktą (OVERLAY_INGEST_TOKEN).</li>
             </ul>
         </div>
     @else

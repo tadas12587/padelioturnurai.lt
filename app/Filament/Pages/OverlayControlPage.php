@@ -3,7 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Overlay;
-use App\Services\TournatedClient;
+use App\Services\OverlayData;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -51,7 +51,7 @@ class OverlayControlPage extends Page implements HasForms
         if (! $overlay?->tournament_external_id) {
             return [];
         }
-        $cats = app(TournatedClient::class)->categories((int) $overlay->tournament_external_id);
+        $cats = app(OverlayData::class)->categories((string) $overlay->tournament_external_id);
 
         $out = [];
         foreach ($cats as $c) {
@@ -63,11 +63,12 @@ class OverlayControlPage extends Page implements HasForms
     /** @return array<int|string,string> */
     public function groupOptions(): array
     {
-        $catId = $this->data['active_category_id'] ?? null;
-        if (! $catId) {
+        $overlay = $this->selectedOverlay();
+        $catId   = $this->data['active_category_id'] ?? null;
+        if (! $overlay?->tournament_external_id || ! $catId) {
             return ['' => 'Visi pogrupiai'];
         }
-        $groups = app(TournatedClient::class)->groups((int) $catId);
+        $groups = app(OverlayData::class)->groups((string) $overlay->tournament_external_id, (int) $catId);
 
         $out = ['' => 'Visi pogrupiai'];
         foreach ($groups as $g) {
