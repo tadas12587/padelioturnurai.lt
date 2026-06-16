@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class TournatedClient
@@ -11,6 +10,21 @@ class TournatedClient
     const ENDPOINT = 'https://api.tournated.com/graphql';
     const ORIGIN   = 'https://play.padel.lt';
     const CACHE_TTL = 18; // seconds
+
+    /**
+     * Transport that POSTs the JSON body and returns the response body, or
+     * null on failure. Defaults to a raw cURL call (see curlPost). Injectable
+     * so tests can stub the network without hitting Tournated.
+     *
+     * @var (callable(string): ?string)|null
+     */
+    private $transport;
+
+    /** @param (callable(string): ?string)|null $transport */
+    public function __construct(?callable $transport = null)
+    {
+        $this->transport = $transport;
+    }
 
     /** @return array<int,mixed> */
     public function groups(int $categoryId): array
@@ -64,26 +78,58 @@ class TournatedClient
     /** @return array<string,mixed> */
     private function graphql(string $query): array
     {
-        try {
-            // Force IPv4 — the production shared host has no working IPv6 route,
-            // so the default IPv6-first attempt hangs until timeout. Guzzle's
-            // `force_ip_resolve` is ignored on this host, so set the raw cURL
-            // option directly (verified working: CURLOPT_IPRESOLVE_V4).
-            $res = Http::timeout(5)
-                ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
-                ->withHeaders(['Origin' => self::ORIGIN])
-                ->post(self::ENDPOINT, ['query' => $query]);
+        $body = ($this->transport ?? [$this, 'curlPost'])(json_encode(['query' => $query]));
 
-            if ($res->failed()) {
-                Log::warning('Tournated request failed: ' . $res->status());
-                return [];
-            }
-
-            return $res->json('data') ?? [];
-        } catch (\Throwable $e) {
-            Log::warning('Tournated request error: ' . $e->getMessage());
+        if ($body === null) {
             return [];
         }
+
+        $decoded = json_decode($body, true);
+
+        return is_array($decoded) ? ($decoded['data'] ?? []) : [];
+    }
+
+    /**
+     * Raw cURL POST to the GraphQL endpoint, forced over IPv4.
+     *
+     * The production shared host (freehosting.lt) has no working IPv6 route,
+     * so the default IPv6-first attempt hangs until timeout. Laravel/Guzzle on
+     * this host does not honour `force_ip_resolve` nor the `curl` option array,
+     * so we issue the request with the cURL extension directly — verified
+     * working with CURLOPT_IPRESOLVE_V4 (curl_errno 0, HTTP 200).
+     */
+    private function curlPost(string $payload): ?string
+    {
+        $ch = curl_init(self::ENDPOINT);
+        curl_setopt_array($ch, [
+            CURLOPT_IPRESOLVE      => CURL_IPRESOLVE_V4,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Origin: ' . self::ORIGIN,
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT        => 8,
+        ]);
+
+        $body   = curl_exec($ch);
+        $errno  = curl_errno($ch);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($errno !== 0) {
+            Log::warning('Tournated cURL error ' . $errno . ': ' . curl_strerror($errno));
+            return null;
+        }
+
+        if ($status >= 400) {
+            Log::warning('Tournated request failed: HTTP ' . $status);
+            return null;
+        }
+
+        return is_string($body) ? $body : null;
     }
 
     /**

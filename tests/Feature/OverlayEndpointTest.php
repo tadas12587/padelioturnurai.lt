@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Overlay;
+use App\Services\TournatedClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,7 +37,8 @@ class OverlayEndpointTest extends TestCase
 
     public function test_data_endpoint_marks_stale_when_api_down_and_no_cache(): void
     {
-        \Illuminate\Support\Facades\Http::fake(['api.tournated.com/*' => \Illuminate\Support\Facades\Http::response(null, 500)]);
+        // Transport returns null = upstream unreachable.
+        $this->app->instance(TournatedClient::class, new TournatedClient(fn () => null));
 
         $overlay = Overlay::create([
             'name' => 'G', 'type' => 'group_standings',
@@ -51,14 +53,12 @@ class OverlayEndpointTest extends TestCase
 
     public function test_data_endpoint_returns_groups_when_visible(): void
     {
-        \Illuminate\Support\Facades\Http::fake([
-            'api.tournated.com/*' => \Illuminate\Support\Facades\Http::response([
-                'data' => ['groups' => [[
-                    'id' => 5, 'name' => 'A', 'segment' => 'MD',
-                    'entries' => [], 'matches' => [],
-                ]]],
-            ]),
-        ]);
+        $this->app->instance(TournatedClient::class, new TournatedClient(fn () => json_encode([
+            'data' => ['groups' => [[
+                'id' => 5, 'name' => 'A', 'segment' => 'MD',
+                'entries' => [], 'matches' => [],
+            ]]],
+        ])));
 
         $overlay = Overlay::create([
             'name' => 'G', 'type' => 'group_standings',
