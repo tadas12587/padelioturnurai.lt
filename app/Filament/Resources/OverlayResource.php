@@ -74,10 +74,15 @@ class OverlayResource extends Resource
                     Select::make('config.position')
                         ->label('Pozicija ekrane')
                         ->options([
-                            'bottom-left'  => 'Apačia kairė',
-                            'bottom-right' => 'Apačia dešinė',
-                            'top-left'     => 'Viršus kairė',
-                            'center'       => 'Centras',
+                            'top-left'      => 'Viršus — kairė',
+                            'top-center'    => 'Viršus — centras',
+                            'top-right'     => 'Viršus — dešinė',
+                            'mid-left'      => 'Vidurys — kairė',
+                            'center'        => 'Centras',
+                            'mid-right'     => 'Vidurys — dešinė',
+                            'bottom-left'   => 'Apačia — kairė',
+                            'bottom-center' => 'Apačia — centras',
+                            'bottom-right'  => 'Apačia — dešinė',
                         ])
                         ->default('bottom-left'),
 
