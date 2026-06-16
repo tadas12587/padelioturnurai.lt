@@ -167,13 +167,33 @@ class OverlayResource extends Resource
                                 ->columns(2)
                                 ->defaultItems(1),
 
-                            Textarea::make('bracket_data')
-                                ->label('Bracket JSON')
-                                ->helperText('Rankinis tinklelis: {"rounds":[{"matches":[{"teams":[{"name":"..","score":"","winner":false}]}]}]}')
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket')
-                                ->formatStateUsing(fn ($state) => filled($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '')
-                                ->dehydrateStateUsing(fn ($state) => filled($state) ? json_decode($state, true) : null)
-                                ->rows(8),
+                            Select::make('bracket_data.size')
+                                ->label('Tinklelio dydis')
+                                ->options([8 => '8 komandų', 16 => '16 komandų'])
+                                ->live()
+                                ->afterStateUpdated(function ($state, Forms\Set $set) {
+                                    if ($state) {
+                                        $set('bracket_data.matches', Overlay::bracketSkeleton((int) $state));
+                                    }
+                                })
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
+
+                            Repeater::make('bracket_data.matches')
+                                ->label('Mačai')
+                                ->addable(false)->deletable(false)->reorderable(false)
+                                ->itemLabel(fn (array $state) => $state['round'] ?? 'Mačas')
+                                ->schema([
+                                    Hidden::make('round'),
+                                    TextInput::make('team1')->label('Pora 1'),
+                                    TextInput::make('score1')->label('Rez. 1'),
+                                    TextInput::make('team2')->label('Pora 2'),
+                                    TextInput::make('score2')->label('Rez. 2'),
+                                    Select::make('winner')->label('Nugalėtojas')
+                                        ->options([1 => '1-as', 2 => '2-as'])->placeholder('—'),
+                                ])
+                                ->columns(2)
+                                ->collapsed()
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
 
                             Select::make('variant')
                                 ->label('Variantas')
