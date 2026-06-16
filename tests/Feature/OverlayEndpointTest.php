@@ -126,17 +126,17 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('items.0.name', 'A');
     }
 
-    public function test_data_returns_bracket_grouped_with_third_place(): void
+    public function test_bracket_auto_advances_winners_and_third_place(): void
     {
         $overlay = Overlay::create([
             'name' => 'B', 'type' => 'group_standings',
             'windows' => [[
-                'id' => 'w1', 'type' => 'bracket', 'name' => 'Tinklelis',
+                'id' => 'w1', 'type' => 'bracket', 'name' => 'T',
                 'bracket_data' => ['size' => 8, 'matches' => [
-                    ['round' => 'Pusfinaliai', 'team1' => 'A', 'score1' => '6:2', 'team2' => 'B', 'score2' => '', 'winner' => 1],
-                    ['round' => 'Pusfinaliai', 'team1' => 'C', 'score1' => '', 'team2' => 'D', 'score2' => '', 'winner' => 2],
-                    ['round' => 'Finalas', 'team1' => 'A', 'score1' => '', 'team2' => 'D', 'score2' => '', 'winner' => null],
-                    ['round' => 'Dėl 3 vietos', 'team1' => 'B', 'score1' => '', 'team2' => 'C', 'score2' => '', 'winner' => 2],
+                    ['round' => 'Pusfinaliai', 'team1' => 'A', 'team2' => 'B', 'sets1' => '6 6', 'sets2' => '2 3', 'winner' => 1],
+                    ['round' => 'Pusfinaliai', 'team1' => 'C', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
+                    ['round' => 'Finalas', 'team1' => '', 'team2' => '', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                    ['round' => 'Dėl 3 vietos', 'team1' => '', 'team2' => '', 'sets1' => '', 'sets2' => '', 'winner' => null],
                 ]],
             ]],
             'state' => ['active_window_id' => 'w1', 'next_match' => ''],
@@ -146,9 +146,11 @@ class OverlayEndpointTest extends TestCase
             ->assertOk()
             ->assertJson(['visible' => true, 'window_type' => 'bracket'])
             ->assertJsonPath('bracket.rounds.0.title', 'Pusfinaliai')
-            ->assertJsonCount(2, 'bracket.rounds.0.matches')
+            ->assertJsonPath('bracket.rounds.0.matches.0.sets1', '6 6')
             ->assertJsonPath('bracket.rounds.1.title', 'Finalas')
+            ->assertJsonPath('bracket.rounds.1.matches.0.team1', 'A')
+            ->assertJsonPath('bracket.rounds.1.matches.0.team2', 'D')
             ->assertJsonPath('bracket.third.team1', 'B')
-            ->assertJsonPath('bracket.third.winner', 2);
+            ->assertJsonPath('bracket.third.team2', 'C');
     }
 }
