@@ -13,10 +13,15 @@
         #root { position: fixed; }
         #scrim { position: fixed; inset: 0; opacity: 0; pointer-events: none;
             transition: opacity .5s cubic-bezier(.16,1,.3,1); z-index: -1; }
-        .pos-bottom-left  { left: 40px; bottom: 40px; }
-        .pos-bottom-right { right: 40px; bottom: 40px; }
-        .pos-top-left     { left: 40px; top: 40px; }
-        .pos-center       { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .pos-top-left      { left: 40px; top: 40px; }
+        .pos-top-center    { left: 50%; top: 40px; transform: translateX(-50%); }
+        .pos-top-right     { right: 40px; top: 40px; }
+        .pos-mid-left      { left: 40px; top: 50%; transform: translateY(-50%); }
+        .pos-center        { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .pos-mid-right     { right: 40px; top: 50%; transform: translateY(-50%); }
+        .pos-bottom-left   { left: 40px; bottom: 40px; }
+        .pos-bottom-center { left: 50%; bottom: 40px; transform: translateX(-50%); }
+        .pos-bottom-right  { right: 40px; bottom: 40px; }
         #stage {
             opacity: 0;
             transform: translateY(28px) scale(.985);
