@@ -125,4 +125,30 @@ class OverlayEndpointTest extends TestCase
             ])
             ->assertJsonPath('items.0.name', 'A');
     }
+
+    public function test_data_returns_bracket_grouped_with_third_place(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'B', 'type' => 'group_standings',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'bracket', 'name' => 'Tinklelis',
+                'bracket_data' => ['size' => 8, 'matches' => [
+                    ['round' => 'Pusfinaliai', 'team1' => 'A', 'score1' => '6:2', 'team2' => 'B', 'score2' => '', 'winner' => 1],
+                    ['round' => 'Pusfinaliai', 'team1' => 'C', 'score1' => '', 'team2' => 'D', 'score2' => '', 'winner' => 2],
+                    ['round' => 'Finalas', 'team1' => 'A', 'score1' => '', 'team2' => 'D', 'score2' => '', 'winner' => null],
+                    ['round' => 'Dėl 3 vietos', 'team1' => 'B', 'score1' => '', 'team2' => 'C', 'score2' => '', 'winner' => 2],
+                ]],
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson(['visible' => true, 'window_type' => 'bracket'])
+            ->assertJsonPath('bracket.rounds.0.title', 'Pusfinaliai')
+            ->assertJsonCount(2, 'bracket.rounds.0.matches')
+            ->assertJsonPath('bracket.rounds.1.title', 'Finalas')
+            ->assertJsonPath('bracket.third.team1', 'B')
+            ->assertJsonPath('bracket.third.winner', 2);
+    }
 }

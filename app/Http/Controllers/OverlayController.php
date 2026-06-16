@@ -62,9 +62,7 @@ class OverlayController extends Controller
         $type = $window['type'] ?? 'groups';
 
         if ($type === 'bracket') {
-            $rounds = $window['bracket_data']['rounds'] ?? [];
-            $payload['rounds']    = $rounds;
-            $payload['draw_size'] = isset($rounds[0]['matches']) ? count($rounds[0]['matches']) * 2 : 0;
+            $payload['bracket'] = $this->buildBracket($window['bracket_data'] ?? []);
         } elseif ($type === 'sponsors') {
             $payload['variant']        = $window['variant'] ?? 'corner';
             $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
@@ -78,6 +76,44 @@ class OverlayController extends Controller
         }
 
         return response()->json($payload);
+    }
+
+    /**
+     * Group a flat bracket match list into ordered rounds, extracting the
+     * 3rd-place match separately.
+     *
+     * @param  array<string,mixed>  $bracketData
+     * @return array{rounds:list<array{title:string,matches:list<array<string,mixed>>}>,third:?array<string,mixed>}
+     */
+    private function buildBracket(array $bracketData): array
+    {
+        $rounds = [];
+        $index = [];
+        $third = null;
+
+        foreach ($bracketData['matches'] ?? [] as $m) {
+            $entry = [
+                'team1'  => $m['team1'] ?? '',
+                'score1' => $m['score1'] ?? '',
+                'team2'  => $m['team2'] ?? '',
+                'score2' => $m['score2'] ?? '',
+                'winner' => $m['winner'] ?? null,
+            ];
+
+            $title = $m['round'] ?? '';
+            if ($title === 'Dėl 3 vietos') {
+                $third = $entry;
+                continue;
+            }
+
+            if (! isset($index[$title])) {
+                $index[$title] = count($rounds);
+                $rounds[] = ['title' => $title, 'matches' => []];
+            }
+            $rounds[$index[$title]]['matches'][] = $entry;
+        }
+
+        return ['rounds' => $rounds, 'third' => $third];
     }
 
     /**
