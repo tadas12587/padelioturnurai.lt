@@ -71,9 +71,67 @@
     .team { padding: 9px 13px; font-size: 16px; display: flex; justify-content: space-between; gap: 10px; color: var(--ov-text); }
     .team + .team { border-top: 1px solid rgba(127,127,127,.18); }
     .team.win { color: var(--ov-accent); font-weight: 700; }
+
+    /* ── Sponsors ────────────────────────────────────────────── */
+    .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
+    .sp-item.show { opacity: 1; }
+    .spons.corner { position: relative; width: 240px; height: 120px; background: var(--ov-bg);
+        border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px;
+        box-shadow: 0 20px 45px -20px rgba(0,0,0,.75); }
+    .spons.corner .sp-item { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 18px; transform: scale(.96); }
+    .spons.corner .sp-item.show { transform: none; }
+    .spons.corner img { max-width: 80%; max-height: 70%; object-fit: contain; }
+    .spons.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 92px; background: var(--ov-bg);
+        border-top: 3px solid var(--ov-accent); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.6); }
+    .spons.bar .sp-item { position: absolute; inset: 0; display: flex; align-items: center; gap: 22px; padding: 0 48px; transform: translateY(12px); }
+    .spons.bar .sp-item.show { transform: none; }
+    .spons.bar img { height: 60px; width: auto; object-fit: contain; }
+    .spons.bar .meta { display: flex; flex-direction: column; }
+    .spons.bar .nm { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 22px; color: var(--ov-text); }
+    .spons.bar .url { font-family: 'Barlow',sans-serif; font-size: 16px; color: var(--ov-accent); }
+    .spons.full { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(120% 120% at 50% 30%, var(--ov-bg), #000); }
+    .spons.full .sp-item { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 28px; transform: scale(.92); }
+    .spons.full .sp-item.show { transform: none; }
+    .spons.full img { max-width: 56vw; max-height: 52vh; object-fit: contain; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
+    .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 @endsection
 
 @section('render_fn_body')
+    if ((d.window_type || 'groups') === 'sponsors') {
+        clearInterval(window.__spTimer);
+        const items = d.items || [];
+        if (!items.length) { stage.innerHTML = ''; return; }
+        const variant = d.variant || 'corner';
+
+        const itemHtml = (it, i) => {
+            if (variant === 'bar') {
+                const meta = (it.name || it.url)
+                    ? `<div class="meta">${it.name ? `<span class="nm">${it.name}</span>` : ''}${it.url ? `<span class="url">${it.url}</span>` : ''}</div>`
+                    : '';
+                return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt="">${meta}</div>`;
+            }
+            if (variant === 'fullscreen') {
+                return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt="">${it.name ? `<span class="nm">${it.name}</span>` : ''}</div>`;
+            }
+            return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt=""></div>`;
+        };
+
+        const cls = variant === 'bar' ? 'bar' : (variant === 'fullscreen' ? 'full' : 'corner');
+        stage.innerHTML = `<div class="spons ${cls}">${items.map(itemHtml).join('')}</div>`;
+
+        const els = stage.querySelectorAll('.sp-item');
+        if (els.length > 1) {
+            let i = 0;
+            window.__spTimer = setInterval(() => {
+                els[i].classList.remove('show');
+                i = (i + 1) % els.length;
+                els[i].classList.add('show');
+            }, (d.rotate_seconds || 6) * 1000);
+        }
+        return;
+    }
+
     // ── Top header: tournament logo + name (always shown) ───────
     const bigTitle = d.tournament_title || d.title || '';
     const headerHtml = (bigTitle || d.logo)
