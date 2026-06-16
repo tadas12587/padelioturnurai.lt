@@ -65,7 +65,10 @@ class TournatedClient
     private function graphql(string $query): array
     {
         try {
+            // Force IPv4 — the production shared host has no working IPv6 route,
+            // so Guzzle's default IPv6-first attempt hangs until timeout.
             $res = Http::timeout(5)
+                ->withOptions(['force_ip_resolve' => 'v4'])
                 ->withHeaders(['Origin' => self::ORIGIN])
                 ->post(self::ENDPOINT, ['query' => $query]);
 
