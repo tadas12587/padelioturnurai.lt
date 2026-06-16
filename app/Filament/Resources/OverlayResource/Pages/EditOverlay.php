@@ -13,6 +13,11 @@ class EditOverlay extends EditRecord
 {
     protected static string $resource = OverlayResource::class;
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return OverlayResource::advanceBracketWindows($data);
+    }
+
     protected function getHeaderActions(): array
     {
         return [

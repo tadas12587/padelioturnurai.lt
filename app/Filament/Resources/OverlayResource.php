@@ -35,6 +35,25 @@ class OverlayResource extends Resource
 
     protected static ?string $navigationGroup = 'Transliacijos';
 
+    /**
+     * Persist winner advancement for every bracket window before saving, so the
+     * builder form (and overlay) fill later rounds with the winners.
+     *
+     * @param  array<string,mixed>  $data
+     * @return array<string,mixed>
+     */
+    public static function advanceBracketWindows(array $data): array
+    {
+        $data['windows'] = array_map(function ($window) {
+            if (($window['type'] ?? null) === 'bracket' && ! empty($window['bracket_data'])) {
+                $window['bracket_data'] = Overlay::advanceBracket($window['bracket_data']);
+            }
+            return $window;
+        }, $data['windows'] ?? []);
+
+        return $data;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
