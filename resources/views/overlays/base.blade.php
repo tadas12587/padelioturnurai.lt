@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Overlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
         html, body { margin: 0; background: transparent; overflow: hidden;
-            font-family: 'Inter', system-ui, sans-serif; color: var(--ov-text, #F5F5F0); }
+            font-family: 'Barlow', system-ui, sans-serif; color: var(--ov-text, #F5F5F0); }
         #root { position: fixed; }
         .pos-bottom-left  { left: 40px; bottom: 40px; }
         .pos-bottom-right { right: 40px; bottom: 40px; }
