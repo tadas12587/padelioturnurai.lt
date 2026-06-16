@@ -61,16 +61,38 @@
     .lower .tag::before { content: '▸ '; }
     .lower .txt { font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 16px; }
 
-    /* ── Bracket ─────────────────────────────────────────────── */
-    .bracket { display: flex; gap: 40px; align-items: center; background: var(--ov-bg);
-        border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px;
-        padding: 24px; box-shadow: 0 20px 45px -20px rgba(0,0,0,.75); }
-    .round { display: flex; flex-direction: column; gap: 22px; }
-    .match { border: 1px solid rgba(127,127,127,.22); border-radius: 6px; overflow: hidden; min-width: 230px;
-        background: rgba(0,0,0,.18); }
-    .team { padding: 9px 13px; font-size: 16px; display: flex; justify-content: space-between; gap: 10px; color: var(--ov-text); }
-    .team + .team { border-top: 1px solid rgba(127,127,127,.18); }
-    .team.win { color: var(--ov-accent); font-weight: 700; }
+    /* ── Bracket (tournament tree) ───────────────────────────── */
+    .bracket { display: flex; align-items: stretch; padding: 4px 0; }
+    .round { position: relative; display: flex; flex-direction: column; padding: 30px 30px 4px; }
+    .round-title { position: absolute; top: 0; left: 0; right: 0; text-align: center;
+        font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
+        letter-spacing: .12em; font-size: 12px; color: var(--ov-muted); }
+    .round-matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; }
+    .match-slot { position: relative; flex: 1; display: flex; align-items: center; }
+    .match { position: relative; width: 232px; background: var(--ov-bg);
+        border: 1px solid rgba(127,127,127,.28); border-left: 3px solid var(--ov-accent);
+        border-radius: 6px; box-shadow: 0 12px 30px -18px rgba(0,0,0,.7); }
+    .team { display: flex; justify-content: space-between; gap: 10px; padding: 8px 13px;
+        font-size: 15px; color: var(--ov-text); }
+    .team + .team { border-top: 1px solid rgba(127,127,127,.16); }
+    .team .nm { font-family: 'Barlow', sans-serif; font-weight: 500; }
+    .team .sc { font-family: 'Oswald', sans-serif; font-variant-numeric: tabular-nums; color: var(--ov-muted); }
+    .team.win { background: rgba(127,127,127,.12); }
+    .team.win .nm { font-weight: 700; color: var(--ov-accent); }
+    .team.win .sc { color: var(--ov-accent); }
+    /* connectors: out from each slot → vertical join per pair → in to next match */
+    .round:not(.is-last) .match-slot::after { content: ''; position: absolute; right: -30px; top: 50%;
+        width: 30px; height: 2px; background: rgba(127,127,127,.5); }
+    .round:not(.is-last) .match-slot:nth-child(odd)::before { content: ''; position: absolute;
+        right: -30px; top: 50%; width: 2px; height: 50%; background: rgba(127,127,127,.5); }
+    .round:not(.is-last) .match-slot:nth-child(even)::before { content: ''; position: absolute;
+        right: -30px; bottom: 50%; width: 2px; height: 50%; background: rgba(127,127,127,.5); }
+    .round:not(:first-child) .match::before { content: ''; position: absolute; left: -30px; top: 50%;
+        width: 30px; height: 2px; background: rgba(127,127,127,.5); }
+    /* 3rd place block */
+    .bracket-third { margin-top: 16px; display: inline-flex; flex-direction: column; gap: 6px; }
+    .bracket-third .round-title { position: static; color: var(--ov-accent); text-align: left; }
+    .bracket-third .match { border-left-color: var(--ov-accent); }
 
     /* ── Sponsors ────────────────────────────────────────────── */
     .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
@@ -96,12 +118,6 @@
     .spons.full img { width: min(640px, 60vw); height: min(360px, 52vh); object-fit: contain; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 
-    .bracket { align-items: flex-start; }
-    .round-title { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase;
-        letter-spacing: .08em; font-size: 12px; color: var(--ov-muted); margin-bottom: 6px; text-align: center; }
-    .round.third { margin-left: 8px; }
-    .round.third .round-title { color: var(--ov-accent); }
-    .round.third .match { border-color: var(--ov-accent); }
 @endsection
 
 @section('render_fn_body')
@@ -143,24 +159,25 @@
         ? `<div class="ov-head">${d.logo ? `<img src="${d.logo}" alt="">` : ''}${bigTitle ? `<span class="ov-title">${bigTitle}</span>` : ''}</div>`
         : '';
 
-    // ── Bracket window ──────────────────────────────────────────
+    // ── Bracket window (tournament tree) ────────────────────────
     if ((d.window_type || 'groups') === 'bracket') {
         const b = d.bracket || { rounds: [], third: null };
         const team = (name, score, win) =>
-            `<div class="team ${win ? 'win' : ''}"><span>${name || 'TBD'}</span><span>${score ?? ''}</span></div>`;
+            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name || 'TBD'}</span><span class="sc">${score ?? ''}</span></div>`;
         const matchBox = (m) =>
             `<div class="match">${team(m.team1, m.score1, m.winner === 1)}${team(m.team2, m.score2, m.winner === 2)}</div>`;
 
         let html = headerHtml + `<div class="bracket">`;
-        for (const round of b.rounds) {
-            html += `<div class="round"><div class="round-title">${round.title}</div>`;
-            for (const m of round.matches) html += matchBox(m);
-            html += `</div>`;
-        }
-        if (b.third) {
-            html += `<div class="round third"><div class="round-title">Dėl 3 vietos</div>${matchBox(b.third)}</div>`;
-        }
+        b.rounds.forEach((round, ri) => {
+            const last = ri === b.rounds.length - 1;
+            html += `<div class="round${last ? ' is-last' : ''}"><div class="round-title">${round.title}</div><div class="round-matches">`;
+            for (const m of round.matches) html += `<div class="match-slot">${matchBox(m)}</div>`;
+            html += `</div></div>`;
+        });
         html += `</div>`;
+        if (b.third) {
+            html += `<div class="bracket-third"><div class="round-title">Dėl 3 vietos</div>${matchBox(b.third)}</div>`;
+        }
         stage.innerHTML = html;
         return;
     }
