@@ -73,6 +73,33 @@ class Overlay extends Model
         ];
     }
 
+    /**
+     * Generate an empty single-elimination bracket (flat match list) for the
+     * given draw size, including the 3rd-place match.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function bracketSkeleton(int $size): array
+    {
+        $rounds = $size === 16
+            ? [['1/8 finalio', 8], ['Ketvirtfinaliai', 4], ['Pusfinaliai', 2], ['Finalas', 1]]
+            : [['Ketvirtfinaliai', 4], ['Pusfinaliai', 2], ['Finalas', 1]];
+
+        $blank = fn (string $round) => [
+            'round' => $round, 'team1' => '', 'score1' => '', 'team2' => '', 'score2' => '', 'winner' => null,
+        ];
+
+        $matches = [];
+        foreach ($rounds as [$title, $count]) {
+            for ($i = 0; $i < $count; $i++) {
+                $matches[] = $blank($title);
+            }
+        }
+        $matches[] = $blank('Dėl 3 vietos');
+
+        return $matches;
+    }
+
     public function getRouteKeyName(): string
     {
         return 'token';
