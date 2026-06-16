@@ -18,6 +18,13 @@ class EditOverlay extends EditRecord
         return OverlayResource::advanceBracketWindows($data);
     }
 
+    protected function afterSave(): void
+    {
+        // Reload the form from the saved record so the auto-advanced bracket
+        // (winners moved up, 3rd place filled) shows immediately, no manual refresh.
+        $this->fillForm();
+    }
+
     protected function getHeaderActions(): array
     {
         return [
