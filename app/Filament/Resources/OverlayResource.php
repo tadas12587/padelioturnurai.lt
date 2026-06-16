@@ -4,10 +4,13 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\OverlayResource\Pages;
 use App\Models\Overlay;
+use App\Services\OverlayData;
 use Filament\Forms;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -19,6 +22,7 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 class OverlayResource extends Resource
 {
@@ -32,73 +36,136 @@ class OverlayResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                TextInput::make('name')
-                    ->label('Pavadinimas')
-                    ->required(),
+        return $form->schema([
+            TextInput::make('name')
+                ->label('Pavadinimas')
+                ->required(),
 
-                Select::make('type')
-                    ->label('Tipas')
-                    ->options([
-                        'group_standings' => 'Grupės',
-                        'bracket'         => 'Brackets',
-                    ])
-                    ->required()
-                    ->live(),
+            TextInput::make('tournament_external_id')
+                ->label('Tournated turnyro ID')
+                ->helperText('Pvz. 10424')
+                ->live(),
 
-                TextInput::make('tournament_external_id')
-                    ->label('Tournated turnyro ID')
-                    ->helperText('Pvz. 10229')
-                    ->visible(fn (Forms\Get $get) => $get('type') === 'group_standings'),
+            Section::make('Išvaizda')
+                ->schema([
+                    Select::make('config.theme')
+                        ->label('Spalvų tema')
+                        ->options(collect(Overlay::themePresets())->map(fn ($p) => $p['label'])->all())
+                        ->default('gold_night')
+                        ->live()
+                        ->afterStateUpdated(function ($state, Forms\Set $set) {
+                            $colors = Overlay::themePresets()[$state]['colors'] ?? null;
+                            if ($colors) {
+                                $set('config.colors.bg', $colors['bg']);
+                                $set('config.colors.text', $colors['text']);
+                                $set('config.colors.accent', $colors['accent']);
+                                $set('config.colors.muted', $colors['muted']);
+                            }
+                        }),
 
-                Section::make('Išvaizda')
-                    ->schema([
-                        TextInput::make('config.title')
-                            ->label('Antraštė'),
+                    ColorPicker::make('config.colors.bg')->label('Fonas'),
+                    ColorPicker::make('config.colors.text')->label('Tekstas'),
+                    ColorPicker::make('config.colors.accent')->label('Akcentas'),
+                    ColorPicker::make('config.colors.muted')->label('Antrinė'),
 
-                        ColorPicker::make('config.accent_color')
-                            ->label('Akcento spalva')
-                            ->default('#C9A84C'),
+                    FileUpload::make('config.logo')->label('Logotipas')->image()->directory('overlay-logos'),
 
-                        FileUpload::make('config.logo')
-                            ->label('Logotipas')
-                            ->image()
-                            ->directory('overlay-logos'),
+                    Select::make('config.position')
+                        ->label('Pozicija ekrane')
+                        ->options([
+                            'bottom-left'  => 'Apačia kairė',
+                            'bottom-right' => 'Apačia dešinė',
+                            'top-left'     => 'Viršus kairė',
+                            'center'       => 'Centras',
+                        ])
+                        ->default('bottom-left'),
 
-                        Select::make('config.position')
-                            ->label('Pozicija ekrane')
-                            ->options([
-                                'bottom-left'  => 'Apačia kairė',
-                                'bottom-right' => 'Apačia dešinė',
-                                'top-left'     => 'Viršus kairė',
-                                'center'       => 'Centras',
-                            ])
-                            ->default('bottom-left'),
+                    CheckboxList::make('config.visible_columns')
+                        ->label('Rodomi stulpeliai')
+                        ->options([
+                            'place'  => 'Vieta',
+                            'name'   => 'Pora',
+                            'points' => 'Taškai',
+                            'wins'   => 'Laimėta',
+                            'losses' => 'Pralaimėta',
+                            'played' => 'Sužaista',
+                        ])
+                        ->columns(2),
+                ])
+                ->columns(2),
 
-                        CheckboxList::make('config.visible_columns')
-                            ->label('Rodomi stulpeliai')
-                            ->options([
-                                'place'   => 'Vieta',
-                                'name'    => 'Pora',
-                                'wins'    => 'Laimėjimai',
-                                'losses'  => 'Pralaimėjimai',
-                                'played'  => 'Sužaista',
-                            ])
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'group_standings'),
-                    ]),
+            Section::make('Langai')
+                ->description('Sukurk langus (scenas). Valdymo puslapyje juos įjungsi/išjungsi Play/Stop.')
+                ->schema([
+                    Repeater::make('windows')
+                        ->label('Langai')
+                        ->schema([
+                            Hidden::make('id')->default(fn () => 'w' . Str::random(6)),
 
-                Section::make('Bracket duomenys')
-                    ->visible(fn (Forms\Get $get) => $get('type') === 'bracket')
-                    ->schema([
-                        Textarea::make('bracket_data')
-                            ->label('Bracket JSON')
-                            ->helperText('Rankiniu būdu suvestas tinklelis JSON formatu: {"rounds":[{"matches":[{"teams":[{"name":"...","score":"","winner":false}]}]}]}')
-                            ->formatStateUsing(fn ($state) => filled($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '')
-                            ->dehydrateStateUsing(fn ($state) => filled($state) ? json_decode($state, true) : null)
-                            ->rows(10),
-                    ]),
-            ]);
+                            TextInput::make('name')->label('Lango pavadinimas')->required(),
+
+                            Select::make('type')
+                                ->label('Tipas')
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets'])
+                                ->default('groups')
+                                ->live(),
+
+                            Repeater::make('subgroups')
+                                ->label('Pogrupiai')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'groups')
+                                ->schema([
+                                    Select::make('category_id')
+                                        ->label('Kategorija')
+                                        ->live()
+                                        ->options(function ($livewire) {
+                                            $tid = data_get($livewire, 'data.tournament_external_id');
+                                            if (! $tid) {
+                                                return [];
+                                            }
+                                            $stages = app(OverlayData::class)->categoryStages((string) $tid);
+                                            $out = [];
+                                            foreach (app(OverlayData::class)->categories((string) $tid) as $c) {
+                                                $st  = $stages[(string) $c['id']] ?? [];
+                                                $tag = (($st['has_bracket'] ?? false) && ! ($st['has_groups'] ?? false))
+                                                    ? ' (bracketas)' : ' (grupės)';
+                                                $out[$c['id']] = ($c['category']['name'] ?? ('#' . $c['id'])) . $tag;
+                                            }
+                                            return $out;
+                                        }),
+
+                                    Select::make('group_id')
+                                        ->label('Pogrupis')
+                                        ->placeholder('Visi pogrupiai')
+                                        ->options(function ($livewire, Forms\Get $get) {
+                                            $tid = data_get($livewire, 'data.tournament_external_id');
+                                            $cid = $get('category_id');
+                                            if (! $tid || ! $cid) {
+                                                return ['' => 'Visi pogrupiai'];
+                                            }
+                                            $out = ['' => 'Visi pogrupiai'];
+                                            foreach (app(OverlayData::class)->groups((string) $tid, (int) $cid) as $g) {
+                                                $out[$g['id']] = $g['name'] ?? ('#' . $g['id']);
+                                            }
+                                            return $out;
+                                        }),
+                                ])
+                                ->columns(2)
+                                ->defaultItems(1),
+
+                            Textarea::make('bracket_data')
+                                ->label('Bracket JSON')
+                                ->helperText('Rankinis tinklelis: {"rounds":[{"matches":[{"teams":[{"name":"..","score":"","winner":false}]}]}]}')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket')
+                                ->formatStateUsing(fn ($state) => filled($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '')
+                                ->dehydrateStateUsing(fn ($state) => filled($state) ? json_decode($state, true) : null)
+                                ->rows(8),
+                        ])
+                        ->collapsible()
+                        ->itemLabel(fn (array $state) => $state['name'] ?? 'Langas')
+                        ->defaultItems(0)
+                        ->addActionLabel('Pridėti langą'),
+                ]),
+        ]);
     }
 
     public static function table(Table $table): Table
