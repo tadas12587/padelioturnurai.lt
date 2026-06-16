@@ -82,7 +82,7 @@ class Overlay extends Model
     public static function bracketSkeleton(int $size): array
     {
         $rounds = $size === 16
-            ? [['1/8 finalio', 8], ['Ketvirtfinaliai', 4], ['Pusfinaliai', 2], ['Finalas', 1]]
+            ? [['1/8 finalis', 8], ['Ketvirtfinaliai', 4], ['Pusfinaliai', 2], ['Finalas', 1]]
             : [['Ketvirtfinaliai', 4], ['Pusfinaliai', 2], ['Finalas', 1]];
 
         $blank = fn (string $round) => [
