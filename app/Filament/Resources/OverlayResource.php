@@ -180,14 +180,15 @@ class OverlayResource extends Resource
 
                             Repeater::make('bracket_data.matches')
                                 ->label('Mačai')
+                                ->helperText('Pildyk tik 1-ą raundą — vėlesni raundai užsipildo automatiškai pagal nugalėtojus.')
                                 ->addable(false)->deletable(false)->reorderable(false)
                                 ->itemLabel(fn (array $state) => $state['round'] ?? 'Mačas')
                                 ->schema([
                                     Hidden::make('round'),
                                     TextInput::make('team1')->label('Pora 1'),
-                                    TextInput::make('score1')->label('Rez. 1'),
                                     TextInput::make('team2')->label('Pora 2'),
-                                    TextInput::make('score2')->label('Rez. 2'),
+                                    TextInput::make('sets1')->label('Setai (Pora 1), pvz. 6 6'),
+                                    TextInput::make('sets2')->label('Setai (Pora 2), pvz. 2 3'),
                                     Select::make('winner')->label('Nugalėtojas')
                                         ->options([1 => '1-as', 2 => '2-as'])->placeholder('—'),
                                 ])
