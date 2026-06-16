@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Overlay;
 use App\Models\OverlaySnapshot;
+use App\Models\Sponsor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -96,5 +97,32 @@ class OverlayEndpointTest extends TestCase
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
             ->assertJson(['visible' => true, 'groups' => [], 'stale' => true]);
+    }
+
+    public function test_data_returns_sponsors_window(): void
+    {
+        $sponsor = \App\Models\Sponsor::create(['name' => 'A', 'logo' => 'sponsors/a.png', 'url' => 'https://a.lt', 'category' => 'gold', 'is_active' => true]);
+
+        $overlay = Overlay::create([
+            'name' => 'S', 'type' => 'group_standings',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'sponsors', 'name' => 'Rėmėjai',
+                'variant' => 'bar', 'rotate_seconds' => 8,
+                'sponsor_ids' => [$sponsor->id], 'images' => [],
+                'scrim_enabled' => true, 'scrim_opacity' => 40,
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson([
+                'visible' => true,
+                'window_type' => 'sponsors',
+                'variant' => 'bar',
+                'rotate_seconds' => 8,
+                'scrim' => ['enabled' => true, 'opacity' => 40],
+            ])
+            ->assertJsonPath('items.0.name', 'A');
     }
 }

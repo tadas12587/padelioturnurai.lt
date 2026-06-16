@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\OverlaySnapshot;
+use App\Models\Sponsor;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Reads tournament data from the locally-stored snapshot (pushed in by an
@@ -153,6 +155,35 @@ class OverlayData
         usort($rows, fn ($a, $b) => ($a['place'] ?? 99) <=> ($b['place'] ?? 99));
 
         return array_values($rows);
+    }
+
+    /**
+     * Build the ordered sponsor items for a sponsors window: selected active
+     * sponsors first (in the chosen order), then uploaded images.
+     *
+     * @param  array<string,mixed>  $window
+     * @return list<array{logo:string,name:?string,url:?string}>
+     */
+    public function resolveSponsors(array $window): array
+    {
+        $items = [];
+
+        $ids = $window['sponsor_ids'] ?? [];
+        if (! empty($ids)) {
+            $sponsors = Sponsor::whereIn('id', $ids)->where('is_active', true)->get()->keyBy('id');
+            foreach ($ids as $id) {
+                $s = $sponsors->get($id);
+                if ($s) {
+                    $items[] = ['logo' => Storage::url($s->logo), 'name' => $s->name, 'url' => $s->url];
+                }
+            }
+        }
+
+        foreach ($window['images'] ?? [] as $path) {
+            $items[] = ['logo' => Storage::url($path), 'name' => null, 'url' => null];
+        }
+
+        return $items;
     }
 
     /** @param array<string,mixed> $entry */

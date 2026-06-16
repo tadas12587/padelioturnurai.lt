@@ -11,6 +11,8 @@
         html, body { margin: 0; background: transparent; overflow: hidden;
             font-family: 'Barlow', system-ui, sans-serif; color: var(--ov-text, #F5F5F0); }
         #root { position: fixed; }
+        #scrim { position: fixed; inset: 0; opacity: 0; pointer-events: none;
+            transition: opacity .5s cubic-bezier(.16,1,.3,1); z-index: -1; }
         .pos-bottom-left  { left: 40px; bottom: 40px; }
         .pos-bottom-right { right: 40px; bottom: 40px; }
         .pos-top-left     { left: 40px; top: 40px; }
@@ -39,13 +41,15 @@
     </style>
 </head>
 <body>
+    <div id="scrim"></div>
     <div id="root" class="pos-bottom-left"><div id="stage"></div></div>
     <script>
         const DATA_URL = "{{ route('overlay.data', $overlay) }}";
         const POLL_MS  = 3000;
         const root  = document.getElementById('root');
         const stage = document.getElementById('stage');
-        let shown = false, introTimer = null, currentWindow = null;
+        const scrim = document.getElementById('scrim');
+        let shown = false, introTimer = null, currentWindow = null, lastSig = null;
 
         function setColors(c) {
             if (!c) return;
@@ -54,6 +58,16 @@
             r.setProperty('--ov-text', c.text || '#F5F5F0');
             r.setProperty('--ov-accent', c.accent || '#C9A84C');
             r.setProperty('--ov-muted', c.muted || '#9CA3AF');
+        }
+
+        function applyScrim(d) {
+            const s = d.scrim || {};
+            if (s.enabled && s.opacity > 0) {
+                scrim.style.background = (d.colors && d.colors.bg) || '#111118';
+                scrim.style.opacity = Math.min(1, s.opacity / 100);
+            } else {
+                scrim.style.opacity = 0;
+            }
         }
 
         function render(d) { @yield('render_fn_body') }
@@ -72,20 +86,25 @@
 
                 if (!d.visible) {
                     if (shown) { stage.classList.remove('in'); shown = false; currentWindow = null; }
+                    scrim.style.opacity = 0;
                     return;
                 }
 
                 setColors(d.colors);
+                applyScrim(d);
                 root.className = 'pos-' + (d.position || 'bottom-left');
 
+                const sig = JSON.stringify({ w: d.window_id, g: d.groups, r: d.rounds,
+                    it: d.items, nm: d.next_match, v: d.variant, tt: d.tournament_title,
+                    ti: d.title, lg: d.logo, c: d.columns });
+
                 if (!shown) {
-                    render(d); playIntro(); shown = true; currentWindow = d.window_id;
+                    render(d); playIntro(); shown = true; currentWindow = d.window_id; lastSig = sig;
                 } else if (d.window_id !== currentWindow) {
-                    stage.classList.remove('in');
-                    currentWindow = d.window_id;
+                    stage.classList.remove('in'); currentWindow = d.window_id; lastSig = sig;
                     setTimeout(() => { render(d); playIntro(); }, 420);
-                } else {
-                    render(d);
+                } else if (sig !== lastSig) {
+                    lastSig = sig; render(d);
                 }
             } catch (e) { /* keep last good frame */ }
         }
