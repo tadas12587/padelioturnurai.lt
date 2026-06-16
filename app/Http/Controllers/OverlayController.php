@@ -22,26 +22,46 @@ class OverlayController extends Controller
         $config = array_merge(Overlay::defaultConfig(), $overlay->config ?? []);
         $state  = array_merge(Overlay::defaultState(), $overlay->state ?? []);
 
+        $logo = ! empty($config['logo']) ? \Illuminate\Support\Facades\Storage::url($config['logo']) : null;
+
         $payload = [
-            'type'       => $overlay->type,
-            'visible'    => (bool) $state['visible'],
-            'title'      => $config['title'],
-            'accent'     => $config['accent_color'],
-            'logo'       => $config['logo'],
-            'position'   => $config['position'],
-            'columns'    => $config['visible_columns'],
-            'next_match' => $state['next_match'],
-            'stale'      => false,
+            'title'       => $config['title'],
+            'colors'      => $config['colors'],
+            'accent'      => $config['colors']['accent'] ?? '#C9A84C',
+            'logo'        => $logo,
+            'position'    => $config['position'],
+            'columns'     => $config['visible_columns'],
+            'next_match'  => $state['next_match'],
+            'visible'     => false,
+            'window_id'   => null,
+            'window_type' => null,
+            'stale'       => false,
         ];
 
-        if (! $payload['visible']) {
+        $activeId = $state['active_window_id'];
+        if (! $activeId) {
             return response()->json($payload);
         }
 
-        if ($overlay->type === 'group_standings') {
-            $payload = array_merge($payload, $this->groupPayload($overlay, $state, $data));
+        $window = collect($overlay->windows ?? [])->firstWhere('id', $activeId);
+        if (! $window) {
+            return response()->json($payload);
+        }
+
+        $payload['visible']     = true;
+        $payload['window_id']   = $activeId;
+        $payload['window_type'] = $window['type'] ?? 'groups';
+
+        if (($window['type'] ?? 'groups') === 'bracket') {
+            $rounds = $window['bracket_data']['rounds'] ?? [];
+            $payload['rounds']    = $rounds;
+            $payload['draw_size'] = isset($rounds[0]['matches']) ? count($rounds[0]['matches']) * 2 : 0;
         } else {
-            $payload = array_merge($payload, $this->bracketPayload($overlay));
+            $resolved = $data->resolveWindow((string) $overlay->tournament_external_id, $window);
+            if (empty($resolved['groups'])) {
+                $resolved['stale'] = true;
+            }
+            $payload = array_merge($payload, $resolved);
         }
 
         return response()->json($payload);
@@ -79,39 +99,4 @@ class OverlayController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    /** @param array<string,mixed> $state */
-    private function groupPayload(Overlay $overlay, array $state, OverlayData $data): array
-    {
-        $categoryId = $state['active_category_id'];
-        if (! $categoryId) {
-            return ['groups' => [], 'subgroup_count' => 0];
-        }
-
-        $raw = $data->groups((string) $overlay->tournament_external_id, (int) $categoryId);
-
-        if (empty($raw)) {
-            return ['groups' => [], 'subgroup_count' => 0, 'stale' => true];
-        }
-
-        if ($state['active_group_id']) {
-            $raw = array_values(array_filter($raw, fn ($g) => $g['id'] == $state['active_group_id']));
-        }
-
-        $groups = array_map(fn ($g) => [
-            'id'   => $g['id'],
-            'name' => $g['name'] ?? '',
-            'rows' => $data->computeStandings($g),
-        ], $raw);
-
-        return ['groups' => $groups, 'subgroup_count' => count($groups)];
-    }
-
-    private function bracketPayload(Overlay $overlay): array
-    {
-        $data = $overlay->bracket_data ?? ['rounds' => []];
-        $rounds = $data['rounds'] ?? [];
-        $drawSize = isset($rounds[0]['matches']) ? count($rounds[0]['matches']) * 2 : 0;
-
-        return ['rounds' => $rounds, 'draw_size' => $drawSize];
-    }
 }
