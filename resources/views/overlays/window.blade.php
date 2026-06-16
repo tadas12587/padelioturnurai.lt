@@ -4,10 +4,11 @@
     #stage { font-family: 'Barlow', system-ui, sans-serif; --cols: 1; }
 
     /* ── Header (logo + overlay title) ───────────────────────── */
-    .ov-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; padding-left: 2px; }
-    .ov-head img { height: 40px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
-    .ov-head .ov-title { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
-        letter-spacing: .16em; font-size: 19px; color: var(--ov-text); text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+    .ov-head { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; padding-left: 2px; }
+    .ov-head img { height: 54px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 7px rgba(0,0,0,.6)); }
+    .ov-head .ov-title { font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .05em; font-size: 30px; line-height: 1.05; color: var(--ov-text);
+        text-shadow: 0 2px 7px rgba(0,0,0,.5); }
 
     /* ── Responsive grid (column count set per render via --cols) ─ */
     .wrap { display: grid; gap: 14px; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); align-items: start; }
@@ -73,10 +74,15 @@
 @endsection
 
 @section('render_fn_body')
+    // ── Top header: tournament logo + name (always shown) ───────
+    const bigTitle = d.tournament_title || d.title || '';
+    const headerHtml = (bigTitle || d.logo)
+        ? `<div class="ov-head">${d.logo ? `<img src="${d.logo}" alt="">` : ''}${bigTitle ? `<span class="ov-title">${bigTitle}</span>` : ''}</div>`
+        : '';
+
     // ── Bracket window ──────────────────────────────────────────
     if ((d.window_type || 'groups') === 'bracket') {
-        let html = '';
-        if (d.title) html += `<div class="ov-head"><span class="ov-title">${d.title}</span></div>`;
+        let html = headerHtml;
         html += `<div class="bracket">`;
         for (const round of (d.rounds || [])) {
             html += `<div class="round">`;
@@ -102,13 +108,7 @@
     const cols = n <= 1 ? 1 : (n === 2 ? 2 : (n === 3 ? 3 : (n === 4 ? 2 : 3)));
     stage.style.setProperty('--cols', cols);
 
-    let html = '';
-    if (d.title || d.logo) {
-        html += `<div class="ov-head">`;
-        if (d.logo) html += `<img src="${d.logo}" alt="">`;
-        if (d.title) html += `<span class="ov-title">${d.title}</span>`;
-        html += `</div>`;
-    }
+    let html = headerHtml;
     html += `<div class="wrap${n >= 5 ? ' dense' : ''}">`;
     for (const g of (d.groups || [])) {
         html += `<div class="card"><div class="card-head"><span class="gname">${g.name || ''}</span></div>`;

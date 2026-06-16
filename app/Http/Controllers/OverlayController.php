@@ -22,8 +22,12 @@ class OverlayController extends Controller
 
         $logo = ! empty($config['logo']) ? \Illuminate\Support\Facades\Storage::url($config['logo']) : null;
 
+        $tid = (string) $overlay->tournament_external_id;
+        $tournamentTitle = $tid !== '' ? ($data->tournament($tid)['title'] ?? null) : null;
+
         $payload = [
-            'title'       => $config['title'],
+            'title'            => $config['title'],
+            'tournament_title' => $tournamentTitle,
             'colors'      => $config['colors'],
             'accent'      => $config['colors']['accent'] ?? '#C9A84C',
             'logo'        => $logo,
