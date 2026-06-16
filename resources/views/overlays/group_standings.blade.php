@@ -40,5 +40,5 @@
     }
     html += `</div>`;
     if (d.next_match) html += `<div class="lower">${d.next_match}</div>`;
-    root.innerHTML = html;
+    stage.innerHTML = html;
 @endsection

@@ -30,5 +30,5 @@
         html += `</div>`;
     }
     html += `</div>`;
-    root.innerHTML = html;
+    stage.innerHTML = html;
 @endsection
