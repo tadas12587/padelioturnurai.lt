@@ -35,5 +35,7 @@ class OverlayDataTest extends TestCase
         $this->assertSame(0, $rows[0]['losses']);
         $this->assertSame(0, $rows[1]['wins']);
         $this->assertSame(1, $rows[1]['losses']);
+        $this->assertSame(1, $rows[0]['points']);
+        $this->assertSame(0, $rows[1]['points']);
     }
 }
