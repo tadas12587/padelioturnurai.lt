@@ -86,7 +86,7 @@ class Overlay extends Model
             : [['Ketvirtfinaliai', 4], ['Pusfinaliai', 2], ['Finalas', 1]];
 
         $blank = fn (string $round) => [
-            'round' => $round, 'team1' => '', 'score1' => '', 'team2' => '', 'score2' => '', 'winner' => null,
+            'round' => $round, 'team1' => '', 'team2' => '', 'sets1' => '', 'sets2' => '', 'winner' => null,
         ];
 
         $matches = [];
