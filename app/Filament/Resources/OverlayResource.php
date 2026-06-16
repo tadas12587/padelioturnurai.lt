@@ -15,6 +15,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -106,9 +107,18 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'sponsors' => 'Rėmėjai'])
                                 ->default('groups')
                                 ->live(),
+
+                            Toggle::make('scrim_enabled')
+                                ->label('Tamsinti foną')
+                                ->live()
+                                ->default(false),
+                            TextInput::make('scrim_opacity')
+                                ->label('Fono tamsumas %')
+                                ->numeric()->minValue(0)->maxValue(100)->default(55)
+                                ->visible(fn (Forms\Get $get) => (bool) $get('scrim_enabled')),
 
                             Repeater::make('subgroups')
                                 ->label('Pogrupiai')
@@ -159,6 +169,30 @@ class OverlayResource extends Resource
                                 ->formatStateUsing(fn ($state) => filled($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '')
                                 ->dehydrateStateUsing(fn ($state) => filled($state) ? json_decode($state, true) : null)
                                 ->rows(8),
+
+                            Select::make('variant')
+                                ->label('Variantas')
+                                ->options([
+                                    'corner'     => 'Kampe (besikeičiantys logo)',
+                                    'bar'        => 'Apačios juosta',
+                                    'fullscreen' => 'Per visą ekraną',
+                                ])
+                                ->default('corner')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                            Select::make('sponsor_ids')
+                                ->label('Rėmėjai iš sąrašo')
+                                ->multiple()
+                                ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                            FileUpload::make('images')
+                                ->label('Arba įkelk nuotraukas (masiškai)')
+                                ->image()->multiple()->reorderable()
+                                ->disk('public')->directory('overlay-sponsors')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                            TextInput::make('rotate_seconds')
+                                ->label('Keitimo intervalas (s)')
+                                ->numeric()->default(6)->minValue(2)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
                         ])
                         ->collapsible()
                         ->itemLabel(fn (array $state) => $state['name'] ?? 'Langas')

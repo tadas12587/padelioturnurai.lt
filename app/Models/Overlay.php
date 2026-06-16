@@ -59,11 +59,17 @@ class Overlay extends Model
     public static function themePresets(): array
     {
         return [
-            'gold_night'  => ['label' => 'Auksinė naktis', 'colors' => ['bg' => '#111118', 'text' => '#F5F5F0', 'accent' => '#C9A84C', 'muted' => '#9CA3AF']],
-            'light'       => ['label' => 'Šviesi',         'colors' => ['bg' => '#FFFFFF', 'text' => '#111118', 'accent' => '#C9A84C', 'muted' => '#6B7280']],
-            'court_blue'  => ['label' => 'Mėlyna (kortas)','colors' => ['bg' => '#0B1E3B', 'text' => '#F5F8FF', 'accent' => '#4FA3FF', 'muted' => '#7E93B8']],
-            'court_green' => ['label' => 'Žalia (kortas)', 'colors' => ['bg' => '#0C2A1F', 'text' => '#F2FBF6', 'accent' => '#34D399', 'muted' => '#79A893']],
-            'red_black'   => ['label' => 'Raudona/juoda',  'colors' => ['bg' => '#1A0D0D', 'text' => '#FBEDED', 'accent' => '#EF4444', 'muted' => '#A98686']],
+            'gold_night'  => ['label' => 'Auksinė naktis',       'colors' => ['bg' => '#111118', 'text' => '#F5F5F0', 'accent' => '#C9A84C', 'muted' => '#9CA3AF']],
+            'light'       => ['label' => 'Šviesi',               'colors' => ['bg' => '#FFFFFF', 'text' => '#111118', 'accent' => '#C9A84C', 'muted' => '#6B7280']],
+            'court_blue'  => ['label' => 'Mėlyna (kortas)',      'colors' => ['bg' => '#0B1E3B', 'text' => '#F5F8FF', 'accent' => '#4FA3FF', 'muted' => '#7E93B8']],
+            'court_green' => ['label' => 'Žalia (kortas)',       'colors' => ['bg' => '#0C2A1F', 'text' => '#F2FBF6', 'accent' => '#34D399', 'muted' => '#79A893']],
+            'red_black'   => ['label' => 'Raudona/juoda',        'colors' => ['bg' => '#1A0D0D', 'text' => '#FBEDED', 'accent' => '#EF4444', 'muted' => '#A98686']],
+            'midnight'    => ['label' => 'Naktinė mėlyna',       'colors' => ['bg' => '#0A1A2F', 'text' => '#EAF2FF', 'accent' => '#38BDF8', 'muted' => '#6E8CB0']],
+            'graphite'    => ['label' => 'Grafitas',             'colors' => ['bg' => '#17181B', 'text' => '#F4F4F5', 'accent' => '#D4D4D8', 'muted' => '#8A8D93']],
+            'wine_gold'   => ['label' => 'Vynas ir auksas',      'colors' => ['bg' => '#2A0E16', 'text' => '#FBEEF1', 'accent' => '#D4AF37', 'muted' => '#A77E86']],
+            'esports'     => ['label' => 'Elektrinė violetinė',  'colors' => ['bg' => '#150F2B', 'text' => '#F1ECFF', 'accent' => '#8B5CF6', 'muted' => '#8A7CB8']],
+            'orange'      => ['label' => 'Oranžinė energija',    'colors' => ['bg' => '#14110D', 'text' => '#FFF3E6', 'accent' => '#FB923C', 'muted' => '#B0937A']],
+            'ice'         => ['label' => 'Ledo mėlyna (šviesi)', 'colors' => ['bg' => '#F4F8FC', 'text' => '#0B2238', 'accent' => '#2563EB', 'muted' => '#5B7290']],
         ];
     }
 
