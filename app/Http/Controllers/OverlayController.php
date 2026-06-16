@@ -54,10 +54,21 @@ class OverlayController extends Controller
         $payload['window_id']   = $activeId;
         $payload['window_type'] = $window['type'] ?? 'groups';
 
-        if (($window['type'] ?? 'groups') === 'bracket') {
+        $payload['scrim'] = [
+            'enabled' => (bool) ($window['scrim_enabled'] ?? false),
+            'opacity' => (int) ($window['scrim_opacity'] ?? 55),
+        ];
+
+        $type = $window['type'] ?? 'groups';
+
+        if ($type === 'bracket') {
             $rounds = $window['bracket_data']['rounds'] ?? [];
             $payload['rounds']    = $rounds;
             $payload['draw_size'] = isset($rounds[0]['matches']) ? count($rounds[0]['matches']) * 2 : 0;
+        } elseif ($type === 'sponsors') {
+            $payload['variant']        = $window['variant'] ?? 'corner';
+            $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
+            $payload['items']          = $data->resolveSponsors($window);
         } else {
             $resolved = $data->resolveWindow((string) $overlay->tournament_external_id, $window);
             if (empty($resolved['groups'])) {
