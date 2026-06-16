@@ -17,6 +17,10 @@ First version ships two overlay types:
 - **Group standings** — driven automatically from the Tournated GraphQL API.
 - **Bracket** — manual entry in v1 (API does not document bracket structure).
 
+Both overlay types must **adapt to variable size**: a category may have 2 subgroups or
+4 (or more), each with a different number of pairs; a bracket may hold 8 teams or 16
+(or other sizes). Layouts scale to the data rather than assuming a fixed count.
+
 ## Goals
 
 - Multiple overlays can exist at once, each with its own copy-paste OBS URL.
@@ -126,6 +130,22 @@ New table `overlays`:
    — transparent background, no site chrome, inline minimal JS that polls the data
    endpoint every ~3 s and updates the DOM with CSS fade/slide transitions. Honors
    `config` (accent color, title, columns, position) and `state.visible`.
+
+### Adaptive layouts
+
+Both templates render to the data, not to a fixed shape:
+
+- **Group standings** — a category can expose 2, 4, or more subgroups, each with a
+  varying number of pairs. The control page can target a single subgroup or "all
+  subgroups"; when showing multiple, the layout flows them into a responsive grid
+  (e.g. 2-up / 4-up) and shrinks row density as count grows, so it stays readable on a
+  1080p canvas without overflowing.
+- **Bracket** — the draw size is derived from the entered `bracket_data` (8, 16, or
+  other). The number of rounds and column widths are computed from that size; an 8-team
+  draw shows fewer rounds than a 16-team draw without template changes.
+
+The data endpoint includes whatever counts the template needs (subgroup count, draw
+size) so the front-end can pick the right layout class.
 
 ## Routes
 
