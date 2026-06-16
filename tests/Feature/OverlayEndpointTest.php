@@ -17,8 +17,9 @@ class OverlayEndpointTest extends TestCase
 
         $this->assertNotEmpty($overlay->token);
         $this->assertSame(8, strlen($overlay->token));
-        $this->assertSame('#C9A84C', $overlay->config['accent_color']);
-        $this->assertFalse($overlay->state['visible']);
+        $this->assertSame('#C9A84C', $overlay->config['colors']['accent']);
+        $this->assertNull($overlay->state['active_window_id']);
+        $this->assertSame([], $overlay->windows);
     }
 
     public function test_data_endpoint_404_for_unknown_token(): void
@@ -26,7 +27,7 @@ class OverlayEndpointTest extends TestCase
         $this->getJson('/overlay/nope1234/data')->assertNotFound();
     }
 
-    public function test_data_endpoint_hidden_when_not_visible(): void
+    public function test_data_hidden_when_no_active_window(): void
     {
         $overlay = Overlay::create(['name' => 'G', 'type' => 'group_standings']);
 
@@ -35,31 +36,26 @@ class OverlayEndpointTest extends TestCase
             ->assertJson(['visible' => false]);
     }
 
-    public function test_data_endpoint_marks_stale_when_no_snapshot(): void
+    public function test_data_hidden_when_active_window_missing(): void
     {
         $overlay = Overlay::create([
             'name' => 'G', 'type' => 'group_standings',
-            'tournament_external_id' => '10229',
-            'state' => ['active_category_id' => 47817, 'visible' => true],
+            'windows' => [],
+            'state' => ['active_window_id' => 'ghost', 'next_match' => ''],
         ]);
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
-            ->assertJson(['visible' => true, 'groups' => [], 'stale' => true]);
+            ->assertJson(['visible' => false]);
     }
 
-    public function test_data_endpoint_returns_groups_from_snapshot(): void
+    public function test_data_returns_active_window_groups(): void
     {
         OverlaySnapshot::create([
             'tournament_external_id' => '10229',
             'payload' => [
-                'title' => 'T',
-                'categories' => [],
                 'groups_by_category' => [
-                    '47817' => [[
-                        'id' => 5, 'name' => 'A', 'segment' => 'MD',
-                        'entries' => [], 'matches' => [],
-                    ]],
+                    '47817' => [['id' => 5, 'name' => 'A', 'entries' => [], 'matches' => []]],
                 ],
             ],
         ]);
@@ -67,16 +63,38 @@ class OverlayEndpointTest extends TestCase
         $overlay = Overlay::create([
             'name' => 'G', 'type' => 'group_standings',
             'tournament_external_id' => '10229',
-            'state' => ['active_category_id' => 47817, 'active_group_id' => null, 'visible' => true, 'next_match' => 'Next: A vs B'],
+            'windows' => [[
+                'id' => 'w1', 'type' => 'groups', 'name' => 'W1',
+                'subgroups' => [['category_id' => 47817, 'group_id' => null]],
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => 'Next'],
         ]);
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
             ->assertJson([
                 'visible' => true,
-                'type'    => 'group_standings',
-                'next_match' => 'Next: A vs B',
+                'window_id' => 'w1',
+                'window_type' => 'groups',
                 'subgroup_count' => 1,
+                'next_match' => 'Next',
             ]);
+    }
+
+    public function test_data_stale_when_active_window_has_no_snapshot(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'G', 'type' => 'group_standings',
+            'tournament_external_id' => '10229',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'groups', 'name' => 'W1',
+                'subgroups' => [['category_id' => 47817, 'group_id' => null]],
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson(['visible' => true, 'groups' => [], 'stale' => true]);
     }
 }

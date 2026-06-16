@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <div class="space-y-6 max-w-2xl">
+    <div class="space-y-6 max-w-3xl">
         {{-- Overlay selector --}}
         <div>
             <label class="text-sm font-medium">Pasirink overlay</label>
@@ -15,50 +15,55 @@
         @php $overlay = $this->selectedOverlay(); @endphp
 
         @if($overlay)
-            {{-- Output URL --}}
             <div class="text-sm text-gray-500">
                 OBS URL:
                 <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{{ url('/overlay/' . $overlay->token) }}</code>
             </div>
 
-            @if($overlay->type === 'group_standings')
-                <div>
-                    <label class="text-sm font-medium">Kategorija</label>
-                    <select wire:model.live="data.active_category_id"
-                            class="mt-1 block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
-                        <option value="">— Pasirink kategoriją —</option>
-                        @foreach($this->categoryOptions() as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <label class="text-sm font-medium">Pogrupis</label>
-                    <select wire:model="data.active_group_id"
-                            class="mt-1 block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
-                        @foreach($this->groupOptions() as $id => $name)
-                            <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            @endif
-
+            {{-- Stop --}}
             <div>
-                <label class="text-sm font-medium">„Kitas susitikimas" tekstas</label>
-                <input type="text" wire:model="data.next_match"
-                       class="mt-1 block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600"
-                       placeholder="Pvz. Toliau: Jonai / Petrai vs Antanai / Kazys">
+                <x-filament::button wire:click="stop" color="gray" icon="heroicon-o-stop">
+                    Sustabdyti viską
+                </x-filament::button>
             </div>
 
-            <label class="flex items-center gap-2">
-                <input type="checkbox" wire:model="data.visible" class="rounded">
-                <span class="text-sm font-medium">Rodyti overlay (matoma)</span>
-            </label>
+            {{-- Windows --}}
+            @php $activeId = $this->activeWindowId(); @endphp
+            <div class="space-y-2">
+                <div class="text-sm font-medium">Langai</div>
+                @forelse($overlay->windows ?? [] as $w)
+                    <div class="flex items-center justify-between gap-3 p-3 rounded-lg border
+                        {{ ($w['id'] ?? null) === $activeId ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10' : 'border-gray-200 dark:border-gray-700' }}">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium">{{ $w['name'] ?? 'Langas' }}</span>
+                            <span class="text-xs text-gray-400">{{ ($w['type'] ?? 'groups') === 'bracket' ? 'Bracketas' : 'Grupės' }}</span>
+                            @if(($w['id'] ?? null) === $activeId)
+                                <span class="text-xs font-bold text-primary-600 dark:text-primary-400">● GYVAI</span>
+                            @endif
+                        </div>
+                        <x-filament::button size="sm" wire:click="play('{{ $w['id'] }}')" icon="heroicon-o-play">
+                            Rodyti
+                        </x-filament::button>
+                    </div>
+                @empty
+                    <div class="text-sm text-gray-500">Šis overlay neturi langų. Sukurk juos overlay redagavimo lange.</div>
+                @endforelse
+            </div>
 
-            <x-filament::button wire:click="apply" icon="heroicon-o-check">
-                Pritaikyti
-            </x-filament::button>
+            {{-- Next match lower-third --}}
+            <div x-data="{ txt: @js($overlay->state['next_match'] ?? '') }">
+                <label class="text-sm font-medium">„Kitas susitikimas" juosta</label>
+                <div class="flex gap-2 mt-1">
+                    <input type="text" x-model="txt"
+                           class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600"
+                           placeholder="Pvz. Toliau: Jonai / Petrai vs Antanai / Kazys">
+                    <x-filament::button color="gray" x-on:click="$wire.setNextMatch(txt)">
+                        Atnaujinti
+                    </x-filament::button>
+                </div>
+            </div>
         @endif
     </div>
+
+    <x-filament-actions::modals />
 </x-filament-panels::page>

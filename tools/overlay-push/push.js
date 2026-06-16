@@ -14,7 +14,7 @@
 
 // ── Nustatymai (gali keisti čia arba per aplinkos kintamuosius) ──
 const SITE_URL       = process.env.SITE_URL       || 'https://padelioturnyrai.lt';
-const INGEST_TOKEN   = process.env.INGEST_TOKEN   || 'ĮRAŠYK_SLAPTĄ_RAKTĄ';   // turi sutapti su .env OVERLAY_INGEST_TOKEN
+const INGEST_TOKEN   = process.env.INGEST_TOKEN   || 'ugx490pqlkt3nycwmdojfeb5ahi6r2sz817v';   // turi sutapti su .env OVERLAY_INGEST_TOKEN
 const TOURNAMENT_ID  = process.env.TOURNAMENT_ID  || '10424';                  // Tournated turnyro ID
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 20000);        // kas kiek siųsti (ms)
 
@@ -56,6 +56,13 @@ async function fetchGroups(categoryId) {
   return data.groups || [];
 }
 
+// ── Vienos kategorijos žaidynės (draws) ────────────────────
+async function fetchDraws(categoryId) {
+  // `draws` returns raw JSON objects; presence indicates an elimination/main draw.
+  const data = await gql(`{ draws(filter: { tournamentCategory: ${categoryId} }) }`);
+  return data.draws || [];
+}
+
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
 async function pushOnce() {
   const tournament = await fetchTournament(TOURNAMENT_ID);
@@ -73,11 +80,25 @@ async function pushOnce() {
     }
   }
 
+  const categoryStages = {};
+  for (const cat of categories) {
+    const groups = groupsByCategory[String(cat.id)] || [];
+    let draws = [];
+    try { draws = await fetchDraws(cat.id); } catch (_) { draws = []; }
+    categoryStages[String(cat.id)] = {
+      has_groups: groups.length > 0,
+      has_bracket: draws.length > 0,
+      draw_type: draws[0]?.type ?? null,
+      draw_size: draws[0]?.size ?? null,
+    };
+  }
+
   const snapshot = {
     tournament_id: TOURNAMENT_ID,
     title: tournament.title || null,
     categories,
     groups_by_category: groupsByCategory,
+    category_stages: categoryStages,
   };
 
   const res = await fetch(`${SITE_URL}/overlay/ingest`, {
