@@ -4,6 +4,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\OverlayController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\RegistrationInterestController;
 use App\Http\Controllers\SitemapController;
@@ -14,6 +15,10 @@ Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 
 
 // Sitemap for search engines
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+// Broadcast overlays (public, polled by OBS browser sources)
+Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
+Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');
 
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])
