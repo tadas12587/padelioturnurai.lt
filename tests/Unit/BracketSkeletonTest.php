@@ -16,6 +16,9 @@ class BracketSkeletonTest extends TestCase
         $this->assertSame('Dėl 3 vietos', $m[7]['round']);
         $this->assertNull($m[0]['winner']);
         $this->assertSame('', $m[0]['team1']);
+        $this->assertArrayHasKey('sets1', $m[0]);
+        $this->assertArrayHasKey('sets2', $m[0]);
+        $this->assertArrayNotHasKey('score1', $m[0]);
     }
 
     public function test_skeleton_16(): void
