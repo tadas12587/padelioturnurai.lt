@@ -37,4 +37,31 @@ class TournatedFetchTest extends TestCase
 
         $this->assertSame([], $groups);
     }
+
+    public function test_tournament_returns_title_and_categories(): void
+    {
+        Http::fake([
+            'api.tournated.com/*' => Http::response([
+                'data' => ['tournament' => [
+                    'title' => 'Test turnyras',
+                    'tournamentCategory' => [
+                        ['id' => 47817, 'category' => ['id' => 10265, 'name' => 'Vaikinai U10'], 'mde' => 4],
+                    ],
+                ]],
+            ]),
+        ]);
+
+        $info = (new TournatedClient)->tournament(10229);
+
+        $this->assertSame('Test turnyras', $info['title']);
+        $this->assertCount(1, $info['tournamentCategory']);
+        $this->assertSame(47817, $info['tournamentCategory'][0]['id']);
+    }
+
+    public function test_tournament_returns_empty_on_failure(): void
+    {
+        Http::fake(['api.tournated.com/*' => Http::response(null, 500)]);
+
+        $this->assertSame([], (new TournatedClient)->tournament(999));
+    }
 }
