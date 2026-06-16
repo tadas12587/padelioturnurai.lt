@@ -126,19 +126,30 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('items.0.name', 'A');
     }
 
-    public function test_bracket_auto_advances_winners_and_third_place(): void
+    public function test_bracket_window_returns_category_draw_from_snapshot(): void
     {
+        \App\Models\OverlaySnapshot::create([
+            'tournament_external_id' => '10424',
+            'payload' => [
+                'brackets_by_category' => [
+                    '53642' => [
+                        'rounds' => [
+                            ['title' => 'Pusfinaliai', 'matches' => [
+                                ['team1' => 'A', 'team2' => 'B', 'sets1' => '6', 'sets2' => '2', 'winner' => 1],
+                            ]],
+                            ['title' => 'Finalas', 'matches' => [
+                                ['team1' => 'A', 'team2' => 'C', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                            ]],
+                        ],
+                        'third' => ['team1' => 'B', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
+                    ],
+                ],
+            ],
+        ]);
+
         $overlay = Overlay::create([
-            'name' => 'B', 'type' => 'group_standings',
-            'windows' => [[
-                'id' => 'w1', 'type' => 'bracket', 'name' => 'T',
-                'bracket_data' => ['size' => 8, 'matches' => [
-                    ['round' => 'Pusfinaliai', 'team1' => 'A', 'team2' => 'B', 'sets1' => '6 6', 'sets2' => '2 3', 'winner' => 1],
-                    ['round' => 'Pusfinaliai', 'team1' => 'C', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
-                    ['round' => 'Finalas', 'team1' => '', 'team2' => '', 'sets1' => '', 'sets2' => '', 'winner' => null],
-                    ['round' => 'Dėl 3 vietos', 'team1' => '', 'team2' => '', 'sets1' => '', 'sets2' => '', 'winner' => null],
-                ]],
-            ]],
+            'name' => 'B', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'bracket', 'name' => 'T', 'category_id' => 53642]],
             'state' => ['active_window_id' => 'w1', 'next_match' => ''],
         ]);
 
@@ -146,11 +157,7 @@ class OverlayEndpointTest extends TestCase
             ->assertOk()
             ->assertJson(['visible' => true, 'window_type' => 'bracket'])
             ->assertJsonPath('bracket.rounds.0.title', 'Pusfinaliai')
-            ->assertJsonPath('bracket.rounds.0.matches.0.sets1', '6 6')
             ->assertJsonPath('bracket.rounds.1.title', 'Finalas')
-            ->assertJsonPath('bracket.rounds.1.matches.0.team1', 'A')
-            ->assertJsonPath('bracket.rounds.1.matches.0.team2', 'D')
-            ->assertJsonPath('bracket.third.team1', 'B')
-            ->assertJsonPath('bracket.third.team2', 'C');
+            ->assertJsonPath('bracket.third.team1', 'B');
     }
 }
