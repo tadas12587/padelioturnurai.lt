@@ -20,6 +20,10 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
 Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');
 
+// Snapshot ingest — external bridge pushes Tournated data here (token-protected,
+// CSRF-exempt; see bootstrap/app.php).
+Route::post('/overlay/ingest', [OverlayController::class, 'ingest'])->name('overlay.ingest');
+
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])
     ->middleware(['auth'])

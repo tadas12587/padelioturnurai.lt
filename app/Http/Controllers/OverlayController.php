@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Overlay;
-use App\Services\TournatedClient;
+use App\Models\OverlaySnapshot;
+use App\Services\OverlayData;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class OverlayController extends Controller
 {
@@ -15,7 +17,7 @@ class OverlayController extends Controller
         return view($view, ['overlay' => $overlay]);
     }
 
-    public function data(Overlay $overlay, TournatedClient $client): JsonResponse
+    public function data(Overlay $overlay, OverlayData $data): JsonResponse
     {
         $config = array_merge(Overlay::defaultConfig(), $overlay->config ?? []);
         $state  = array_merge(Overlay::defaultState(), $overlay->state ?? []);
@@ -37,7 +39,7 @@ class OverlayController extends Controller
         }
 
         if ($overlay->type === 'group_standings') {
-            $payload = array_merge($payload, $this->groupPayload($overlay, $state, $client));
+            $payload = array_merge($payload, $this->groupPayload($overlay, $state, $data));
         } else {
             $payload = array_merge($payload, $this->bracketPayload($overlay));
         }
@@ -45,15 +47,47 @@ class OverlayController extends Controller
         return response()->json($payload);
     }
 
+    /**
+     * Ingest a tournament snapshot pushed in by the external bridge.
+     * Authenticated by a shared secret token (the host cannot reach the
+     * Tournated API itself, so data is pushed in instead of pulled).
+     */
+    public function ingest(Request $request): JsonResponse
+    {
+        $expected = config('services.overlay.ingest_token');
+
+        if (! $expected || ! hash_equals($expected, (string) $request->header('X-Overlay-Token'))) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $validated = $request->validate([
+            'tournament_id'      => 'required',
+            'title'              => 'nullable|string',
+            'categories'         => 'array',
+            'groups_by_category' => 'array',
+        ]);
+
+        OverlaySnapshot::updateOrCreate(
+            ['tournament_external_id' => (string) $validated['tournament_id']],
+            ['payload' => [
+                'title'              => $validated['title'] ?? null,
+                'categories'         => $validated['categories'] ?? [],
+                'groups_by_category' => $validated['groups_by_category'] ?? [],
+            ]],
+        );
+
+        return response()->json(['ok' => true]);
+    }
+
     /** @param array<string,mixed> $state */
-    private function groupPayload(Overlay $overlay, array $state, TournatedClient $client): array
+    private function groupPayload(Overlay $overlay, array $state, OverlayData $data): array
     {
         $categoryId = $state['active_category_id'];
         if (! $categoryId) {
             return ['groups' => [], 'subgroup_count' => 0];
         }
 
-        $raw = $client->groups((int) $categoryId);
+        $raw = $data->groups((string) $overlay->tournament_external_id, (int) $categoryId);
 
         if (empty($raw)) {
             return ['groups' => [], 'subgroup_count' => 0, 'stale' => true];
@@ -66,7 +100,7 @@ class OverlayController extends Controller
         $groups = array_map(fn ($g) => [
             'id'   => $g['id'],
             'name' => $g['name'] ?? '',
-            'rows' => $client->computeStandings($g),
+            'rows' => $data->computeStandings($g),
         ], $raw);
 
         return ['groups' => $groups, 'subgroup_count' => count($groups)];

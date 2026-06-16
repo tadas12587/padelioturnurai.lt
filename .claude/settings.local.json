@@ -29,7 +29,24 @@
       "PowerShell(php -l app\\\\Filament\\\\Pages\\\\SeoSettingsPage.php)",
       "PowerShell(php -l routes\\\\web.php)",
       "PowerShell(php -l lang\\\\lt\\\\messages.php)",
-      "PowerShell(php -l lang\\\\en\\\\messages.php)"
+      "PowerShell(php -l lang\\\\en\\\\messages.php)",
+      "Bash(git push *)",
+      "Bash(git checkout *)",
+      "Bash(git -C \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\" rev-parse HEAD)",
+      "Bash(git -C \"C:\\\\Users\\\\Tadas\\\\Desktop\\\\WEB-zinovai\" rev-parse HEAD~1)",
+      "Bash(php -l app/Filament/Resources/OverlayResource.php)",
+      "Bash(php -l app/Filament/Resources/OverlayResource/Pages/ListOverlays.php)",
+      "Bash(php -l app/Filament/Resources/OverlayResource/Pages/CreateOverlay.php)",
+      "Bash(php -l app/Filament/Resources/OverlayResource/Pages/EditOverlay.php)",
+      "Bash(git stash *)",
+      "Bash(php -l app/Filament/Pages/OverlayControlPage.php)",
+      "Bash(Select-String -Pattern \"overlay\" -SimpleMatch)",
+      "Bash(gh pr create --base master --head feature/broadcast-overlays --title 'feat: broadcast overlays \\(group standings + bracket\\) for OBS' --body ' *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(curl -s -X POST https://api.tournated.com/graphql -H \"Content-Type: application/json\" -H \"Origin: https://play.padel.lt\" -d \"{\\\\\"query\\\\\":\\\\\"{ tournament\\(id: 10424\\) { title tournamentCategory { id category { id name } mde } } }\\\\\"}\")",
+      "Bash(git merge *)",
+      "Bash(git branch *)"
     ]
   }
 }

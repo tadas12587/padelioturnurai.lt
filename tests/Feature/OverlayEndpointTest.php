@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Overlay;
-use App\Services\TournatedClient;
+use App\Models\OverlaySnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,11 +35,8 @@ class OverlayEndpointTest extends TestCase
             ->assertJson(['visible' => false]);
     }
 
-    public function test_data_endpoint_marks_stale_when_api_down_and_no_cache(): void
+    public function test_data_endpoint_marks_stale_when_no_snapshot(): void
     {
-        // Transport returns null = upstream unreachable.
-        $this->app->instance(TournatedClient::class, new TournatedClient(fn () => null));
-
         $overlay = Overlay::create([
             'name' => 'G', 'type' => 'group_standings',
             'tournament_external_id' => '10229',
@@ -51,14 +48,21 @@ class OverlayEndpointTest extends TestCase
             ->assertJson(['visible' => true, 'groups' => [], 'stale' => true]);
     }
 
-    public function test_data_endpoint_returns_groups_when_visible(): void
+    public function test_data_endpoint_returns_groups_from_snapshot(): void
     {
-        $this->app->instance(TournatedClient::class, new TournatedClient(fn () => json_encode([
-            'data' => ['groups' => [[
-                'id' => 5, 'name' => 'A', 'segment' => 'MD',
-                'entries' => [], 'matches' => [],
-            ]]],
-        ])));
+        OverlaySnapshot::create([
+            'tournament_external_id' => '10229',
+            'payload' => [
+                'title' => 'T',
+                'categories' => [],
+                'groups_by_category' => [
+                    '47817' => [[
+                        'id' => 5, 'name' => 'A', 'segment' => 'MD',
+                        'entries' => [], 'matches' => [],
+                    ]],
+                ],
+            ],
+        ]);
 
         $overlay = Overlay::create([
             'name' => 'G', 'type' => 'group_standings',

@@ -17,6 +17,12 @@ return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR
         $middleware->alias([
             'setlocale' => \App\Http\Middleware\SetLocale::class,
         ]);
+
+        // The snapshot ingest endpoint is an API-style POST from the external
+        // bridge (no session/CSRF token); it is protected by a secret token.
+        $middleware->validateCsrfTokens(except: [
+            'overlay/ingest',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

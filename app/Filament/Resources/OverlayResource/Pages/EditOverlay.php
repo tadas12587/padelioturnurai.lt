@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\OverlayResource\Pages;
 
 use App\Filament\Resources\OverlayResource;
-use App\Services\TournatedClient;
+use App\Services\OverlayData;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -27,7 +27,7 @@ class EditOverlay extends EditRecord
                 ->modalContent(function (): View {
                     $id = $this->data['tournament_external_id'] ?? $this->record->tournament_external_id;
 
-                    $info = $id ? app(TournatedClient::class)->tournament((int) $id) : [];
+                    $info = $id ? app(OverlayData::class)->tournament((string) $id) : [];
 
                     return view('filament.overlay-fetch-preview', [
                         'info' => $info,

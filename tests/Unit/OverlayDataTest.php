@@ -2,10 +2,10 @@
 
 namespace Tests\Unit;
 
-use App\Services\TournatedClient;
+use App\Services\OverlayData;
 use PHPUnit\Framework\TestCase;
 
-class TournatedClientTest extends TestCase
+class OverlayDataTest extends TestCase
 {
     public function test_compute_standings_counts_wins_and_pairs(): void
     {
@@ -27,7 +27,7 @@ class TournatedClientTest extends TestCase
             ],
         ];
 
-        $rows = (new TournatedClient)->computeStandings($group);
+        $rows = (new OverlayData)->computeStandings($group);
 
         $this->assertSame(1, $rows[0]['place']);
         $this->assertSame('Garetas Paplauskas / Oskaras Žiūkas', $rows[0]['name']);
