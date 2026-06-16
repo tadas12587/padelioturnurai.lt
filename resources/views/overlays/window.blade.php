@@ -95,6 +95,13 @@
     .spons.full .sp-item.show { transform: none; }
     .spons.full img { width: min(640px, 60vw); height: min(360px, 52vh); object-fit: contain; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
+
+    .bracket { align-items: flex-start; }
+    .round-title { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase;
+        letter-spacing: .08em; font-size: 12px; color: var(--ov-muted); margin-bottom: 6px; text-align: center; }
+    .round.third { margin-left: 8px; }
+    .round.third .round-title { color: var(--ov-accent); }
+    .round.third .match { border-color: var(--ov-accent); }
 @endsection
 
 @section('render_fn_body')
@@ -138,18 +145,20 @@
 
     // ── Bracket window ──────────────────────────────────────────
     if ((d.window_type || 'groups') === 'bracket') {
-        let html = headerHtml;
-        html += `<div class="bracket">`;
-        for (const round of (d.rounds || [])) {
-            html += `<div class="round">`;
-            for (const m of (round.matches || [])) {
-                html += `<div class="match">`;
-                for (const t of (m.teams || [])) {
-                    html += `<div class="team ${t.winner ? 'win' : ''}"><span>${t.name || 'TBD'}</span><span>${t.score ?? ''}</span></div>`;
-                }
-                html += `</div>`;
-            }
+        const b = d.bracket || { rounds: [], third: null };
+        const team = (name, score, win) =>
+            `<div class="team ${win ? 'win' : ''}"><span>${name || 'TBD'}</span><span>${score ?? ''}</span></div>`;
+        const matchBox = (m) =>
+            `<div class="match">${team(m.team1, m.score1, m.winner === 1)}${team(m.team2, m.score2, m.winner === 2)}</div>`;
+
+        let html = headerHtml + `<div class="bracket">`;
+        for (const round of b.rounds) {
+            html += `<div class="round"><div class="round-title">${round.title}</div>`;
+            for (const m of round.matches) html += matchBox(m);
             html += `</div>`;
+        }
+        if (b.third) {
+            html += `<div class="round third"><div class="round-title">Dėl 3 vietos</div>${matchBox(b.third)}</div>`;
         }
         html += `</div>`;
         stage.innerHTML = html;
