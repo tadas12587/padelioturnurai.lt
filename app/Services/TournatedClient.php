@@ -42,6 +42,25 @@ class TournatedClient
         });
     }
 
+    /**
+     * Fetch the raw tournament node (title + categories) for the admin preview.
+     * Short cache so a freshly-saved tournament id reflects quickly.
+     *
+     * @return array<string,mixed>
+     */
+    public function tournament(int $tournamentId): array
+    {
+        return Cache::remember("overlay.tournament.$tournamentId", 30, function () use ($tournamentId) {
+            $query = '{ tournament(id: ' . $tournamentId . ') {
+                title tournamentCategory { id category { id name } mde }
+            } }';
+
+            $data = $this->graphql($query);
+
+            return $data['tournament'] ?? [];
+        });
+    }
+
     /** @return array<string,mixed> */
     private function graphql(string $query): array
     {
