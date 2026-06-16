@@ -29,7 +29,8 @@
     thead th.col-place, thead th.col-name { text-align: left; }
     tbody td { padding: 9px 14px; font-size: 17px; text-align: right; color: var(--ov-text); font-variant-numeric: tabular-nums; }
     tbody td.col-place { width: 48px; text-align: left; }
-    tbody td.col-name { text-align: left; font-weight: 500; line-height: 1.15; padding-right: 10px; }
+    tbody td.col-name { text-align: left; font-weight: 500; line-height: 1.2; padding-right: 10px; }
+    tbody td.col-name .pl { display: block; }
     tbody tr + tr td { border-top: 1px solid rgba(127,127,127,.14); }
     tbody tr:nth-child(even) { background: rgba(127,127,127,.08); }
     tbody tr.leader { background: rgba(127,127,127,.12); box-shadow: inset 3px 0 0 var(--ov-accent); }
@@ -120,6 +121,9 @@
                 if (c === 'place') {
                     const m = medals[r.place] ? ' ' + medals[r.place] : '';
                     html += `<td class="col-place"><span class="rank${m}">${r.place ?? '–'}</span></td>`;
+                } else if (c === 'name') {
+                    const players = String(r.name || '').split(' / ');
+                    html += `<td class="col-name">${players.map(p => `<span class="pl">${p}</span>`).join('')}</td>`;
                 } else {
                     const v = (r[c] === null || r[c] === undefined) ? '–' : r[c];
                     html += `<td class="col-${c}">${v}</td>`;
