@@ -66,9 +66,11 @@ class TournatedClient
     {
         try {
             // Force IPv4 — the production shared host has no working IPv6 route,
-            // so Guzzle's default IPv6-first attempt hangs until timeout.
+            // so the default IPv6-first attempt hangs until timeout. Guzzle's
+            // `force_ip_resolve` is ignored on this host, so set the raw cURL
+            // option directly (verified working: CURLOPT_IPRESOLVE_V4).
             $res = Http::timeout(5)
-                ->withOptions(['force_ip_resolve' => 'v4'])
+                ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]])
                 ->withHeaders(['Origin' => self::ORIGIN])
                 ->post(self::ENDPOINT, ['query' => $query]);
 
