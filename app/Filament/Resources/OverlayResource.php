@@ -229,7 +229,8 @@ class OverlayResource extends Resource
                                     'by_court' => 'Pagal kortą',
                                     'by_time'  => 'Pagal laiką',
                                     'now'      => 'Dabar žaidžiama',
-                                    'next'     => 'Toliau',
+                                    'next'     => 'Toliau aikštelėje',
+                                    'results'  => 'Rezultatų juosta',
                                 ])
                                 ->default('by_court')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
