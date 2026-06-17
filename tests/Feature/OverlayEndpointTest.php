@@ -134,14 +134,18 @@ class OverlayEndpointTest extends TestCase
                 'brackets_by_category' => [
                     '53642' => [
                         'rounds' => [
-                            ['title' => 'Pusfinaliai', 'matches' => [
-                                ['team1' => 'A', 'team2' => 'B', 'sets1' => '6', 'sets2' => '2', 'winner' => 1],
-                            ]],
                             ['title' => 'Finalas', 'matches' => [
-                                ['team1' => 'A', 'team2' => 'C', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                                ['team1' => 'A', 'team2' => 'C', 'sets1' => '6', 'sets2' => '2', 'winner' => 1, 'court' => 'Kortas 2', 'time' => '10:00'],
                             ]],
                         ],
                         'third' => ['team1' => 'B', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
+                        'placements' => [
+                            ['title' => 'Dėl 7 vietos', 'rounds' => [
+                                ['title' => '', 'matches' => [
+                                    ['team1' => 'E', 'team2' => 'F', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                                ]],
+                            ]],
+                        ],
                     ],
                 ],
             ],
@@ -156,8 +160,9 @@ class OverlayEndpointTest extends TestCase
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
             ->assertJson(['visible' => true, 'window_type' => 'bracket'])
-            ->assertJsonPath('bracket.rounds.0.title', 'Pusfinaliai')
-            ->assertJsonPath('bracket.rounds.1.title', 'Finalas')
-            ->assertJsonPath('bracket.third.team1', 'B');
+            ->assertJsonPath('bracket.rounds.0.matches.0.court', 'Kortas 2')
+            ->assertJsonPath('bracket.rounds.0.matches.0.time', '10:00')
+            ->assertJsonPath('bracket.third.team1', 'B')
+            ->assertJsonPath('bracket.placements.0.title', 'Dėl 7 vietos');
     }
 }
