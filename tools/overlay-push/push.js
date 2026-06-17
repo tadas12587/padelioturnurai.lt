@@ -167,16 +167,31 @@ async function pushOnce(tournamentId) {
     const groups = groupsByCategory[String(cat.id)] || [];
     let draws = [];
     try { draws = await fetchDraws(cat.id); } catch (_) { draws = []; }
+
+    // Each draw is a selectable "segment" (e.g. the main tree, or a separate
+    // "dėl N vietos" draw). A category can have several.
+    const segments = [];
+    for (const draw of draws) {
+      const b = extractBracket(draw);
+      if (b && b.rounds.length) {
+        segments.push({
+          key: String(draw.id),
+          label: draw.title || '',
+          main_draw: !!draw.mainDraw,
+          rounds: b.rounds,
+          third: b.third,
+          placements: b.placements,
+        });
+      }
+    }
+
     categoryStages[String(cat.id)] = {
       has_groups: groups.length > 0,
-      has_bracket: draws.length > 0,
+      has_bracket: segments.length > 0,
       draw_type: draws[0]?.type ?? null,
       draw_size: draws[0]?.size ?? null,
     };
-    if (draws[0]) {
-      const b = extractBracket(draws[0]);
-      if (b && b.rounds.length) bracketsByCategory[String(cat.id)] = b;
-    }
+    if (segments.length) bracketsByCategory[String(cat.id)] = { segments };
   }
 
   const snapshot = {

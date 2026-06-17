@@ -100,6 +100,12 @@
     /* full-screen + auto-fit */
     .bracket-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
     .bracket-fit { transform-origin: center center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    /* multiple bracket segments (separate draws) side by side */
+    .segments-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 48px; }
+    .segment { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .segment-title { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
+        letter-spacing: .1em; font-size: 15px; color: var(--ov-accent); }
+    .segment-body { display: flex; flex-direction: column; align-items: center; gap: 18px; }
     /* court / time caption */
     .match .mt { padding: 2px 13px 7px; font-family: 'Oswald', sans-serif; font-size: 11px;
         letter-spacing: .05em; color: var(--ov-muted); }
@@ -183,7 +189,11 @@
 
     // ── Bracket window (tournament tree) ────────────────────────
     if ((d.window_type || 'groups') === 'bracket') {
-        const b = d.bracket || { rounds: [], third: null, placements: [] };
+        const b = d.bracket || { segments: [] };
+        // Accept the legacy single-bracket shape as one segment.
+        const segments = b.segments
+            || (b.rounds ? [{ label: '', rounds: b.rounds, third: b.third, placements: b.placements }] : []);
+
         const setCells = (sets) => (sets || '').trim().split(/\s+/).filter(Boolean)
             .map((g) => `<span class="g">${g}</span>`).join('');
         const team = (name, sets, win) =>
@@ -204,32 +214,47 @@
             return h + '</div>';
         };
 
-        // Main tree, with the 3rd-place match tucked under the final column (saves bottom space).
-        let mainHtml = '<div class="bracket">';
-        b.rounds.forEach((round, ri) => {
-            const last = ri === b.rounds.length - 1;
-            mainHtml += `<div class="round${last ? ' is-last' : ''}">`;
-            mainHtml += round.title ? `<div class="round-title">${round.title}</div>` : '';
-            mainHtml += '<div class="round-matches">';
-            for (const m of round.matches) mainHtml += `<div class="match-slot">${matchBox(m)}</div>`;
+        // One segment = main tree (3rd place tucked under the final) + placement row.
+        const segmentTree = (seg) => {
+            const rounds = seg.rounds || [];
+            let mainHtml = '<div class="bracket">';
+            rounds.forEach((round, ri) => {
+                const last = ri === rounds.length - 1;
+                mainHtml += `<div class="round${last ? ' is-last' : ''}">`;
+                mainHtml += round.title ? `<div class="round-title">${round.title}</div>` : '';
+                mainHtml += '<div class="round-matches">';
+                for (const m of round.matches) mainHtml += `<div class="match-slot">${matchBox(m)}</div>`;
+                mainHtml += '</div>';
+                if (last && seg.third) {
+                    mainHtml += `<div class="third-under"><div class="placement-title">Dėl 3 vietos</div>${matchBox(seg.third)}</div>`;
+                }
+                mainHtml += '</div>';
+            });
             mainHtml += '</div>';
-            if (last && b.third) {
-                mainHtml += `<div class="third-under"><div class="placement-title">Dėl 3 vietos</div>${matchBox(b.third)}</div>`;
-            }
-            mainHtml += '</div>';
-        });
-        mainHtml += '</div>';
 
-        let inner = headerHtml + mainHtml;
-
-        const blocks = (b.placements || []);
-        if (blocks.length) {
-            inner += '<div class="placements-row">';
-            for (const blk of blocks) {
-                inner += `<div class="placement"><div class="placement-title">${blk.title}</div>${treeHtml(blk.rounds)}</div>`;
+            let h = mainHtml;
+            const blocks = (seg.placements || []);
+            if (blocks.length) {
+                h += '<div class="placements-row">';
+                for (const blk of blocks) {
+                    h += `<div class="placement"><div class="placement-title">${blk.title}</div>${treeHtml(blk.rounds)}</div>`;
+                }
+                h += '</div>';
             }
-            inner += '</div>';
+            return h;
+        };
+
+        // Show a per-segment heading except for a single full main tree (stays clean).
+        const isFull = (seg) => (seg.rounds || []).length >= 2 || (seg.placements || []).length > 0;
+        const showTitles = segments.length > 1 || (segments.length === 1 && !isFull(segments[0]));
+
+        let inner = headerHtml + '<div class="segments-row">';
+        for (const seg of segments) {
+            inner += '<div class="segment">';
+            if (showTitles && seg.label) inner += `<div class="segment-title">${seg.label}</div>`;
+            inner += `<div class="segment-body">${segmentTree(seg)}</div></div>`;
         }
+        inner += '</div>';
 
         stage.innerHTML = `<div class="bracket-screen"><div class="bracket-fit">${inner}</div></div>`;
 

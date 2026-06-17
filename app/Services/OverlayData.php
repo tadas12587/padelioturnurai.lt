@@ -57,20 +57,58 @@ class OverlayData
     }
 
     /**
-     * The stored normalized bracket for a category, from the pushed snapshot.
+     * The stored bracket segments for a category (each a separate draw — the
+     * main tree, or a "dėl N vietos" draw). Normalises the older single-bracket
+     * snapshot shape into a one-segment list.
      *
-     * @return array{rounds:array<int,mixed>,third:?array<string,mixed>}
+     * @return list<array<string,mixed>>
      */
-    public function bracketForCategory(string $tournamentId, int $categoryId): array
+    public function bracketSegmentsForCategory(string $tournamentId, int $categoryId): array
     {
         $byCat = $this->payload($tournamentId)['brackets_by_category'] ?? [];
         $b = $byCat[(string) $categoryId] ?? null;
 
-        return [
-            'rounds'     => $b['rounds'] ?? [],
-            'third'      => $b['third'] ?? null,
-            'placements' => $b['placements'] ?? [],
-        ];
+        if (! is_array($b)) {
+            return [];
+        }
+
+        // New shape: { segments: [ {key,label,rounds,third,placements}, ... ] }
+        if (isset($b['segments']) && is_array($b['segments'])) {
+            return array_values($b['segments']);
+        }
+
+        // Legacy shape: a single { rounds, third, placements }.
+        if (isset($b['rounds'])) {
+            return [[
+                'key'        => 'main',
+                'label'      => 'Pagrindinis tinklelis',
+                'main_draw'  => true,
+                'rounds'     => $b['rounds'] ?? [],
+                'third'      => $b['third'] ?? null,
+                'placements' => $b['placements'] ?? [],
+            ]];
+        }
+
+        return [];
+    }
+
+    /**
+     * Bracket segments as a key => label map for the admin multi-select.
+     *
+     * @return array<string,string>
+     */
+    public function bracketSegments(string $tournamentId, int $categoryId): array
+    {
+        $out = [];
+        foreach ($this->bracketSegmentsForCategory($tournamentId, $categoryId) as $seg) {
+            $key = (string) ($seg['key'] ?? '');
+            if ($key === '') {
+                continue;
+            }
+            $out[$key] = $seg['label'] ?? $key;
+        }
+
+        return $out;
     }
 
     /** @return array<int,mixed> */
