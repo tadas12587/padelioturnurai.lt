@@ -198,6 +198,11 @@
 @endsection
 
 @section('render_fn_body')
+    // The results ticker lives on <body> (outside the positioned/transformed
+    // containers) so it can pin to the real screen bottom. Clear it each render;
+    // the results branch re-creates it.
+    { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
+
     if ((d.window_type || 'groups') === 'sponsors') {
         clearInterval(window.__spTimer);
         const items = d.items || [];
@@ -348,7 +353,11 @@
                 }
             }
             bar += '</div></div>';
-            stage.innerHTML = bar;
+            stage.innerHTML = '';
+            const host = document.createElement('div');
+            host.id = 'ov-ticker';
+            host.innerHTML = bar;
+            document.body.appendChild(host);
             return;
         }
 
