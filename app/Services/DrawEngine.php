@@ -214,6 +214,58 @@ class DrawEngine
         return ['id' => $id, 'pot' => null];
     }
 
+    public function place(array $config, array $state, $teamId, string $slot): array
+    {
+        if (! array_key_exists($slot, $state['slots'])) {
+            throw new \RuntimeException("Nėra tokios vietos: {$slot}.");
+        }
+        if ($state['slots'][$slot] !== null) {
+            throw new \RuntimeException('Vieta jau užimta.');
+        }
+        // Remove the team from any slot it currently occupies.
+        foreach ($state['slots'] as $k => $tid) {
+            if ($tid === $teamId) {
+                $state['slots'][$k] = null;
+            }
+        }
+        $state['slots'][$slot] = $teamId;
+        $state['current'] = ['team_id' => $teamId, 'slot' => (string) $slot];
+        $state['history'][] = ['team_id' => $teamId, 'slot' => (string) $slot];
+        $state['status'] = $this->poolEmpty($state) ? 'done' : 'idle';
+
+        return $state;
+    }
+
+    public function lock(array $config, array $state, $teamId, string $slot): array
+    {
+        return $this->place($config, $state, $teamId, $slot);
+    }
+
+    public function undo(array $config, array $state): array
+    {
+        if (empty($state['history'])) {
+            return $state;
+        }
+        $last = array_pop($state['history']);
+        $state['slots'][$last['slot']] = null;
+        $state['current'] = null;
+        $state['status'] = 'idle';
+
+        return $state;
+    }
+
+    public function reset(array $config, array $state): array
+    {
+        return $this->init($config, $state['teams']);
+    }
+
+    private function poolEmpty(array $state): bool
+    {
+        $placed = array_values(array_filter($state['slots'], fn ($t) => $t !== null));
+
+        return count($placed) >= count($state['teams']);
+    }
+
     /** @return array{0:array,1:string,2:int} [team, slotKey, nextActivePot] */
     private function pickBracket(array $config, array $state, array $remaining, callable $rng): array
     {
