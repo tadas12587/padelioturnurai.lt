@@ -67,7 +67,9 @@
     .round-title { position: absolute; top: 0; left: 0; right: 0; text-align: center;
         font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
         letter-spacing: .12em; font-size: 12px; color: var(--ov-muted); }
-    .round-matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; }
+    .round-matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 30px; }
+    .round.is-last { justify-content: center; }
+    .round.is-last .round-matches { flex: 0 0 auto; }
     .match-slot { position: relative; flex: 1; display: flex; align-items: center; }
     .match { position: relative; width: 232px; background: var(--ov-bg);
         border: 1px solid rgba(127,127,127,.28); border-left: 3px solid var(--ov-accent);
@@ -106,7 +108,7 @@
     .placement .match { width: 198px; }
     .placement .team { font-size: 13px; padding: 6px 11px; }
     /* 3rd place tucked under the final column */
-    .third-under { margin-top: 16px; display: flex; flex-direction: column; align-items: center; }
+    .third-under { margin-top: 10px; display: flex; flex-direction: column; align-items: center; }
     .third-under .match { width: 200px; }
     .third-under .team { font-size: 13px; padding: 6px 11px; }
 
