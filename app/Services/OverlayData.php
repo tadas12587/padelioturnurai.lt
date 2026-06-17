@@ -119,6 +119,19 @@ class OverlayData
         return $byCategory[(string) $categoryId] ?? [];
     }
 
+    /**
+     * Frozen-pool source: the teams of a category from the snapshot, used to
+     * seed a draw window's participant pool.
+     *
+     * @return array<int,mixed>
+     */
+    public function participants(string $tournamentId, int $categoryId): array
+    {
+        $byCat = $this->payload($tournamentId)['participants_by_category'] ?? [];
+
+        return $byCat[(string) $categoryId] ?? [];
+    }
+
     /** @return array<string,mixed> */
     public function categoryStages(string $tournamentId): array
     {

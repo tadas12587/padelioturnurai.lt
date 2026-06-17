@@ -140,6 +140,7 @@ class OverlayController extends Controller
             'category_stages'      => 'array',
             'brackets_by_category' => 'array',
             'matches'              => 'array',
+            'participants_by_category' => 'array',
         ]);
 
         OverlaySnapshot::updateOrCreate(
@@ -151,6 +152,7 @@ class OverlayController extends Controller
                 'category_stages'      => $validated['category_stages'] ?? [],
                 'brackets_by_category' => $validated['brackets_by_category'] ?? [],
                 'matches'              => $validated['matches'] ?? [],
+                'participants_by_category' => $validated['participants_by_category'] ?? [],
             ]],
         );
 

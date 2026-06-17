@@ -189,6 +189,22 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('groups.0.segment', 'Main');
     }
 
+    public function test_ingest_stores_participants_by_category(): void
+    {
+        config(['services.overlay.ingest_token' => 'secret']);
+
+        $this->postJson('/overlay/ingest', [
+            'tournament_id' => '10424',
+            'participants_by_category' => [
+                '53636' => [['id' => 1, 'name' => 'Garcia / Lopez', 'seed' => 1]],
+            ],
+        ], ['X-Overlay-Token' => 'secret'])->assertOk();
+
+        $teams = app(\App\Services\OverlayData::class)->participants('10424', 53636);
+        $this->assertSame('Garcia / Lopez', $teams[0]['name']);
+        $this->assertSame(1, $teams[0]['seed']);
+    }
+
     public function test_wanted_rejects_without_token(): void
     {
         config(['services.overlay.ingest_token' => 'secret']);
