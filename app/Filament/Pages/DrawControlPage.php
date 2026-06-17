@@ -7,6 +7,7 @@ use App\Services\DrawEngine;
 use App\Services\OverlayData;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Str;
 
 class DrawControlPage extends Page
 {
@@ -19,7 +20,8 @@ class DrawControlPage extends Page
     public ?int $overlayId = null;
     public ?string $windowId = null;
     public string $search = '';
-    public ?string $manualSlot = null;
+    public ?string $selectedSlot = null;
+    public string $newTeamName = '';
 
     public function selectedOverlay(): ?Overlay
     {
@@ -106,16 +108,103 @@ class DrawControlPage extends Page
         $this->run(fn (DrawEngine $e, $w, $s) => $e->drawNext($w, $s));
     }
 
-    public function placeManual(int $teamId): void
+    /** Click a board slot: free → open the picker; occupied → free it. */
+    public function selectSlot(string $slot): void
     {
-        if (! $this->manualSlot) {
-            Notification::make()->title('Pirma pasirink vietą.')->warning()->send();
+        $s = $this->drawState();
+        if (($s['slots'][$slot] ?? null) !== null) {
+            $this->removeFromSlot($slot);
 
             return;
         }
-        $slot = $this->manualSlot;
+        $this->selectedSlot = $slot;
+        $this->search = '';
+    }
+
+    public function cancelSelect(): void
+    {
+        $this->selectedSlot = null;
+        $this->search = '';
+    }
+
+    /** Place a team (id) or a BYE into the currently selected slot. */
+    public function placeTeam(string $teamId): void
+    {
+        if (! $this->selectedSlot) {
+            Notification::make()->title('Pirma spustelėk laisvą vietą lentoje.')->warning()->send();
+
+            return;
+        }
+        $slot = $this->selectedSlot;
         $this->run(fn (DrawEngine $e, $w, $s) => $e->place($w, $s, $teamId, $slot));
-        $this->manualSlot = null;
+        $this->selectedSlot = null;
+        $this->search = '';
+    }
+
+    public function placeBye(): void
+    {
+        $this->placeTeam(DrawEngine::BYE);
+    }
+
+    /** Free a single slot (return its team to the pool). */
+    public function removeFromSlot(string $slot): void
+    {
+        $window = $this->currentWindow();
+        if (! $window) {
+            return;
+        }
+        $state = $this->drawState();
+        if (! array_key_exists($slot, $state['slots'] ?? [])) {
+            return;
+        }
+        $state['slots'][$slot] = null;
+        $state['current'] = null;
+        $state['status'] = 'idle';
+        $this->saveDrawState($state);
+    }
+
+    // ── Editable player pool ────────────────────────────────────
+    public function addTeam(): void
+    {
+        $name = trim($this->newTeamName);
+        if ($name === '') {
+            return;
+        }
+        $state = $this->drawState();
+        $state['teams'][] = ['id' => 'm' . Str::random(6), 'name' => $name, 'seed' => null, 'pot' => null];
+        $this->saveDrawState($state);
+        $this->newTeamName = '';
+    }
+
+    public function renameTeam(string $id, string $name): void
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return;
+        }
+        $state = $this->drawState();
+        foreach ($state['teams'] as &$t) {
+            if ((string) $t['id'] === $id) {
+                $t['name'] = $name;
+            }
+        }
+        unset($t);
+        $this->saveDrawState($state);
+    }
+
+    public function removeTeam(string $id): void
+    {
+        $state = $this->drawState();
+        $state['teams'] = array_values(array_filter(
+            $state['teams'] ?? [],
+            fn ($t) => (string) $t['id'] !== $id,
+        ));
+        foreach ($state['slots'] ?? [] as $k => $tid) {
+            if ((string) $tid === $id) {
+                $state['slots'][$k] = null;
+            }
+        }
+        $this->saveDrawState($state);
     }
 
     public function undo(): void
@@ -162,19 +251,28 @@ class DrawControlPage extends Page
         return array_values($teams);
     }
 
-    /** Empty slot keys for the manual-place picker. @return list<string> */
-    public function emptySlots(): array
+    /** All teams in the pool (for the editable list). @return list<array<string,mixed>> */
+    public function allTeams(): array
     {
-        $s = $this->drawState();
-
-        return array_values(array_keys(array_filter($s['slots'] ?? [], fn ($t) => $t === null)));
+        return array_values($this->drawState()['teams'] ?? []);
     }
 
-    /** Team name for a placed slot value (for the mini board preview). */
+    /** The board layout (groups or bracket pairs) for the clickable preview. */
+    public function layout(): array
+    {
+        $window = $this->currentWindow();
+
+        return $window ? app(DrawEngine::class)->layout($window) : [];
+    }
+
+    /** Team name for a placed slot value (for the board preview). */
     public function teamName($id): string
     {
+        if ($id === DrawEngine::BYE) {
+            return 'BYE';
+        }
         foreach ($this->drawState()['teams'] ?? [] as $t) {
-            if (($t['id'] ?? null) === $id) {
+            if ((string) ($t['id'] ?? '') === (string) $id) {
                 return $t['name'] ?? ('#' . $id);
             }
         }

@@ -61,47 +61,93 @@
                     </div>
                 </div>
 
+                @php $layout = $this->layout(); $slots = $s['slots'] ?? []; @endphp
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {{-- Manual placement --}}
+                    {{-- Editable player pool --}}
                     <div class="space-y-3">
-                        <div class="text-sm font-medium">Įdėti rankiniu būdu</div>
-                        <select wire:model.live="manualSlot"
-                                class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
-                            <option value="">— Pasirink tuščią vietą —</option>
-                            @foreach($this->emptySlots() as $slot)
-                                <option value="{{ $slot }}">{{ $slot }}</option>
-                            @endforeach
-                        </select>
-                        <input type="text" wire:model.live="search" placeholder="Ieškoti komandos…"
-                               class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
-                        <div class="max-h-72 overflow-y-auto space-y-1">
-                            @forelse($this->remainingTeams() as $t)
-                                <button type="button" wire:click="placeManual({{ $t['id'] }})"
-                                        class="w-full text-left px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-500/10">
-                                    {{ $t['name'] }}
-                                    @if(!empty($t['seed'])) <span class="text-xs text-gray-400">(sėkla {{ $t['seed'] }})</span>
-                                    @elseif(!empty($t['pot'])) <span class="text-xs text-gray-400">(krepšelis {{ $t['pot'] }})</span>
-                                    @endif
-                                </button>
+                        <div class="text-sm font-medium">Galimi žaidėjai ({{ count($this->allTeams()) }})</div>
+                        <div class="flex gap-2">
+                            <input type="text" wire:model="newTeamName" wire:keydown.enter="addTeam"
+                                   placeholder="Pridėti komandą (Vardas / Vardas)"
+                                   class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
+                            <x-filament::button wire:click="addTeam" color="gray" icon="heroicon-o-plus">Pridėti</x-filament::button>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto space-y-1">
+                            @forelse($this->allTeams() as $t)
+                                @php $tid = (string) $t['id']; $isPlaced = in_array($t['id'], array_values($slots)); @endphp
+                                <div class="flex items-center gap-2 px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    <input type="text" value="{{ $t['name'] }}"
+                                           wire:change="renameTeam('{{ $tid }}', $event.target.value)"
+                                           class="flex-1 bg-transparent border-0 text-sm focus:ring-0 p-1">
+                                    @if($isPlaced)<span class="text-xs text-primary-500">●</span>@endif
+                                    <button type="button" wire:click="removeTeam('{{ $tid }}')"
+                                            class="text-gray-400 hover:text-danger-500" title="Pašalinti">
+                                        @svg('heroicon-o-trash', 'w-4 h-4')
+                                    </button>
+                                </div>
                             @empty
-                                <div class="text-sm text-gray-500">Nėra likusių komandų.</div>
+                                <div class="text-sm text-gray-500">Nėra žaidėjų. Užkrauk iš Tournated arba pridėk ranka.</div>
                             @endforelse
                         </div>
                     </div>
 
-                    {{-- Mini board preview --}}
+                    {{-- Clickable board --}}
                     <div class="space-y-2">
-                        <div class="text-sm font-medium">Lentos peržiūra</div>
-                        <div class="grid grid-cols-2 gap-2">
-                            @foreach(($s['slots'] ?? []) as $key => $tid)
-                                <div class="flex justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-sm">
-                                    <span class="text-gray-400">{{ $key }}</span>
-                                    <span class="font-medium">{{ $tid ? $this->teamName($tid) : '—' }}</span>
-                                </div>
-                            @endforeach
-                        </div>
+                        <div class="text-sm font-medium">Lenta — spustelėk vietą</div>
+
+                        @if($layout['format'] === 'bracket')
+                            <div class="space-y-2">
+                                @foreach($layout['pairs'] as $pair)
+                                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y dark:divide-gray-700">
+                                        @foreach($pair as $key)
+                                            @include('filament.pages.partials.draw-slot', ['key' => $key, 'slots' => $slots])
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="grid grid-cols-2 gap-2">
+                                @foreach($layout['groups'] as $g)
+                                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                        <div class="px-3 py-1 text-xs font-semibold bg-gray-50 dark:bg-gray-800">Grupė {{ $g['label'] }}</div>
+                                        @foreach($g['slots'] as $key)
+                                            @include('filament.pages.partials.draw-slot', ['key' => $key, 'slots' => $slots])
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
+
+                {{-- Slot picker: opens when a free slot is clicked --}}
+                @if($this->selectedSlot)
+                    <div class="p-4 rounded-lg border-2 border-primary-500 bg-primary-50/50 dark:bg-primary-500/10 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <div class="text-sm font-medium">Į vietą <span class="text-primary-600">{{ $this->selectedSlot }}</span> įdėti:</div>
+                            <button type="button" wire:click="cancelSelect" class="text-gray-400 hover:text-gray-600">
+                                @svg('heroicon-o-x-mark', 'w-5 h-5')
+                            </button>
+                        </div>
+                        <input type="text" wire:model.live="search" placeholder="Ieškoti komandos…" autofocus
+                               class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
+                        <div class="flex flex-wrap gap-2 max-h-72 overflow-y-auto">
+                            <button type="button" wire:click="placeBye"
+                                    class="px-3 py-2 rounded-lg border border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-medium">
+                                BYE
+                            </button>
+                            @forelse($this->remainingTeams() as $t)
+                                <button type="button" wire:click="placeTeam('{{ (string) $t['id'] }}')"
+                                        class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-500/10 text-sm">
+                                    {{ $t['name'] }}
+                                </button>
+                            @empty
+                                <div class="text-sm text-gray-500">Nėra likusių komandų (gali įdėti BYE).</div>
+                            @endforelse
+                        </div>
+                    </div>
+                @endif
             @endif
         @endif
     </div>

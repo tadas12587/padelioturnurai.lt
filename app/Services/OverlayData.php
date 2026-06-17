@@ -223,7 +223,7 @@ class OverlayData
         $teams = collect($drawState['teams'] ?? [])->keyBy('id');
 
         $nameOf = fn ($id) => $id === null ? null
-            : ['id' => $id, 'name' => $teams[$id]['name'] ?? ('#' . $id)];
+            : ['id' => $id, 'name' => $id === \App\Services\DrawEngine::BYE ? 'BYE' : ($teams[$id]['name'] ?? ('#' . $id))];
 
         $slots = [];
         foreach (($drawState['slots'] ?? []) as $key => $tid) {
