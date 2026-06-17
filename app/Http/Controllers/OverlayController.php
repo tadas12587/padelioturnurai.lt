@@ -79,6 +79,12 @@ class OverlayController extends Controller
             }
 
             $payload['bracket'] = ['segments' => $segments];
+        } elseif ($type === 'draw') {
+            $drawState = $state['draws'][$activeId] ?? [];
+            if (empty($drawState)) {
+                $drawState = app(\App\Services\DrawEngine::class)->init($window, []);
+            }
+            $payload['draw'] = $data->resolveDraw($window, $drawState);
         } elseif ($type === 'sponsors') {
             $payload['variant']        = $window['variant'] ?? 'corner';
             $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
@@ -140,6 +146,7 @@ class OverlayController extends Controller
             'category_stages'      => 'array',
             'brackets_by_category' => 'array',
             'matches'              => 'array',
+            'participants_by_category' => 'array',
         ]);
 
         OverlaySnapshot::updateOrCreate(
@@ -151,6 +158,7 @@ class OverlayController extends Controller
                 'category_stages'      => $validated['category_stages'] ?? [],
                 'brackets_by_category' => $validated['brackets_by_category'] ?? [],
                 'matches'              => $validated['matches'] ?? [],
+                'participants_by_category' => $validated['participants_by_category'] ?? [],
             ]],
         );
 
