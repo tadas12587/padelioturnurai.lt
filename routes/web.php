@@ -16,6 +16,10 @@ Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 
 // Sitemap for search engines
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
+// Which tournaments the push bridge should fetch (token-protected). Must be
+// declared before the /overlay/{overlay} wildcard so it isn't treated as a token.
+Route::get('/overlay/wanted', [OverlayController::class, 'wanted'])->name('overlay.wanted');
+
 // Broadcast overlays (public, polled by OBS browser sources)
 Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
 Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');
