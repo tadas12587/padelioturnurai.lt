@@ -47,4 +47,30 @@ class DrawEngineTest extends TestCase
         $this->assertSame(1, $state['active_pot']);
         $this->assertSame('idle', $state['status']);
     }
+
+    public function test_bracket_seed_order_recursive_doubling(): void
+    {
+        $this->assertSame([1, 2], $this->e->bracketSeedOrder(2));
+        $this->assertSame([1, 4, 2, 3], $this->e->bracketSeedOrder(4));
+        $this->assertSame([1, 8, 4, 5, 2, 7, 3, 6], $this->e->bracketSeedOrder(8));
+    }
+
+    public function test_bracket_pot_of_seed_bands(): void
+    {
+        $this->assertSame(1, $this->e->bracketPotOfSeed(1));
+        $this->assertSame(1, $this->e->bracketPotOfSeed(2));
+        $this->assertSame(2, $this->e->bracketPotOfSeed(3));
+        $this->assertSame(2, $this->e->bracketPotOfSeed(4));
+        $this->assertSame(3, $this->e->bracketPotOfSeed(5));
+        $this->assertSame(3, $this->e->bracketPotOfSeed(8));
+        $this->assertSame(4, $this->e->bracketPotOfSeed(9));
+    }
+
+    public function test_bracket_slot_for_seed_maps_to_physical_position(): void
+    {
+        // n=8 order [1,8,4,5,2,7,3,6]: seed 1 → slot "1", seed 2 → slot "5".
+        $this->assertSame('1', $this->e->bracketSlotForSeed(8, 1));
+        $this->assertSame('5', $this->e->bracketSlotForSeed(8, 2));
+        $this->assertSame('7', $this->e->bracketSlotForSeed(8, 3));
+    }
 }

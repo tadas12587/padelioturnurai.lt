@@ -74,4 +74,34 @@ class DrawEngine
             'status' => 'idle',
         ];
     }
+
+    /** @return list<int> seed number at each physical slot (0-based index) */
+    public function bracketSeedOrder(int $n): array
+    {
+        $order = [1, 2];
+        while (count($order) < $n) {
+            $sum = count($order) * 2 + 1;
+            $next = [];
+            foreach ($order as $s) {
+                $next[] = $s;
+                $next[] = $sum - $s;
+            }
+            $order = $next;
+        }
+
+        return $order;
+    }
+
+    public function bracketPotOfSeed(int $seed): int
+    {
+        return max(1, (int) ceil(log($seed, 2)));
+    }
+
+    /** Physical slot key ("1".."N") that a given seed occupies. */
+    public function bracketSlotForSeed(int $n, int $seed): string
+    {
+        $idx = array_search($seed, $this->bracketSeedOrder($n), true);
+
+        return (string) ($idx + 1);
+    }
 }
