@@ -121,30 +121,33 @@
                     </div>
                 </div>
 
-                {{-- Slot picker: opens when a free slot is clicked --}}
+                {{-- Slot picker popup: opens when a free slot is clicked --}}
                 @if($this->selectedSlot)
-                    <div class="p-4 rounded-lg border-2 border-primary-500 bg-primary-50/50 dark:bg-primary-500/10 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm font-medium">Į vietą <span class="text-primary-600">{{ $this->selectedSlot }}</span> įdėti:</div>
-                            <button type="button" wire:click="cancelSelect" class="text-gray-400 hover:text-gray-600">
-                                @svg('heroicon-o-x-mark', 'w-5 h-5')
-                            </button>
-                        </div>
-                        <input type="text" wire:model.live="search" placeholder="Ieškoti komandos…" autofocus
-                               class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
-                        <div class="flex flex-wrap gap-2 max-h-72 overflow-y-auto">
-                            <button type="button" wire:click="placeBye"
-                                    class="px-3 py-2 rounded-lg border border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-medium">
-                                BYE
-                            </button>
-                            @forelse($this->remainingTeams() as $t)
-                                <button type="button" wire:click="placeTeam('{{ (string) $t['id'] }}')"
-                                        class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-500/10 text-sm">
-                                    {{ $t['name'] }}
+                    <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/50 p-4"
+                         wire:click.self="cancelSelect" wire:key="picker-{{ $this->selectedSlot }}">
+                        <div class="w-full max-w-xl rounded-xl bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-gray-200 dark:ring-gray-700 p-5 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="text-base font-semibold">Į vietą <span class="text-primary-600">{{ $this->selectedSlot }}</span> įdėti:</div>
+                                <button type="button" wire:click="cancelSelect" class="text-gray-400 hover:text-gray-600">
+                                    @svg('heroicon-o-x-mark', 'w-6 h-6')
                                 </button>
-                            @empty
-                                <div class="text-sm text-gray-500">Nėra likusių komandų (gali įdėti BYE).</div>
-                            @endforelse
+                            </div>
+                            <input type="text" wire:model.live="search" placeholder="Ieškoti komandos…" autofocus
+                                   class="block w-full rounded-lg border-gray-300 dark:bg-gray-800 dark:border-gray-600">
+                            <div class="flex flex-wrap gap-2 max-h-[60vh] overflow-y-auto">
+                                <button type="button" wire:click="placeBye"
+                                        class="px-3 py-2 rounded-lg border border-amber-400 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-medium">
+                                    BYE
+                                </button>
+                                @forelse($this->remainingTeams() as $t)
+                                    <button type="button" wire:click="placeTeam('{{ (string) $t['id'] }}')"
+                                            class="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-500/10 text-sm">
+                                        {{ $t['name'] }}
+                                    </button>
+                                @empty
+                                    <div class="text-sm text-gray-500">Nėra likusių komandų (gali įdėti BYE).</div>
+                                @endforelse
+                            </div>
                         </div>
                     </div>
                 @endif
