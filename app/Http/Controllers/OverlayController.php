@@ -85,6 +85,14 @@ class OverlayController extends Controller
                 $drawState = app(\App\Services\DrawEngine::class)->init($window, []);
             }
             $payload['draw'] = $data->resolveDraw($window, $drawState);
+            // Which category/group is being drawn (always shown on the board).
+            $catName = null;
+            foreach ($data->categories((string) $overlay->tournament_external_id) as $c) {
+                if ((string) ($c['id'] ?? '') === (string) ($window['category_id'] ?? '')) {
+                    $catName = $c['category']['name'] ?? null;
+                }
+            }
+            $payload['draw']['category'] = $catName;
         } elseif ($type === 'sponsors') {
             $payload['variant']        = $window['variant'] ?? 'corner';
             $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
