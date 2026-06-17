@@ -126,6 +126,69 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('items.0.name', 'A');
     }
 
+    public function test_groups_window_filters_by_segment_and_labels_it(): void
+    {
+        $mk = fn (int $id, string $name, ?string $seg) => [
+            'id' => $id, 'name' => $name, 'segment' => $seg, 'entries' => [], 'matches' => [],
+        ];
+
+        OverlaySnapshot::create([
+            'tournament_external_id' => '10229',
+            'payload' => [
+                'groups_by_category' => [
+                    '47817' => [
+                        $mk(1, 'A', null),    // main draw (empty segment)
+                        $mk(2, 'B', '5-8'),
+                        $mk(3, 'C', '9-16'),
+                    ],
+                ],
+            ],
+        ]);
+
+        $overlay = Overlay::create([
+            'name' => 'G', 'type' => 'group_standings',
+            'tournament_external_id' => '10229',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'groups', 'name' => 'W1',
+                'subgroups' => [['category_id' => 47817, 'segments' => ['5-8', '9-16'], 'group_id' => null]],
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $res = $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson(['visible' => true, 'subgroup_count' => 2]);
+
+        $this->assertSame(['B', 'C'], collect($res->json('groups'))->pluck('name')->all());
+        $this->assertSame(['5-8', '9-16'], collect($res->json('groups'))->pluck('segment')->all());
+    }
+
+    public function test_groups_window_labels_main_when_segment_empty(): void
+    {
+        OverlaySnapshot::create([
+            'tournament_external_id' => '10229',
+            'payload' => [
+                'groups_by_category' => [
+                    '47817' => [['id' => 1, 'name' => 'A', 'segment' => null, 'entries' => [], 'matches' => []]],
+                ],
+            ],
+        ]);
+
+        $overlay = Overlay::create([
+            'name' => 'G', 'type' => 'group_standings',
+            'tournament_external_id' => '10229',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'groups', 'name' => 'W1',
+                'subgroups' => [['category_id' => 47817, 'segments' => [], 'group_id' => null]],
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('groups.0.segment', 'Main');
+    }
+
     public function test_wanted_rejects_without_token(): void
     {
         config(['services.overlay.ingest_token' => 'secret']);

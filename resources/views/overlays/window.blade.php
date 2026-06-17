@@ -22,6 +22,10 @@
         box-shadow: 0 0 12px var(--ov-accent); transform: rotate(45deg); }
     .card-head .gname { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
         letter-spacing: .1em; font-size: 15px; color: var(--ov-accent); }
+    .card-head .gseg { margin-left: auto; font-family: 'Oswald', sans-serif; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--ov-muted);
+        padding: 2px 8px; border: 1px solid rgba(127,127,127,.35); border-radius: 999px; }
+    .wrap.dense .card-head .gseg { font-size: 10px; padding: 1px 6px; }
 
     /* ── Standings table ─────────────────────────────────────── */
     table { width: 100%; border-collapse: collapse; }
@@ -254,7 +258,7 @@
     let html = headerHtml;
     html += `<div class="wrap${n >= 5 ? ' dense' : ''}">`;
     for (const g of (d.groups || [])) {
-        html += `<div class="card"><div class="card-head"><span class="gname">${g.name || ''}</span></div>`;
+        html += `<div class="card"><div class="card-head"><span class="gname">${g.name || ''}</span>${g.segment ? `<span class="gseg">${g.segment}</span>` : ''}</div>`;
         html += `<table><thead><tr>`;
         for (const c of cs) html += `<th class="col-${c}">${colLabels[c] || c}</th>`;
         html += `</tr></thead><tbody>`;
