@@ -242,7 +242,17 @@ class OverlayData
                     $matches,
                     fn ($m) => ! empty($m['score']) && empty($m['in_progress']),
                 ));
-                usort($items, fn ($a, $b) => strcmp((string) ($b['finished_at'] ?? ''), (string) ($a['finished_at'] ?? '')));
+                // Sort by the actual finish time when known, else fall back to
+                // the scheduled date+time. Newest first.
+                $finishKey = function ($m) {
+                    if (! empty($m['finished_at'])) {
+                        return (string) $m['finished_at'];
+                    }
+                    $date = $m['date'] ?? '';
+
+                    return $date !== '' ? $date . 'T' . ($m['time'] ?? '') : '';
+                };
+                usort($items, fn ($a, $b) => strcmp($finishKey($b), $finishKey($a)));
             }
 
             $limit = (int) ($window['limit'] ?? 0);
