@@ -126,6 +126,30 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('items.0.name', 'A');
     }
 
+    public function test_wanted_rejects_without_token(): void
+    {
+        config(['services.overlay.ingest_token' => 'secret']);
+
+        $this->getJson('/overlay/wanted')->assertStatus(403);
+        $this->getJson('/overlay/wanted', ['X-Overlay-Token' => 'wrong'])->assertStatus(403);
+    }
+
+    public function test_wanted_returns_distinct_tournament_ids(): void
+    {
+        config(['services.overlay.ingest_token' => 'secret']);
+
+        Overlay::create(['name' => 'A', 'type' => 'group_standings', 'tournament_external_id' => '10424']);
+        Overlay::create(['name' => 'B', 'type' => 'group_standings', 'tournament_external_id' => '10424']);
+        Overlay::create(['name' => 'C', 'type' => 'group_standings', 'tournament_external_id' => '99999']);
+        Overlay::create(['name' => 'D', 'type' => 'group_standings', 'tournament_external_id' => null]);
+
+        $res = $this->getJson('/overlay/wanted', ['X-Overlay-Token' => 'secret'])->assertOk();
+
+        $ids = $res->json('tournament_ids');
+        sort($ids);
+        $this->assertSame(['10424', '99999'], $ids);
+    }
+
     public function test_bracket_window_returns_category_draw_from_snapshot(): void
     {
         \App\Models\OverlaySnapshot::create([

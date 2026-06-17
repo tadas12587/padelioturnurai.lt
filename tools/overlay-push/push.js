@@ -5,17 +5,23 @@
 //  Kas POLL_INTERVAL_MS nuskaito Tournated turnyro duomenis ir
 //  nusiunčia juos į tavo svetainę (POST /overlay/ingest).
 //
+//  Kuriuos turnyrus siųsti, skriptas sužino iš serverio (pagal
+//  overlay'us admin'e) — pakeitus turnyrą admin'e, nieko keisti/
+//  perpaleisti nereikia.
+//
 //  Reikia: Node.js 18+ (turi įmontuotą fetch).
 //  Paleidimas:
 //      node push.js
-//  arba su aplinkos kintamaisiais:
+//  arba su aplinkos kintamaisiais (TOURNAMENT_ID — tik atsarginis):
 //      TOURNAMENT_ID=10424 INGEST_TOKEN=xxxx node push.js
 // ============================================================
 
 // ── Nustatymai (gali keisti čia arba per aplinkos kintamuosius) ──
 const SITE_URL       = process.env.SITE_URL       || 'https://padelioturnyrai.lt';
 const INGEST_TOKEN   = process.env.INGEST_TOKEN   || 'ugx490pqlkt3nycwmdojfeb5ahi6r2sz817v';   // turi sutapti su .env OVERLAY_INGEST_TOKEN
-const TOURNAMENT_ID  = process.env.TOURNAMENT_ID  || '10424';                  // Tournated turnyro ID
+// Turnyrų ID sąrašą imame iš serverio (kuriuos naudoja overlay'ai admin'e).
+// TOURNAMENT_ID — neprivalomas atsarginis variantas, jei serveris nepasiekiamas.
+const TOURNAMENT_ID  = process.env.TOURNAMENT_ID  || '';
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 20000);        // kas kiek siųsti (ms)
 
 const GRAPHQL_URL = 'https://api.tournated.com/graphql';
@@ -128,10 +134,20 @@ function extractBracket(draw) {
   return { rounds: outRounds, third, placements };
 }
 
+// ── Kurių turnyrų reikia (iš serverio overlay'ų) ────────────
+async function fetchWantedTournaments() {
+  const res = await fetch(`${SITE_URL}/overlay/wanted`, {
+    headers: { 'X-Overlay-Token': INGEST_TOKEN },
+  });
+  if (!res.ok) throw new Error(`Serveris atsakė ${res.status}`);
+  const json = await res.json();
+  return Array.isArray(json.tournament_ids) ? json.tournament_ids.map(String) : [];
+}
+
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
-async function pushOnce() {
-  const tournament = await fetchTournament(TOURNAMENT_ID);
-  if (!tournament) throw new Error(`Turnyras ${TOURNAMENT_ID} nerastas`);
+async function pushOnce(tournamentId) {
+  const tournament = await fetchTournament(tournamentId);
+  if (!tournament) throw new Error(`Turnyras ${tournamentId} nerastas`);
 
   const categories = tournament.tournamentCategory || [];
   const groupsByCategory = {};
@@ -164,7 +180,7 @@ async function pushOnce() {
   }
 
   const snapshot = {
-    tournament_id: TOURNAMENT_ID,
+    tournament_id: tournamentId,
     title: tournament.title || null,
     categories,
     groups_by_category: groupsByCategory,
@@ -194,7 +210,7 @@ async function pushOnce() {
 // ── Pagrindinis ciklas ──────────────────────────────────────
 async function loop() {
   console.log(`🏓 Overlay push paleistas`);
-  console.log(`   Turnyras: ${TOURNAMENT_ID}`);
+  console.log(`   Turnyrai: iš admin (auto)${TOURNAMENT_ID ? ` arba ${TOURNAMENT_ID}` : ''}`);
   console.log(`   Svetainė: ${SITE_URL}`);
   console.log(`   Intervalas: ${POLL_INTERVAL_MS / 1000}s\n`);
 
@@ -205,7 +221,26 @@ async function loop() {
 
   for (;;) {
     try {
-      await pushOnce();
+      let ids = [];
+      try {
+        ids = await fetchWantedTournaments();
+      } catch (e) {
+        console.error(`⚠️  Nepavyko gauti turnyrų sąrašo iš serverio: ${e.message}`);
+      }
+      // Atsarginis variantas, jei serveris negrąžino nieko.
+      if (!ids.length && TOURNAMENT_ID) ids = [TOURNAMENT_ID];
+
+      if (!ids.length) {
+        console.error('⚠️  Nėra nei vieno turnyro (admin\'e nepriskirtas turnyro ID).');
+      }
+
+      for (const id of ids) {
+        try {
+          await pushOnce(id);
+        } catch (e) {
+          console.error(`❌ Turnyras ${id}: ${e.message}`);
+        }
+      }
     } catch (e) {
       console.error(`❌ Klaida: ${e.message}`);
     }
