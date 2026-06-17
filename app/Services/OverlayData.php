@@ -88,6 +88,32 @@ class OverlayData
     }
 
     /**
+     * Distinct group segments (Main, 5-8, 9-16, …) of a category, as a
+     * value => label map for the admin multi-select. The raw segment string is
+     * the value; empty/null is treated as the main draw.
+     *
+     * @return array<string,string>
+     */
+    public function segments(string $tournamentId, int $categoryId): array
+    {
+        $out = [];
+        foreach ($this->groups($tournamentId, $categoryId) as $g) {
+            $key = (string) ($g['segment'] ?? '');
+            $out[$key] = $this->segmentLabel($g['segment'] ?? null);
+        }
+
+        return $out;
+    }
+
+    /** Human label for a raw segment value (empty/null → main draw). */
+    private function segmentLabel(mixed $raw): string
+    {
+        $s = trim((string) ($raw ?? ''));
+
+        return $s === '' ? 'Main' : $s;
+    }
+
+    /**
      * Resolve a groups-window's selected subgroups from the snapshot.
      *
      * @param  array<string,mixed>  $window
@@ -105,6 +131,15 @@ class OverlayData
 
             $raw = $this->groups($tournamentId, (int) $catId);
 
+            $segments = $sel['segments'] ?? [];
+            if (! empty($segments)) {
+                $segments = array_map('strval', $segments);
+                $raw = array_values(array_filter(
+                    $raw,
+                    fn ($g) => in_array((string) ($g['segment'] ?? ''), $segments, true),
+                ));
+            }
+
             $groupId = $sel['group_id'] ?? null;
             if ($groupId) {
                 $raw = array_values(array_filter($raw, fn ($g) => $g['id'] == $groupId));
@@ -112,9 +147,10 @@ class OverlayData
 
             foreach ($raw as $g) {
                 $groups[] = [
-                    'id'   => $g['id'],
-                    'name' => $g['name'] ?? '',
-                    'rows' => $this->computeStandings($g),
+                    'id'      => $g['id'],
+                    'name'    => $g['name'] ?? '',
+                    'segment' => $this->segmentLabel($g['segment'] ?? null),
+                    'rows'    => $this->computeStandings($g),
                 ];
             }
         }

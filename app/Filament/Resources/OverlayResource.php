@@ -150,6 +150,21 @@ class OverlayResource extends Resource
                                             return $out;
                                         }),
 
+                                    Select::make('segments')
+                                        ->label('Segmentai')
+                                        ->helperText('Pvz. Main, 5-8, 9-16. Gali pažymėti kelis. Tuščia = visi.')
+                                        ->multiple()
+                                        ->live()
+                                        ->placeholder('Visi segmentai')
+                                        ->options(function ($livewire, Forms\Get $get) {
+                                            $tid = data_get($livewire, 'data.tournament_external_id');
+                                            $cid = $get('category_id');
+                                            if (! $tid || ! $cid) {
+                                                return [];
+                                            }
+                                            return app(OverlayData::class)->segments((string) $tid, (int) $cid);
+                                        }),
+
                                     Select::make('group_id')
                                         ->label('Pogrupis')
                                         ->placeholder('Visi pogrupiai')
@@ -159,8 +174,12 @@ class OverlayResource extends Resource
                                             if (! $tid || ! $cid) {
                                                 return ['' => 'Visi pogrupiai'];
                                             }
+                                            $segs = array_map('strval', $get('segments') ?? []);
                                             $out = ['' => 'Visi pogrupiai'];
                                             foreach (app(OverlayData::class)->groups((string) $tid, (int) $cid) as $g) {
+                                                if ($segs && ! in_array((string) ($g['segment'] ?? ''), $segs, true)) {
+                                                    continue;
+                                                }
                                                 $out[$g['id']] = $g['name'] ?? ('#' . $g['id']);
                                             }
                                             return $out;
