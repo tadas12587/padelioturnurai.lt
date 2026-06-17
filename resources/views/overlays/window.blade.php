@@ -91,10 +91,20 @@
         right: -30px; bottom: 50%; width: 2px; height: 50%; background: rgba(127,127,127,.5); }
     .round:not(:first-child) .match::before { content: ''; position: absolute; left: -30px; top: 50%;
         width: 30px; height: 2px; background: rgba(127,127,127,.5); }
-    /* 3rd place block */
-    .bracket-third { margin-top: 16px; display: inline-flex; flex-direction: column; gap: 6px; }
-    .bracket-third .round-title { position: static; color: var(--ov-accent); text-align: left; }
-    .bracket-third .match { border-left-color: var(--ov-accent); }
+    /* full-screen + auto-fit */
+    .bracket-screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .bracket-fit { transform-origin: center center; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+    /* court / time caption */
+    .match .mt { padding: 2px 13px 7px; font-family: 'Oswald', sans-serif; font-size: 11px;
+        letter-spacing: .05em; color: var(--ov-muted); }
+    /* placements (3rd place + consolation), visually secondary */
+    .placements-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 26px; }
+    .placement { display: flex; flex-direction: column; align-items: center; }
+    .placement-title { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
+        letter-spacing: .1em; font-size: 12px; color: var(--ov-accent); opacity: .85; margin-bottom: 6px; }
+    .placement .bracket { padding: 0; }
+    .placement .match { width: 198px; }
+    .placement .team { font-size: 13px; padding: 6px 11px; }
 
     /* ── Sponsors ────────────────────────────────────────────── */
     .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
@@ -163,26 +173,53 @@
 
     // ── Bracket window (tournament tree) ────────────────────────
     if ((d.window_type || 'groups') === 'bracket') {
-        const b = d.bracket || { rounds: [], third: null };
+        const b = d.bracket || { rounds: [], third: null, placements: [] };
         const setCells = (sets) => (sets || '').trim().split(/\s+/).filter(Boolean)
             .map((g) => `<span class="g">${g}</span>`).join('');
         const team = (name, sets, win) =>
             `<div class="team ${win ? 'win' : ''}"><span class="nm">${name || 'TBD'}</span><span class="sets">${setCells(sets)}</span></div>`;
+        const courtLine = (m) => (m.court || m.time)
+            ? `<div class="mt">${[m.court, m.time].filter(Boolean).join(' · ')}</div>` : '';
         const matchBox = (m) =>
-            `<div class="match">${team(m.team1, m.sets1, m.winner === 1)}${team(m.team2, m.sets2, m.winner === 2)}</div>`;
+            `<div class="match">${team(m.team1, m.sets1, m.winner === 1)}${team(m.team2, m.sets2, m.winner === 2)}${courtLine(m)}</div>`;
 
-        let html = headerHtml + `<div class="bracket">`;
-        b.rounds.forEach((round, ri) => {
-            const last = ri === b.rounds.length - 1;
-            html += `<div class="round${last ? ' is-last' : ''}"><div class="round-title">${round.title}</div><div class="round-matches">`;
-            for (const m of round.matches) html += `<div class="match-slot">${matchBox(m)}</div>`;
-            html += `</div></div>`;
-        });
-        html += `</div>`;
-        if (b.third) {
-            html += `<div class="bracket-third"><div class="round-title">Dėl 3 vietos</div>${matchBox(b.third)}</div>`;
+        const treeHtml = (rounds) => {
+            let h = '<div class="bracket">';
+            rounds.forEach((round, ri) => {
+                const last = ri === rounds.length - 1;
+                h += `<div class="round${last ? ' is-last' : ''}">${round.title ? `<div class="round-title">${round.title}</div>` : ''}<div class="round-matches">`;
+                for (const m of round.matches) h += `<div class="match-slot">${matchBox(m)}</div>`;
+                h += '</div></div>';
+            });
+            return h + '</div>';
+        };
+
+        let inner = headerHtml + treeHtml(b.rounds);
+
+        const blocks = [];
+        if (b.third) blocks.push({ title: 'Dėl 3 vietos', rounds: [{ title: '', matches: [b.third] }] });
+        for (const p of (b.placements || [])) blocks.push(p);
+        if (blocks.length) {
+            inner += '<div class="placements-row">';
+            for (const blk of blocks) {
+                inner += `<div class="placement"><div class="placement-title">${blk.title}</div>${treeHtml(blk.rounds)}</div>`;
+            }
+            inner += '</div>';
         }
-        stage.innerHTML = html;
+
+        stage.innerHTML = `<div class="bracket-screen"><div class="bracket-fit">${inner}</div></div>`;
+
+        const fit = stage.querySelector('.bracket-fit');
+        if (fit) {
+            fit.style.transform = 'none';
+            requestAnimationFrame(() => {
+                const w = fit.scrollWidth, h = fit.scrollHeight;
+                if (w && h) {
+                    const s = Math.min(1, (window.innerWidth - 80) / w, (window.innerHeight - 80) / h);
+                    fit.style.transform = `scale(${s})`;
+                }
+            });
+        }
         return;
     }
 
