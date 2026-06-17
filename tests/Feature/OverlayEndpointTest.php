@@ -397,6 +397,7 @@ class OverlayEndpointTest extends TestCase
                 $base(2, '12:00', 'completed', '2026-04-18T13:05:00', '7:5'),
                 $base(3, '13:00', 'pending', null, null),
                 $base(4, '10:00', 'completed', null, null), // no score → excluded
+                $base(6, '15:00', 'completed', null, '6:1'),  // no finish stamp → falls back to 15:00
                 $live,
             ],
         ]]);
@@ -412,7 +413,8 @@ class OverlayEndpointTest extends TestCase
 
         $res = $this->getJson("/overlay/{$overlay->token}/data")->assertOk()
             ->assertJson(['schedule_variant' => 'results']);
-        // Newest finish first (id2 13:05 before id1 11:50); pending + scoreless excluded.
-        $this->assertSame([2, 1], collect($res->json('schedule.items'))->pluck('id')->all());
+        // Newest first: id6 falls back to its 15:00 schedule, then id2 (13:05),
+        // then id1 (11:50). Pending / scoreless / live are excluded.
+        $this->assertSame([6, 2, 1], collect($res->json('schedule.items'))->pluck('id')->all());
     }
 }
