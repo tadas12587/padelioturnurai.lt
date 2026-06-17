@@ -74,7 +74,11 @@
     .round-matches { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 30px; }
     .round.is-last { justify-content: center; }
     .round.is-last .round-matches { flex: 0 0 auto; }
-    .match-slot { position: relative; flex: 1; display: flex; align-items: center; }
+    .match-slot { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    /* "Dėl N vietos" caption above a placement final */
+    .match-place { align-self: stretch; margin-bottom: 5px; padding: 3px 11px; border-radius: 5px;
+        background: rgba(127,127,127,.14); font-family: 'Oswald', sans-serif; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--ov-muted); }
     .match { position: relative; width: 232px; background: var(--ov-bg);
         border: 1px solid rgba(127,127,127,.28); border-left: 3px solid var(--ov-accent);
         border-radius: 6px; box-shadow: 0 12px 30px -18px rgba(0,0,0,.7); }
@@ -201,7 +205,7 @@
         const courtLine = (m) => (m.court || m.time)
             ? `<div class="mt">${[m.court, m.time].filter(Boolean).join(' · ')}</div>` : '';
         const matchBox = (m) =>
-            `<div class="match">${team(m.team1, m.sets1, m.winner === 1)}${team(m.team2, m.sets2, m.winner === 2)}${courtLine(m)}</div>`;
+            `${m.place ? `<div class="match-place">${m.place}</div>` : ''}<div class="match">${team(m.team1, m.sets1, m.winner === 1)}${team(m.team2, m.sets2, m.winner === 2)}${courtLine(m)}</div>`;
 
         const treeHtml = (rounds) => {
             let h = '<div class="bracket">';

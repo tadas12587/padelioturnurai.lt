@@ -125,7 +125,7 @@ function extractBracket(draw) {
   let acc = [];
   for (const r of rounds) {
     if (mainSet.has(r) || r === thirdRound) continue;
-    acc.push({ title: '', matches: (r.seeds || []).map(matchOf) });
+    acc.push({ title: r.title || '', matches: (r.seeds || []).map(matchOf) });
     const m = (r.title || '').match(/(\d+)\D*place/i);
     if (m) {
       const named = parseInt(m[1], 10);
@@ -135,7 +135,33 @@ function extractBracket(draw) {
       const label = (start > 0 && end >= start)
         ? (start === end ? `Dėl ${start} vietos` : `${start}-${end}`)
         : `Dėl ${named} vietos`;
-      placements.push({ key: `place-${named}`, title: label, rounds: acc });
+
+      // The winners' final (round before the "Nth place" round) decides the
+      // top place of the block; the "Nth place" round the lower one. When both
+      // are single matches, merge them into one final column, labelling each by
+      // the place it decides (Tournated shows them side by side).
+      const placeFinal = acc[acc.length - 1];
+      const winnersFinal = acc.length >= 2 ? acc[acc.length - 2] : null;
+      const canMerge = start > 0
+        && placeFinal.matches.length === 1
+        && winnersFinal && winnersFinal.matches.length === 1;
+
+      let displayRounds;
+      if (canMerge) {
+        displayRounds = acc.slice(0, acc.length - 2).map((rr) => ({ title: rr.title, matches: rr.matches }));
+        displayRounds.push({ title: '', matches: [
+          { ...winnersFinal.matches[0], place: `Dėl ${start} vietos` },
+          { ...placeFinal.matches[0], place: `Dėl ${named} vietos` },
+        ] });
+      } else {
+        // Fallback: keep columns, just translate the "Nth place" header.
+        displayRounds = acc.map((rr, i) => ({
+          title: i === acc.length - 1 ? `Dėl ${named} vietos` : rr.title,
+          matches: rr.matches,
+        }));
+      }
+
+      placements.push({ key: `place-${named}`, title: label, rounds: displayRounds });
       acc = [];
     }
   }
@@ -281,4 +307,9 @@ async function loop() {
   }
 }
 
-loop();
+// Auto-run only when executed directly; allow requiring for tests.
+if (require.main === module) {
+  loop();
+}
+
+module.exports = { extractBracket };
