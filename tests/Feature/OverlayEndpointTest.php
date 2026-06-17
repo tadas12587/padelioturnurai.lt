@@ -370,4 +370,45 @@ class OverlayEndpointTest extends TestCase
         $this->assertSame(['Court 7'], collect($res->json('schedule.groups'))->pluck('heading')->all());
         $this->assertSame([1, 2], collect($res->json('schedule.groups.0.matches'))->pluck('id')->all());
     }
+
+    public function test_schedule_next_lists_in_progress_then_upcoming(): void
+    {
+        // id3 in_progress (11:00) before id2 pending (12:00); completed id1 excluded.
+        $o = $this->scheduleOverlay('next');
+        $res = $this->getJson("/overlay/{$o->token}/data")->assertOk();
+        $this->assertSame([3, 2], collect($res->json('schedule.items'))->pluck('id')->all());
+    }
+
+    public function test_schedule_results_completed_with_score_newest_first(): void
+    {
+        $base = fn ($id, $time, $status, $finished, $score) => [
+            'id' => $id, 'date' => '2026-04-18', 'time' => $time, 'duration' => 60,
+            'court' => 'Court 7', 'court_id' => 7, 'category_id' => 53642, 'category' => 'Vyrai 40+',
+            'status' => $status, 'in_progress' => false, 'round' => 'R1', 'segment' => 'main',
+            'score' => $score, 'finished_at' => $finished, 'team1' => ['A B'], 'team2' => ['C D'], 'winner' => 1,
+        ];
+
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [
+                $base(1, '11:00', 'completed', '2026-04-18T11:50:00', '6:2'),
+                $base(2, '12:00', 'completed', '2026-04-18T13:05:00', '7:5'),
+                $base(3, '13:00', 'pending', null, null),
+                $base(4, '10:00', 'completed', null, null), // no score → excluded
+            ],
+        ]]);
+
+        $overlay = Overlay::create([
+            'name' => 'R', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'schedule', 'name' => 'T', 'schedule_variant' => 'results',
+                'date' => '2026-04-18', 'category_ids' => [], 'courts' => [], 'limit' => 6,
+            ]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $res = $this->getJson("/overlay/{$overlay->token}/data")->assertOk()
+            ->assertJson(['schedule_variant' => 'results']);
+        // Newest finish first (id2 13:05 before id1 11:50); pending + scoreless excluded.
+        $this->assertSame([2, 1], collect($res->json('schedule.items'))->pluck('id')->all());
+    }
 }

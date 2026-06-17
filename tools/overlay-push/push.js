@@ -90,6 +90,7 @@ function normalizeMatch(m) {
     category: (m.tournamentCategory && m.tournamentCategory.category && m.tournamentCategory.category.name) || null,
     status: m.status || null,
     in_progress: !!m.isMatchInProgress,
+    finished_at: m.firstScoreSubmittedAt || null,
     round: m.round || null,
     segment: m.bracketType || null,
     score: m.score || null,
@@ -102,7 +103,7 @@ function normalizeMatch(m) {
 async function fetchMatches(tournamentId) {
   const data = await gql(`{
     matches(filter: { tournament: ${tournamentId} }) {
-      id time date duration status isMatchInProgress round bracketType score
+      id time date duration status isMatchInProgress firstScoreSubmittedAt round bracketType score
       court { id name }
       tournamentCategory { id category { name } }
       entry1 { id } entry2 { id } winner { id }

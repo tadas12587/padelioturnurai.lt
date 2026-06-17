@@ -223,12 +223,28 @@ class OverlayData
 
         $byTime = fn ($a, $b) => strcmp((string) ($a['time'] ?? ''), (string) ($b['time'] ?? ''));
 
-        if ($variant === 'now' || $variant === 'next') {
-            $items = $variant === 'now'
-                ? array_filter($matches, fn ($m) => ! empty($m['in_progress']))
-                : array_filter($matches, fn ($m) => ($m['status'] ?? null) === 'pending');
-            $items = array_values($items);
-            usort($items, $byTime);
+        if (in_array($variant, ['now', 'next', 'results'], true)) {
+            if ($variant === 'now') {
+                $items = array_values(array_filter($matches, fn ($m) => ! empty($m['in_progress'])));
+                usort($items, $byTime);
+            } elseif ($variant === 'next') {
+                // Whatever is on court now first, then the upcoming (pending) matches.
+                $live = array_values(array_filter($matches, fn ($m) => ! empty($m['in_progress'])));
+                $upcoming = array_values(array_filter(
+                    $matches,
+                    fn ($m) => ($m['status'] ?? null) === 'pending' && empty($m['in_progress']),
+                ));
+                usort($live, $byTime);
+                usort($upcoming, $byTime);
+                $items = array_merge($live, $upcoming);
+            } else { // results — just-finished matches, newest first
+                $items = array_values(array_filter(
+                    $matches,
+                    fn ($m) => ($m['status'] ?? null) === 'completed' && ! empty($m['score']),
+                ));
+                usort($items, fn ($a, $b) => strcmp((string) ($b['finished_at'] ?? ''), (string) ($a['finished_at'] ?? '')));
+            }
+
             $limit = (int) ($window['limit'] ?? 0);
             if ($limit > 0) {
                 $items = array_slice($items, 0, $limit);

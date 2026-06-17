@@ -138,6 +138,9 @@
         padding: 9px 13px; border-bottom: 1px solid rgba(127,127,127,.22); }
     .sc-row, .sc-card { padding: 9px 13px; border-bottom: 1px solid rgba(127,127,127,.12); }
     .sc-list { display: flex; flex-direction: column; gap: 10px; }
+    /* results render as a horizontal ticker strip */
+    .sc-list.results { flex-direction: row; flex-wrap: wrap; }
+    .sc-list.results .sc-card { flex: 0 1 230px; }
     .sc-card { border: 1px solid rgba(127,127,127,.22); border-left: 3px solid rgba(127,127,127,.4);
         border-radius: 6px; background: var(--ov-bg); }
     .sc-card.live { border-left-color: var(--ov-accent); box-shadow: 0 0 16px -6px var(--ov-accent); }
@@ -310,14 +313,16 @@
 
         let html = headerHtml + '<div class="sc-wrap">';
 
-        if (variant === 'now' || variant === 'next') {
+        if (variant === 'now' || variant === 'next' || variant === 'results') {
             const items = sc.items || [];
+            const empty = variant === 'results' ? 'Nėra rezultatų' : 'Nėra suplanuotų rungtynių';
             if (!items.length) {
-                html += '<div class="sc-empty">Nėra suplanuotų rungtynių</div>';
+                html += `<div class="sc-empty">${empty}</div>`;
             } else {
                 html += `<div class="sc-list ${variant}">`;
                 for (const m of items) {
-                    html += `<div class="sc-card${variant === 'now' ? ' live' : ''}">`
+                    const live = m.in_progress ? ' live' : '';
+                    html += `<div class="sc-card${live}">`
                         + meta([m.time, m.court, m.category].filter(Boolean))
                         + teams(m)
                         + (m.score ? `<div class="sc-score">${m.score}</div>` : '')
