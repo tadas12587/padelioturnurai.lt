@@ -249,10 +249,10 @@
     /* Reserve a wide band on the camera side for the live video feed. */
     .draw-corner-bottom-right .draw-head, .draw-corner-top-right .draw-head,
     .draw-corner-bottom-right .draw-body, .draw-corner-top-right .draw-body,
-    .draw-corner-bottom-right .draw-spons, .draw-corner-top-right .draw-spons { padding-right: 40%; }
+    .draw-corner-bottom-right .draw-spons, .draw-corner-top-right .draw-spons { padding-right: 30%; }
     .draw-corner-bottom-left .draw-head, .draw-corner-top-left .draw-head,
     .draw-corner-bottom-left .draw-body, .draw-corner-top-left .draw-body,
-    .draw-corner-bottom-left .draw-spons, .draw-corner-top-left .draw-spons { padding-left: 40%; }
+    .draw-corner-bottom-left .draw-spons, .draw-corner-top-left .draw-spons { padding-left: 30%; }
 
 @endsection
 
@@ -509,11 +509,11 @@
         const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
 
         const logo = dr.show_tournament && d.logo ? `<img src="${d.logo}" alt="">` : '';
-        const tname = dr.show_tournament ? (d.tournament_title || d.title || '') : '';
+        const tname = d.tournament_title || d.title || '';
         const group = dr.category || '';
         const headHtml = `<div class="draw-head"><div class="left">${logo}<div>`
-            + `<div class="tt">${group || 'Burtai'}</div>`
-            + `${tname ? `<div class="cat">${tname}</div>` : ''}</div></div>`
+            + `${tname ? `<div class="cat">${tname}</div>` : ''}`
+            + `<div class="tt">${group || 'Burtai'}</div></div></div>`
             + `<div><span class="badge">BURTAI</span>${dr.status === 'done' ? '<span class="draw-done">Baigta</span>' : ''}</div></div>`;
 
         const allSponsors = dr.sponsors || [];
