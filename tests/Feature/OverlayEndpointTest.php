@@ -213,26 +213,94 @@ class OverlayEndpointTest extends TestCase
         $this->assertSame(['10424', '99999'], $ids);
     }
 
-    public function test_bracket_window_returns_category_draw_from_snapshot(): void
+    public function test_bracket_window_returns_segments_from_snapshot(): void
     {
-        \App\Models\OverlaySnapshot::create([
+        OverlaySnapshot::create([
+            'tournament_external_id' => '10424',
+            'payload' => [
+                'brackets_by_category' => [
+                    '53642' => ['segments' => [
+                        [
+                            'key' => '900', 'label' => 'Vyrai 40+', 'main_draw' => true,
+                            'rounds' => [
+                                ['title' => 'Finalas', 'matches' => [
+                                    ['team1' => 'A', 'team2' => 'C', 'sets1' => '6', 'sets2' => '2', 'winner' => 1, 'court' => 'Kortas 2', 'time' => '10:00'],
+                                ]],
+                            ],
+                            'third' => ['team1' => 'B', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
+                            'placements' => [
+                                ['title' => 'Dėl 7 vietos', 'rounds' => [
+                                    ['title' => '', 'matches' => [
+                                        ['team1' => 'E', 'team2' => 'F', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                                    ]],
+                                ]],
+                            ],
+                        ],
+                        [
+                            'key' => '901', 'label' => 'Vyrai 40+ dėl 5 vietos', 'main_draw' => false,
+                            'rounds' => [['title' => 'Finalas', 'matches' => [
+                                ['team1' => 'G', 'team2' => 'H', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                            ]]],
+                            'third' => null, 'placements' => [],
+                        ],
+                    ]],
+                ],
+            ],
+        ]);
+
+        $overlay = Overlay::create([
+            'name' => 'B', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'bracket', 'name' => 'T', 'category_id' => 53642, 'segments' => []]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson(['visible' => true, 'window_type' => 'bracket'])
+            ->assertJsonPath('bracket.segments.0.label', 'Vyrai 40+')
+            ->assertJsonPath('bracket.segments.0.rounds.0.matches.0.court', 'Kortas 2')
+            ->assertJsonPath('bracket.segments.0.third.team1', 'B')
+            ->assertJsonPath('bracket.segments.0.placements.0.title', 'Dėl 7 vietos')
+            ->assertJsonPath('bracket.segments.1.label', 'Vyrai 40+ dėl 5 vietos');
+    }
+
+    public function test_bracket_window_filters_to_selected_segments(): void
+    {
+        OverlaySnapshot::create([
+            'tournament_external_id' => '10424',
+            'payload' => [
+                'brackets_by_category' => [
+                    '53642' => ['segments' => [
+                        ['key' => '900', 'label' => 'dėl 1 vietos', 'rounds' => [['title' => 'Finalas', 'matches' => []]], 'third' => null, 'placements' => []],
+                        ['key' => '901', 'label' => 'dėl 3 vietos', 'rounds' => [['title' => 'Finalas', 'matches' => []]], 'third' => null, 'placements' => []],
+                        ['key' => '902', 'label' => 'dėl 5 vietos', 'rounds' => [['title' => 'Finalas', 'matches' => []]], 'third' => null, 'placements' => []],
+                    ]],
+                ],
+            ],
+        ]);
+
+        $overlay = Overlay::create([
+            'name' => 'B', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'bracket', 'name' => 'T', 'category_id' => 53642, 'segments' => ['901', '902']]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $res = $this->getJson("/overlay/{$overlay->token}/data")->assertOk();
+
+        $this->assertSame(['dėl 3 vietos', 'dėl 5 vietos'], collect($res->json('bracket.segments'))->pluck('label')->all());
+    }
+
+    public function test_bracket_legacy_snapshot_shape_wrapped_as_single_segment(): void
+    {
+        OverlaySnapshot::create([
             'tournament_external_id' => '10424',
             'payload' => [
                 'brackets_by_category' => [
                     '53642' => [
-                        'rounds' => [
-                            ['title' => 'Finalas', 'matches' => [
-                                ['team1' => 'A', 'team2' => 'C', 'sets1' => '6', 'sets2' => '2', 'winner' => 1, 'court' => 'Kortas 2', 'time' => '10:00'],
-                            ]],
-                        ],
-                        'third' => ['team1' => 'B', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
-                        'placements' => [
-                            ['title' => 'Dėl 7 vietos', 'rounds' => [
-                                ['title' => '', 'matches' => [
-                                    ['team1' => 'E', 'team2' => 'F', 'sets1' => '', 'sets2' => '', 'winner' => null],
-                                ]],
-                            ]],
-                        ],
+                        'rounds' => [['title' => 'Finalas', 'matches' => [
+                            ['team1' => 'A', 'team2' => 'C', 'sets1' => '6', 'sets2' => '2', 'winner' => 1],
+                        ]]],
+                        'third' => null, 'placements' => [],
                     ],
                 ],
             ],
@@ -246,10 +314,7 @@ class OverlayEndpointTest extends TestCase
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
-            ->assertJson(['visible' => true, 'window_type' => 'bracket'])
-            ->assertJsonPath('bracket.rounds.0.matches.0.court', 'Kortas 2')
-            ->assertJsonPath('bracket.rounds.0.matches.0.time', '10:00')
-            ->assertJsonPath('bracket.third.team1', 'B')
-            ->assertJsonPath('bracket.placements.0.title', 'Dėl 7 vietos');
+            ->assertJsonPath('bracket.segments.0.label', 'Pagrindinis tinklelis')
+            ->assertJsonPath('bracket.segments.0.rounds.0.matches.0.team1', 'A');
     }
 }
