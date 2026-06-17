@@ -85,10 +85,13 @@ function extractBracket(draw) {
     let winner = null;
     if (seed.winner && teams[0] && seed.winner.id === teams[0].id) winner = 1;
     else if (seed.winner && teams[1] && seed.winner.id === teams[1].id) winner = 2;
+    const court = (seed.court && seed.court.name) || (typeof seed.court === 'string' ? seed.court : null);
     return {
       team1: teams[0] ? pairName(teams[0]) : '',
       team2: teams[1] ? pairName(teams[1]) : '',
       sets1, sets2, winner,
+      court: court || null,
+      time: seed.time || null,
     };
   };
 
@@ -104,11 +107,25 @@ function extractBracket(draw) {
     matches: (r.seeds || []).map(matchOf),
   }));
 
-  let third = null;
-  const t = rounds.find((r) => /3rd/i.test(r.title || '') && (r.seeds || []).length === 1);
-  if (t) third = matchOf(t.seeds[0]);
+  const thirdRound = rounds.find((r) => /3rd/i.test(r.title || '') && (r.seeds || []).length === 1);
+  const third = thirdRound ? matchOf(thirdRound.seeds[0]) : null;
 
-  return { rounds: outRounds, third };
+  // Placement brackets: leftover rounds (not main, not 3rd place) grouped into
+  // blocks, each ending in a "Nth place" round.
+  const mainSet = new Set(main);
+  const placements = [];
+  let acc = [];
+  for (const r of rounds) {
+    if (mainSet.has(r) || r === thirdRound) continue;
+    acc.push({ title: '', matches: (r.seeds || []).map(matchOf) });
+    const m = (r.title || '').match(/(\d+)\D*place/i);
+    if (m) {
+      placements.push({ title: `Dėl ${m[1]} vietos`, rounds: acc });
+      acc = [];
+    }
+  }
+
+  return { rounds: outRounds, third, placements };
 }
 
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
