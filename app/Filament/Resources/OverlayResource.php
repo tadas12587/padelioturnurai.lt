@@ -140,10 +140,12 @@ class OverlayResource extends Resource
                                             $stages = app(OverlayData::class)->categoryStages((string) $tid);
                                             $out = [];
                                             foreach (app(OverlayData::class)->categories((string) $tid) as $c) {
-                                                $st  = $stages[(string) $c['id']] ?? [];
-                                                $tag = (($st['has_bracket'] ?? false) && ! ($st['has_groups'] ?? false))
-                                                    ? ' (bracketas)' : ' (grupės)';
-                                                $out[$c['id']] = ($c['category']['name'] ?? ('#' . $c['id'])) . $tag;
+                                                $st = $stages[(string) $c['id']] ?? [];
+                                                // Groups window → only categories that actually have groups.
+                                                if (! ($st['has_groups'] ?? false)) {
+                                                    continue;
+                                                }
+                                                $out[$c['id']] = $c['category']['name'] ?? ('#' . $c['id']);
                                             }
                                             return $out;
                                         }),
