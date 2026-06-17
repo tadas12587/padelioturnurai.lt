@@ -125,6 +125,10 @@ class DrawEngine
             ? $this->pickBracket($config, $state, $remaining, $rng)
             : $this->pickGroups($config, $state, $remaining, $rng);
 
+        // PHP casts numeric-string array keys to int, so bracket slot keys come
+        // back as ints — keep the public slot value a string for consistency.
+        $slot = (string) $slot;
+
         $state['slots'][$slot] = $team['id'];
         $state['current'] = ['team_id' => $team['id'], 'slot' => $slot];
         $state['history'][] = ['team_id' => $team['id'], 'slot' => $slot];
@@ -208,5 +212,63 @@ class DrawEngine
         }
 
         return ['id' => $id, 'pot' => null];
+    }
+
+    /** @return array{0:array,1:string,2:int} [team, slotKey, nextActivePot] */
+    private function pickBracket(array $config, array $state, array $remaining, callable $rng): array
+    {
+        $n = (int) ($config['bracket_size'] ?? 0);
+        $usePots = (bool) ($config['use_pots'] ?? false);
+
+        // The unseeded band is one above the deepest seed band, so active_pot
+        // stays a small, displayable number (no PHP_INT_MAX sentinel).
+        $unseededPot = $this->bracketPotOfSeed(max(2, $n)) + 1;
+
+        if (! $usePots) {
+            $team = $remaining[$rng(count($remaining))];
+            $free = array_values(array_filter(array_keys($state['slots']), fn ($k) => $state['slots'][$k] === null));
+            if (empty($free)) {
+                throw new \RuntimeException('Nėra laisvų vietų.');
+            }
+
+            return [$team, $free[$rng(count($free))], 1];
+        }
+
+        $potOf = function ($t) use ($unseededPot) {
+            return empty($t['seed']) ? $unseededPot : $this->bracketPotOfSeed((int) $t['seed']);
+        };
+
+        $pot = (int) ($state['active_pot'] ?? 1);
+        $candidates = array_values(array_filter($remaining, fn ($t) => $potOf($t) === $pot));
+        while (empty($candidates)) {
+            $pot++;
+            if ($pot > $unseededPot) {
+                throw new \RuntimeException('Krepšelio nepavyksta užpildyti.');
+            }
+            $candidates = array_values(array_filter($remaining, fn ($t) => $potOf($t) === $pot));
+        }
+
+        $team = $candidates[$rng(count($candidates))];
+
+        // A seeded team uses its band's canonical anchor slots; unseeded use all free.
+        $free = array_values(array_filter(array_keys($state['slots']), fn ($k) => $state['slots'][$k] === null));
+        if (! empty($team['seed'])) {
+            $band = $this->bracketPotOfSeed((int) $team['seed']);
+            $bandSlots = [];
+            foreach ($this->bracketSeedOrder($n) as $idx => $seed) {
+                if ($this->bracketPotOfSeed($seed) === $band) {
+                    $bandSlots[] = (string) ($idx + 1);
+                }
+            }
+            $anchors = array_values(array_intersect($free, $bandSlots));
+            if (! empty($anchors)) {
+                $free = $anchors;
+            }
+        }
+        if (empty($free)) {
+            throw new \RuntimeException('Nėra laisvų vietų.');
+        }
+
+        return [$team, $free[$rng(count($free))], $pot];
     }
 }

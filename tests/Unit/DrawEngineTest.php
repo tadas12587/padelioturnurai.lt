@@ -115,4 +115,27 @@ class DrawEngineTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->e->drawNext($config, $state, fn (int $c) => 0);
     }
+
+    public function test_bracket_draw_places_seeds_at_band_anchor_slots(): void
+    {
+        $config = ['format' => 'bracket', 'bracket_size' => 4, 'use_pots' => true];
+        // n=4 order [1,4,2,3]: seed1 → slot "1" (idx0), seed2 → slot "3" (idx2).
+        $teams = [
+            ['id' => 10, 'name' => 'S1', 'seed' => 1],
+            ['id' => 20, 'name' => 'S2', 'seed' => 2],
+            ['id' => 30, 'name' => 'U1'],
+            ['id' => 40, 'name' => 'U2'],
+        ];
+        $state = $this->e->init($config, $teams);
+        $rng = fn (int $c) => 0;
+
+        $state = $this->e->drawNext($config, $state, $rng); // pot1 seed → its anchor slot
+        $this->assertSame(10, $state['slots']['1']);         // seed1 anchor = physical slot 1
+
+        $state = $this->e->drawNext($config, $state, $rng);
+        $this->assertSame(20, $state['slots']['3']);         // seed2 anchor = physical slot 3 (idx2)
+
+        $state = $this->e->drawNext($config, $state, $rng);  // unseeded → remaining free slot
+        $this->assertContains($state['current']['slot'], ['2', '4']);
+    }
 }
