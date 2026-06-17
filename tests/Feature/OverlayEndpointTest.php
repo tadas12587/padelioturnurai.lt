@@ -310,4 +310,64 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('bracket.segments.0.label', 'Pagrindinis tinklelis')
             ->assertJsonPath('bracket.segments.0.rounds.0.matches.0.team1', 'A');
     }
+
+    private function scheduleOverlay(string $variant, array $extra = []): Overlay
+    {
+        $mk = fn ($id, $date, $time, $court, $courtId, $cat, $status, $inProg) => [
+            'id' => $id, 'date' => $date, 'time' => $time, 'duration' => 60,
+            'court' => $court, 'court_id' => $courtId, 'category_id' => $cat, 'category' => 'Vyrai 40+',
+            'status' => $status, 'in_progress' => $inProg, 'round' => 'R1', 'segment' => 'main',
+            'score' => '6:2', 'team1' => ['A B'], 'team2' => ['C D'], 'winner' => 1,
+        ];
+
+        OverlaySnapshot::updateOrCreate(['tournament_external_id' => '10424'], ['payload' => [
+            'matches' => [
+                $mk(1, '2026-04-18', '11:00', 'Court 7', 7, 53642, 'completed', false),
+                $mk(2, '2026-04-18', '12:00', 'Court 7', 7, 53642, 'pending', false),
+                $mk(3, '2026-04-18', '11:00', 'Court 8', 8, 53636, 'pending', true),
+                $mk(4, '2026-04-19', '11:00', 'Court 8', 8, 53642, 'pending', false),
+            ],
+        ]]);
+
+        return Overlay::create([
+            'name' => 'S', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [array_merge([
+                'id' => 'w1', 'type' => 'schedule', 'name' => 'T', 'schedule_variant' => $variant,
+                'date' => '2026-04-18', 'category_ids' => [], 'courts' => [], 'limit' => 6,
+            ], $extra)],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+    }
+
+    public function test_schedule_by_court_groups_and_sorts(): void
+    {
+        $o = $this->scheduleOverlay('by_court');
+        $res = $this->getJson("/overlay/{$o->token}/data")->assertOk()
+            ->assertJson(['visible' => true, 'window_type' => 'schedule', 'schedule_variant' => 'by_court']);
+
+        $this->assertSame(['Court 7', 'Court 8'], collect($res->json('schedule.groups'))->pluck('heading')->all());
+        $this->assertSame(['11:00', '12:00'], collect($res->json('schedule.groups.0.matches'))->pluck('time')->all());
+    }
+
+    public function test_schedule_now_keeps_only_in_progress(): void
+    {
+        $o = $this->scheduleOverlay('now');
+        $res = $this->getJson("/overlay/{$o->token}/data")->assertOk();
+        $this->assertSame([3], collect($res->json('schedule.items'))->pluck('id')->all());
+    }
+
+    public function test_schedule_next_keeps_pending_sorted_by_time(): void
+    {
+        $o = $this->scheduleOverlay('next');
+        $res = $this->getJson("/overlay/{$o->token}/data")->assertOk();
+        $this->assertSame([3, 2], collect($res->json('schedule.items'))->pluck('id')->all());
+    }
+
+    public function test_schedule_filters_by_category_and_court(): void
+    {
+        $o = $this->scheduleOverlay('by_court', ['category_ids' => [53642], 'courts' => [7]]);
+        $res = $this->getJson("/overlay/{$o->token}/data")->assertOk();
+        $this->assertSame(['Court 7'], collect($res->json('schedule.groups'))->pluck('heading')->all());
+        $this->assertSame([1, 2], collect($res->json('schedule.groups.0.matches'))->pluck('id')->all());
+    }
 }
