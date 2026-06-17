@@ -73,4 +73,46 @@ class DrawEngineTest extends TestCase
         $this->assertSame('5', $this->e->bracketSlotForSeed(8, 2));
         $this->assertSame('7', $this->e->bracketSlotForSeed(8, 3));
     }
+
+    public function test_groups_draw_distributes_pot_one_per_group_then_advances(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 2, 'group_size' => 2, 'use_pots' => true];
+        $teams = [
+            ['id' => 1, 'name' => 'P1a', 'pot' => 1], ['id' => 2, 'name' => 'P1b', 'pot' => 1],
+            ['id' => 3, 'name' => 'P2a', 'pot' => 2], ['id' => 4, 'name' => 'P2b', 'pot' => 2],
+        ];
+        $state = $this->e->init($config, $teams);
+        $rng = fn (int $c) => 0; // always first candidate / first group
+
+        $state = $this->e->drawNext($config, $state, $rng);
+        $this->assertSame(1, $state['slots']['A1']);          // pot1 team → group A pos1
+        $this->assertSame(['team_id' => 1, 'slot' => 'A1'], $state['current']);
+
+        $state = $this->e->drawNext($config, $state, $rng);
+        $this->assertSame(2, $state['slots']['B1']);          // pot1 second team → group B (A already has pot1)
+
+        $state = $this->e->drawNext($config, $state, $rng);
+        $this->assertSame(2, $state['active_pot']);           // pot1 exhausted → pot2
+        $this->assertSame(3, $state['slots']['A2']);          // pot2 → group A next free pos
+    }
+
+    public function test_draw_marks_done_when_pool_empty(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 1, 'use_pots' => true];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'X', 'pot' => 1]]);
+        $state = $this->e->drawNext($config, $state, fn (int $c) => 0);
+
+        $this->assertSame('done', $state['status']);
+        $this->assertSame(1, $state['slots']['A1']);
+    }
+
+    public function test_draw_throws_when_already_done(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 1];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'X', 'pot' => 1]]);
+        $state = $this->e->drawNext($config, $state, fn (int $c) => 0);
+
+        $this->expectException(\RuntimeException::class);
+        $this->e->drawNext($config, $state, fn (int $c) => 0);
+    }
 }

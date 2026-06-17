@@ -104,4 +104,109 @@ class DrawEngine
 
         return (string) ($idx + 1);
     }
+
+    /** Apply one random draw. @throws \RuntimeException when nothing can be drawn. */
+    public function drawNext(array $config, array $state, ?callable $rng = null): array
+    {
+        $rng ??= fn (int $count) => random_int(0, max(0, $count - 1));
+
+        $placed = array_filter($state['slots'], fn ($t) => $t !== null);
+        $placedIds = array_values($placed);
+        $remaining = array_values(array_filter(
+            $state['teams'],
+            fn ($t) => ! in_array($t['id'], $placedIds, true),
+        ));
+
+        if (empty($remaining)) {
+            throw new \RuntimeException('Traukimas baigtas — nebėra komandų.');
+        }
+
+        [$team, $slot, $nextPot] = (($config['format'] ?? 'groups') === 'bracket')
+            ? $this->pickBracket($config, $state, $remaining, $rng)
+            : $this->pickGroups($config, $state, $remaining, $rng);
+
+        $state['slots'][$slot] = $team['id'];
+        $state['current'] = ['team_id' => $team['id'], 'slot' => $slot];
+        $state['history'][] = ['team_id' => $team['id'], 'slot' => $slot];
+        $state['active_pot'] = $nextPot;
+
+        $stillLeft = count($remaining) - 1;
+        $state['status'] = $stillLeft === 0 ? 'done' : 'idle';
+
+        return $state;
+    }
+
+    /** @return array{0:array,1:string,2:int} [team, slotKey, nextActivePot] */
+    private function pickGroups(array $config, array $state, array $remaining, callable $rng): array
+    {
+        $usePots = (bool) ($config['use_pots'] ?? false);
+        $layout = $this->layout($config);
+        $pot = (int) ($state['active_pot'] ?? 1);
+
+        // Candidates in the active pot (or all remaining when pots are off).
+        $potOf = fn ($t) => $usePots ? (int) ($t['pot'] ?? PHP_INT_MAX) : 1;
+        $candidates = $usePots
+            ? array_values(array_filter($remaining, fn ($t) => $potOf($t) === $pot))
+            : $remaining;
+
+        // Active pot empty → advance to the next pot that still has teams.
+        while ($usePots && empty($candidates)) {
+            $pot++;
+            if ($pot > 1000) {
+                throw new \RuntimeException('Krepšelio nepavyksta užpildyti.');
+            }
+            $candidates = array_values(array_filter($remaining, fn ($t) => $potOf($t) === $pot));
+        }
+
+        $team = $candidates[$rng(count($candidates))];
+
+        // Groups that have a free slot AND no team from this pot yet (when pots on).
+        $eligible = [];
+        foreach ($layout['groups'] as $grp) {
+            $free = array_values(array_filter($grp['slots'], fn ($k) => $state['slots'][$k] === null));
+            if (empty($free)) {
+                continue;
+            }
+            if ($usePots) {
+                $hasPot = false;
+                foreach ($grp['slots'] as $k) {
+                    $tid = $state['slots'][$k];
+                    if ($tid !== null && $potOf($this->teamById($state, $tid)) === $pot) {
+                        $hasPot = true;
+                        break;
+                    }
+                }
+                if ($hasPot) {
+                    continue;
+                }
+            }
+            $eligible[] = ['group' => $grp, 'free' => $free];
+        }
+        if (empty($eligible)) { // pots constraint blocked everything → relax to any free group
+            foreach ($layout['groups'] as $grp) {
+                $free = array_values(array_filter($grp['slots'], fn ($k) => $state['slots'][$k] === null));
+                if ($free) {
+                    $eligible[] = ['group' => $grp, 'free' => $free];
+                }
+            }
+        }
+        if (empty($eligible)) {
+            throw new \RuntimeException('Nėra laisvų vietų.');
+        }
+
+        $chosen = $eligible[$rng(count($eligible))];
+
+        return [$team, $chosen['free'][0], $pot];
+    }
+
+    private function teamById(array $state, $id): array
+    {
+        foreach ($state['teams'] as $t) {
+            if ($t['id'] === $id) {
+                return $t;
+            }
+        }
+
+        return ['id' => $id, 'pot' => null];
+    }
 }
