@@ -237,10 +237,10 @@ class OverlayData
                 usort($live, $byTime);
                 usort($upcoming, $byTime);
                 $items = array_merge($live, $upcoming);
-            } else { // results — just-finished matches, newest first
+            } else { // results — finished matches (have a score, not live), newest first
                 $items = array_values(array_filter(
                     $matches,
-                    fn ($m) => ($m['status'] ?? null) === 'completed' && ! empty($m['score']),
+                    fn ($m) => ! empty($m['score']) && empty($m['in_progress']),
                 ));
                 usort($items, fn ($a, $b) => strcmp((string) ($b['finished_at'] ?? ''), (string) ($a['finished_at'] ?? '')));
             }
