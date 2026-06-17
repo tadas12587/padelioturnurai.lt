@@ -75,16 +75,18 @@ async function fetchParticipants(tournamentId, categoryId) {
   }`);
   const rows = data.tournamentRegistrationParticipants || [];
 
-  const byTeam = new Map();
+  // A doubles pair shares one registrationId (the entry); `team` is each
+  // player's personal team object, so group by registrationId.
+  const byReg = new Map();
   for (const r of rows) {
-    const key = (r.team && r.team.id) || `r${r.registrationId}`;
-    if (!byTeam.has(key)) byTeam.set(key, []);
+    const key = r.registrationId != null ? `r${r.registrationId}` : ((r.team && r.team.id) || `u${Math.random()}`);
+    if (!byReg.has(key)) byReg.set(key, []);
     const nm = `${r.user?.name || ''} ${r.user?.surname || ''}`.trim();
-    if (nm) byTeam.get(key).push(nm);
+    if (nm) byReg.get(key).push(nm);
   }
 
   const out = [];
-  for (const [key, names] of byTeam) {
+  for (const [key, names] of byReg) {
     out.push({ id: key, name: names.join(' / ') || `#${key}`, seed: null, pot: null });
   }
   return out;
