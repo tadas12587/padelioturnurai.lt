@@ -96,6 +96,22 @@ class DrawEngineTest extends TestCase
         $this->assertSame(3, $state['slots']['A2']);          // pot2 → group A next free pos
     }
 
+    public function test_groups_draw_without_pot_data_does_not_throw(): void
+    {
+        // Real Tournated participants arrive with no pot/seed; use_pots on must
+        // still draw (treats all teams as one band) instead of throwing.
+        $config = ['format' => 'groups', 'group_count' => 2, 'group_size' => 1, 'use_pots' => true];
+        $teams = [['id' => 1, 'name' => 'A'], ['id' => 2, 'name' => 'B']];
+        $state = $this->e->init($config, $teams);
+
+        $state = $this->e->drawNext($config, $state, fn (int $c) => 0);
+        $state = $this->e->drawNext($config, $state, fn (int $c) => 0);
+
+        $placed = array_filter($state['slots'], fn ($t) => $t !== null);
+        $this->assertCount(2, $placed);
+        $this->assertSame('done', $state['status']);
+    }
+
     public function test_draw_marks_done_when_pool_empty(): void
     {
         $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 1, 'use_pots' => true];

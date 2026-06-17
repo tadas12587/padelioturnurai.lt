@@ -147,8 +147,17 @@ class DrawEngine
         $layout = $this->layout($config);
         $pot = (int) ($state['active_pot'] ?? 1);
 
-        // Candidates in the active pot (or all remaining when pots are off).
-        $potOf = fn ($t) => $usePots ? (int) ($t['pot'] ?? PHP_INT_MAX) : 1;
+        // Teams with no pot fall into one band just above the deepest real pot,
+        // so a draw still works (and never loops forever) when pot data is absent.
+        $finite = [];
+        foreach ($remaining as $t) {
+            if ($usePots && ! empty($t['pot'])) {
+                $finite[] = (int) $t['pot'];
+            }
+        }
+        $lastPot = $finite ? max($finite) + 1 : 1;
+
+        $potOf = fn ($t) => $usePots ? (empty($t['pot']) ? $lastPot : (int) $t['pot']) : 1;
         $candidates = $usePots
             ? array_values(array_filter($remaining, fn ($t) => $potOf($t) === $pot))
             : $remaining;
@@ -156,7 +165,7 @@ class DrawEngine
         // Active pot empty → advance to the next pot that still has teams.
         while ($usePots && empty($candidates)) {
             $pot++;
-            if ($pot > 1000) {
+            if ($pot > $lastPot) {
                 throw new \RuntimeException('Krepšelio nepavyksta užpildyti.');
             }
             $candidates = array_values(array_filter($remaining, fn ($t) => $potOf($t) === $pot));
