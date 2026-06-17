@@ -82,7 +82,7 @@ class OverlayData
             return [[
                 'key'        => 'main',
                 'label'      => 'Pagrindinis tinklelis',
-                'main_draw'  => true,
+                'is_main'    => true,
                 'rounds'     => $b['rounds'] ?? [],
                 'third'      => $b['third'] ?? null,
                 'placements' => $b['placements'] ?? [],
