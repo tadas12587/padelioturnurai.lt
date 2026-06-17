@@ -190,6 +190,21 @@ class DrawEngineTest extends TestCase
         $this->assertSame('idle', $state['status']);
     }
 
+    public function test_place_bye_fills_slot_without_consuming_pool(): void
+    {
+        $config = ['format' => 'bracket', 'bracket_size' => 4];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'A']]);
+
+        $state = $this->e->place($config, $state, 'BYE', '2');
+
+        $this->assertSame('BYE', $state['slots']['2']);
+        // The only real team is still unplaced, so the draw is not done.
+        $this->assertSame('idle', $state['status']);
+        // A BYE can be placed in more than one slot.
+        $state = $this->e->place($config, $state, 'BYE', '3');
+        $this->assertSame('BYE', $state['slots']['3']);
+    }
+
     public function test_reset_clears_all_slots_but_keeps_teams(): void
     {
         $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 2];

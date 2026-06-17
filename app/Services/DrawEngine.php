@@ -9,6 +9,9 @@ namespace App\Services;
  */
 class DrawEngine
 {
+    /** Sentinel slot value for a walkover / empty draw position. */
+    public const BYE = 'BYE';
+
     /** @return array<string,mixed> */
     public function layout(array $config): array
     {
@@ -231,10 +234,13 @@ class DrawEngine
         if ($state['slots'][$slot] !== null) {
             throw new \RuntimeException('Vieta jau užimta.');
         }
-        // Remove the team from any slot it currently occupies.
-        foreach ($state['slots'] as $k => $tid) {
-            if ($tid === $teamId) {
-                $state['slots'][$k] = null;
+        // A real team occupies only one slot; a BYE may repeat across slots.
+        // Compare as strings — random draws store int ids, the console sends strings.
+        if ($teamId !== self::BYE) {
+            foreach ($state['slots'] as $k => $tid) {
+                if ($tid !== null && (string) $tid === (string) $teamId) {
+                    $state['slots'][$k] = null;
+                }
             }
         }
         $state['slots'][$slot] = $teamId;
@@ -270,9 +276,13 @@ class DrawEngine
 
     private function poolEmpty(array $state): bool
     {
-        $placed = array_values(array_filter($state['slots'], fn ($t) => $t !== null));
+        $teamIds = array_column($state['teams'], 'id');
+        $placedReal = array_unique(array_filter(
+            $state['slots'],
+            fn ($t) => $t !== null && $t !== self::BYE && in_array($t, $teamIds),
+        ));
 
-        return count($placed) >= count($state['teams']);
+        return count($placedReal) >= count($teamIds);
     }
 
     /** @return array{0:array,1:string,2:int} [team, slotKey, nextActivePot] */
