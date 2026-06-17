@@ -138,9 +138,28 @@
         padding: 9px 13px; border-bottom: 1px solid rgba(127,127,127,.22); }
     .sc-row, .sc-card { padding: 9px 13px; border-bottom: 1px solid rgba(127,127,127,.12); }
     .sc-list { display: flex; flex-direction: column; gap: 10px; }
-    /* results render as a horizontal ticker strip */
-    .sc-list.results { flex-direction: row; flex-wrap: wrap; }
-    .sc-list.results .sc-card { flex: 0 1 230px; }
+    /* results — full-width bottom broadcast strip */
+    .sc-ticker { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: stretch;
+        background: var(--ov-bg); border-top: 3px solid var(--ov-accent);
+        box-shadow: 0 -12px 34px -14px rgba(0,0,0,.65); }
+    .sc-ticker-label { display: flex; align-items: center; padding: 0 28px; white-space: nowrap;
+        font-family: 'Oswald', sans-serif; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .14em; font-size: 26px; color: var(--ov-accent);
+        border-right: 1px solid rgba(127,127,127,.25); }
+    .sc-ticker-items { display: flex; flex: 1; min-width: 0; overflow: hidden; }
+    .res { flex: 1 1 0; min-width: 0; padding: 12px 22px; display: flex; flex-direction: column;
+        justify-content: center; gap: 2px; border-right: 1px solid rgba(127,127,127,.16); }
+    .res-cat { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .08em;
+        font-size: 11px; color: var(--ov-muted); margin-bottom: 3px; }
+    .res-row { display: flex; align-items: center; gap: 8px; font-family: 'Barlow', sans-serif;
+        font-size: 15px; color: var(--ov-text); min-width: 0; }
+    .res-row::before { content: ''; width: 7px; height: 7px; flex: none; border-radius: 50%; }
+    .res-row.w { color: var(--ov-accent); font-weight: 700; }
+    .res-row.w::before { background: var(--ov-accent); box-shadow: 0 0 8px var(--ov-accent); }
+    .res-team { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .res-score { margin-top: 6px; padding-left: 15px; font-family: 'Oswald', sans-serif;
+        font-variant-numeric: tabular-nums; font-weight: 600; font-size: 20px; letter-spacing: .04em;
+        color: var(--ov-accent); }
     .sc-card { border: 1px solid rgba(127,127,127,.22); border-left: 3px solid rgba(127,127,127,.4);
         border-radius: 6px; background: var(--ov-bg); }
     .sc-card.live { border-left-color: var(--ov-accent); box-shadow: 0 0 16px -6px var(--ov-accent); }
@@ -311,13 +330,34 @@
           + `<span class="${m.winner === 2 ? 'win' : ''}">${pair(m.team2)}</span></div>`;
         const meta = (parts) => `<div class="sc-meta">${parts.filter(Boolean).join(' · ')}</div>`;
 
+        // Results — a full-width bottom broadcast strip; no header, winner + score emphasised.
+        if (variant === 'results') {
+            const items = sc.items || [];
+            const resRow = (names, won) => `<div class="res-row${won ? ' w' : ''}"><span class="res-team">${names}</span></div>`;
+            let bar = '<div class="sc-ticker"><div class="sc-ticker-label">Rezultatai</div><div class="sc-ticker-items">';
+            if (!items.length) {
+                bar += '<div class="sc-empty">Nėra rezultatų</div>';
+            } else {
+                for (const m of items) {
+                    bar += '<div class="res">'
+                        + (m.category ? `<div class="res-cat">${[m.category, m.round].filter(Boolean).join(' · ')}</div>` : '')
+                        + resRow(pair(m.team1), m.winner === 1)
+                        + resRow(pair(m.team2), m.winner === 2)
+                        + (m.score ? `<div class="res-score">${m.score}</div>` : '')
+                        + '</div>';
+                }
+            }
+            bar += '</div></div>';
+            stage.innerHTML = bar;
+            return;
+        }
+
         let html = headerHtml + '<div class="sc-wrap">';
 
-        if (variant === 'now' || variant === 'next' || variant === 'results') {
+        if (variant === 'now' || variant === 'next') {
             const items = sc.items || [];
-            const empty = variant === 'results' ? 'Nėra rezultatų' : 'Nėra suplanuotų rungtynių';
             if (!items.length) {
-                html += `<div class="sc-empty">${empty}</div>`;
+                html += '<div class="sc-empty">Nėra suplanuotų rungtynių</div>';
             } else {
                 html += `<div class="sc-list ${variant}">`;
                 for (const m of items) {
