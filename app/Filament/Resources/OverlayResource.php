@@ -113,7 +113,7 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
                                 ->default('groups')
                                 ->live(),
 
@@ -270,6 +270,51 @@ class OverlayResource extends Resource
                                 ->label('Kiek rodyti (Dabar / Toliau)')
                                 ->numeric()->minValue(1)->default(6)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
+
+                            Select::make('category_id')
+                                ->label('Kategorija (traukimui)')
+                                ->live()
+                                ->options(function ($livewire) {
+                                    $tid = data_get($livewire, 'data.tournament_external_id');
+                                    if (! $tid) {
+                                        return [];
+                                    }
+                                    $out = [];
+                                    foreach (app(OverlayData::class)->categories((string) $tid) as $c) {
+                                        $out[$c['id']] = $c['category']['name'] ?? ('#' . $c['id']);
+                                    }
+                                    return $out;
+                                })
+                                ->helperText('Iš čia užkrausi dalyvius valdymo puslapyje.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+
+                            Select::make('format')
+                                ->label('Formatas')
+                                ->options(['groups' => 'Grupių lentelės', 'bracket' => 'Bracket (sėklavimas)'])
+                                ->default('groups')->live()
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+
+                            TextInput::make('group_count')->label('Grupių skaičius')->numeric()->minValue(1)->default(4)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw' && ($get('format') ?? 'groups') === 'groups'),
+                            TextInput::make('group_size')->label('Komandų grupėje')->numeric()->minValue(2)->default(4)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw' && ($get('format') ?? 'groups') === 'groups'),
+                            Select::make('bracket_size')->label('Bracket dydis')->options([8 => 8, 16 => 16, 32 => 32])->default(16)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw' && ($get('format') ?? 'groups') === 'bracket'),
+
+                            Toggle::make('use_pots')->label('Naudoti krepšelius / sėklas')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('camera_corner')->label('Kameros kampas (skaidrus)')
+                                ->options(['bottom-right' => 'Apačia — dešinė', 'bottom-left' => 'Apačia — kairė', 'top-right' => 'Viršus — dešinė', 'top-left' => 'Viršus — kairė'])
+                                ->default('bottom-right')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Toggle::make('show_tournament')->label('Rodyti turnyro logo + pavadinimą')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('sponsor_ids')->label('Rėmėjai iš sąrašo')->multiple()
+                                ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            FileUpload::make('images')->label('Arba įkelk rėmėjų logotipus')
+                                ->image()->multiple()->reorderable()->disk('public')->directory('overlay-sponsors')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
 
                             Select::make('variant')
                                 ->label('Variantas')
