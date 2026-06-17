@@ -498,8 +498,8 @@
             bodyHtml += '</div>';
         } else {
             const groups = dr.board || [];
-            const cols = groups.length <= 2 ? groups.length : (groups.length <= 6 ? 3 : 4);
-            bodyHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols || 1},1fr)">`;
+            const cols = Math.min(2, groups.length || 1); // always 2 columns
+            bodyHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols},1fr)">`;
             for (const g of groups) {
                 bodyHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
                 g.slots.forEach((k, i) => {
