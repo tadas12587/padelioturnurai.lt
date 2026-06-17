@@ -190,6 +190,7 @@ class OverlayResource extends Resource
 
                             Select::make('category_id')
                                 ->label('Kategorija (bracketas)')
+                                ->live()
                                 ->options(function ($livewire) {
                                     $tid = data_get($livewire, 'data.tournament_external_id');
                                     if (! $tid) {
@@ -205,6 +206,20 @@ class OverlayResource extends Resource
                                     return $out;
                                 })
                                 ->helperText('Bracketas užsipildo automatiškai iš turnyro tinklelio.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
+
+                            Select::make('segments')
+                                ->label('Segmentai (bracketai)')
+                                ->helperText('Pvz. pagrindinis tinklelis, „dėl 3 vietos". Gali pažymėti kelis. Tuščia = visi.')
+                                ->multiple()
+                                ->options(function ($livewire, Forms\Get $get) {
+                                    $tid = data_get($livewire, 'data.tournament_external_id');
+                                    $cid = $get('category_id');
+                                    if (! $tid || ! $cid) {
+                                        return [];
+                                    }
+                                    return app(OverlayData::class)->bracketSegments((string) $tid, (int) $cid);
+                                })
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
 
                             Select::make('variant')

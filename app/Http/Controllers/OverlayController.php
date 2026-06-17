@@ -62,10 +62,20 @@ class OverlayController extends Controller
         $type = $window['type'] ?? 'groups';
 
         if ($type === 'bracket') {
-            $payload['bracket'] = $data->bracketForCategory(
+            $segments = $data->bracketSegmentsForCategory(
                 (string) $overlay->tournament_external_id,
                 (int) ($window['category_id'] ?? 0),
             );
+
+            $selected = array_map('strval', $window['segments'] ?? []);
+            if (! empty($selected)) {
+                $segments = array_values(array_filter(
+                    $segments,
+                    fn ($s) => in_array((string) ($s['key'] ?? ''), $selected, true),
+                ));
+            }
+
+            $payload['bracket'] = ['segments' => $segments];
         } elseif ($type === 'sponsors') {
             $payload['variant']        = $window['variant'] ?? 'corner';
             $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
