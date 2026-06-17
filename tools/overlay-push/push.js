@@ -117,7 +117,9 @@ function extractBracket(draw) {
   const third = thirdRound ? matchOf(thirdRound.seeds[0]) : null;
 
   // Placement brackets: leftover rounds (not main, not 3rd place) grouped into
-  // blocks, each ending in a "Nth place" round.
+  // blocks, each ending in a "Nth place" round. The block's place range is the
+  // segment label Tournated shows (5-8, 9-16, 13-16, …): the closing round is
+  // "(start+2)th place" and the block holds 2×(first-round matches) teams.
   const mainSet = new Set(main);
   const placements = [];
   let acc = [];
@@ -126,7 +128,14 @@ function extractBracket(draw) {
     acc.push({ title: '', matches: (r.seeds || []).map(matchOf) });
     const m = (r.title || '').match(/(\d+)\D*place/i);
     if (m) {
-      placements.push({ title: `Dėl ${m[1]} vietos`, rounds: acc });
+      const named = parseInt(m[1], 10);
+      const firstSeeds = (acc[0] && acc[0].matches.length) || 1;
+      const start = named - 2;
+      const end = start + 2 * firstSeeds - 1;
+      const label = (start > 0 && end >= start)
+        ? (start === end ? `Dėl ${start} vietos` : `${start}-${end}`)
+        : `Dėl ${named} vietos`;
+      placements.push({ key: `place-${named}`, title: label, rounds: acc });
       acc = [];
     }
   }
@@ -168,19 +177,28 @@ async function pushOnce(tournamentId) {
     let draws = [];
     try { draws = await fetchDraws(cat.id); } catch (_) { draws = []; }
 
-    // Each draw is a selectable "segment" (e.g. the main tree, or a separate
-    // "dėl N vietos" draw). A category can have several.
+    // Selectable "segments". A play-each-place draw is split into its main tree
+    // plus one segment per placement block (5-8, 9-16, …). Separate draws (one
+    // per place) each become a single segment labelled by their title.
     const segments = [];
     for (const draw of draws) {
       const b = extractBracket(draw);
-      if (b && b.rounds.length) {
+      if (!b || !b.rounds.length) continue;
+      if (b.placements && b.placements.length) {
         segments.push({
-          key: String(draw.id),
-          label: draw.title || '',
-          main_draw: !!draw.mainDraw,
-          rounds: b.rounds,
-          third: b.third,
-          placements: b.placements,
+          key: `${draw.id}-main`, label: 'Pagrindinis', is_main: true,
+          rounds: b.rounds, third: b.third, placements: [],
+        });
+        for (const p of b.placements) {
+          segments.push({
+            key: `${draw.id}-${p.key}`, label: p.title, is_main: false,
+            rounds: p.rounds, third: null, placements: [],
+          });
+        }
+      } else {
+        segments.push({
+          key: String(draw.id), label: draw.title || '', is_main: false,
+          rounds: b.rounds, third: b.third, placements: [],
         });
       }
     }
