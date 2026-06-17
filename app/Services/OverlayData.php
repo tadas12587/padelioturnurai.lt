@@ -119,6 +119,19 @@ class OverlayData
         return $byCategory[(string) $categoryId] ?? [];
     }
 
+    /**
+     * Frozen-pool source: the teams of a category from the snapshot, used to
+     * seed a draw window's participant pool.
+     *
+     * @return array<int,mixed>
+     */
+    public function participants(string $tournamentId, int $categoryId): array
+    {
+        $byCat = $this->payload($tournamentId)['participants_by_category'] ?? [];
+
+        return $byCat[(string) $categoryId] ?? [];
+    }
+
     /** @return array<string,mixed> */
     public function categoryStages(string $tournamentId): array
     {
@@ -194,6 +207,54 @@ class OverlayData
         }
 
         return ['groups' => $groups, 'subgroup_count' => count($groups)];
+    }
+
+    /**
+     * Assemble the draw-window payload from the live runtime state + config.
+     *
+     * @param  array<string,mixed>  $window
+     * @param  array<string,mixed>  $drawState
+     * @return array<string,mixed>
+     */
+    public function resolveDraw(array $window, array $drawState): array
+    {
+        $engine = app(\App\Services\DrawEngine::class);
+        $layout = $engine->layout($window);
+        $teams = collect($drawState['teams'] ?? [])->keyBy('id');
+
+        $nameOf = fn ($id) => $id === null ? null
+            : ['id' => $id, 'name' => $teams[$id]['name'] ?? ('#' . $id)];
+
+        $slots = [];
+        foreach (($drawState['slots'] ?? []) as $key => $tid) {
+            $slots[$key] = $nameOf($tid);
+        }
+
+        $placedIds = array_values(array_filter($drawState['slots'] ?? [], fn ($t) => $t !== null));
+        $pool = collect($drawState['teams'] ?? [])
+            ->reject(fn ($t) => in_array($t['id'], $placedIds, true))
+            ->map(fn ($t) => ['id' => $t['id'], 'name' => $t['name'] ?? ('#' . $t['id'])])
+            ->values()->all();
+
+        $current = $drawState['current'] ?? null;
+        if ($current) {
+            $current = ['name' => $teams[$current['team_id']]['name'] ?? '', 'slot' => $current['slot']];
+        }
+
+        $board = $layout['format'] === 'bracket' ? $layout['pairs'] : $layout['groups'];
+
+        return [
+            'format' => $layout['format'],
+            'board' => $board,
+            'slots' => $slots,
+            'pool' => $pool,
+            'current' => $current,
+            'status' => $drawState['status'] ?? 'idle',
+            'active_pot' => $drawState['active_pot'] ?? 1,
+            'camera_corner' => $window['camera_corner'] ?? 'bottom-right',
+            'show_tournament' => (bool) ($window['show_tournament'] ?? true),
+            'sponsors' => $this->resolveSponsors($window),
+        ];
     }
 
     /**

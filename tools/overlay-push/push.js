@@ -62,6 +62,23 @@ async function fetchGroups(categoryId) {
   return data.groups || [];
 }
 
+// ── Vienos kategorijos dalyviai (poros) ─────────────────────
+async function fetchParticipants(categoryId) {
+  const data = await gql(`{
+    entries(filter: { tournamentCategory: ${categoryId} }) {
+      id seed registrationRequest { users { user { name surname } } }
+    }
+  }`);
+  const pairName = (e) => (e.registrationRequest?.users || [])
+    .map((u) => `${u.user?.name || ''} ${u.user?.surname || ''}`.trim()).filter(Boolean).join(' / ');
+  return (data.entries || []).map((e) => ({
+    id: e.id,
+    name: pairName(e) || `#${e.id}`,
+    seed: e.seed ?? null,
+    pot: null,
+  }));
+}
+
 // ── Vienos kategorijos žaidynės (draws) ────────────────────
 async function fetchDraws(categoryId) {
   // `draws` returns raw JSON objects; presence indicates an elimination/main draw.
@@ -231,6 +248,7 @@ async function pushOnce(tournamentId) {
 
   const categories = tournament.tournamentCategory || [];
   const groupsByCategory = {};
+  const participantsByCategory = {};
 
   for (const cat of categories) {
     try {
@@ -238,6 +256,12 @@ async function pushOnce(tournamentId) {
     } catch (e) {
       console.error(`  ! Kategorija ${cat.id}: ${e.message}`);
       groupsByCategory[String(cat.id)] = [];
+    }
+    try {
+      participantsByCategory[String(cat.id)] = await fetchParticipants(cat.id);
+    } catch (e) {
+      console.error(`  ! Dalyviai ${cat.id}: ${e.message}`);
+      participantsByCategory[String(cat.id)] = [];
     }
   }
 
@@ -291,6 +315,7 @@ async function pushOnce(tournamentId) {
     title: tournament.title || null,
     categories,
     groups_by_category: groupsByCategory,
+    participants_by_category: participantsByCategory,
     category_stages: categoryStages,
     brackets_by_category: bracketsByCategory,
     matches,

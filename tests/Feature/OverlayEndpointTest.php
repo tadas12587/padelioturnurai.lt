@@ -189,6 +189,58 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('groups.0.segment', 'Main');
     }
 
+    public function test_ingest_stores_participants_by_category(): void
+    {
+        config(['services.overlay.ingest_token' => 'secret']);
+
+        $this->postJson('/overlay/ingest', [
+            'tournament_id' => '10424',
+            'participants_by_category' => [
+                '53636' => [['id' => 1, 'name' => 'Garcia / Lopez', 'seed' => 1]],
+            ],
+        ], ['X-Overlay-Token' => 'secret'])->assertOk();
+
+        $teams = app(\App\Services\OverlayData::class)->participants('10424', 53636);
+        $this->assertSame('Garcia / Lopez', $teams[0]['name']);
+        $this->assertSame(1, $teams[0]['seed']);
+    }
+
+    public function test_data_returns_draw_window_board(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'title' => 'Padelio Turnyras',
+            'participants_by_category' => ['53636' => [['id' => 1, 'name' => 'A / B', 'pot' => 1]]],
+        ]]);
+
+        $overlay = Overlay::create([
+            'name' => 'D', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [[
+                'id' => 'w1', 'type' => 'draw', 'name' => 'Traukimas', 'category_id' => 53636,
+                'format' => 'groups', 'group_count' => 2, 'group_size' => 2, 'use_pots' => true,
+                'camera_corner' => 'bottom-right', 'sponsor_ids' => [], 'images' => [],
+            ]],
+            'state' => [
+                'active_window_id' => 'w1', 'next_match' => '',
+                'draws' => ['w1' => [
+                    'teams' => [['id' => 1, 'name' => 'A / B', 'pot' => 1]],
+                    'slots' => ['A1' => 1, 'A2' => null, 'B1' => null, 'B2' => null],
+                    'current' => ['team_id' => 1, 'slot' => 'A1'], 'history' => [['team_id' => 1, 'slot' => 'A1']],
+                    'active_pot' => 1, 'status' => 'idle',
+                ]],
+            ],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJson(['visible' => true, 'window_type' => 'draw'])
+            ->assertJsonPath('draw.format', 'groups')
+            ->assertJsonPath('draw.camera_corner', 'bottom-right')
+            ->assertJsonPath('draw.board.0.label', 'A')
+            ->assertJsonPath('draw.slots.A1.name', 'A / B')
+            ->assertJsonPath('draw.current.name', 'A / B')
+            ->assertJsonPath('draw.current.slot', 'A1');
+    }
+
     public function test_wanted_rejects_without_token(): void
     {
         config(['services.overlay.ingest_token' => 'secret']);
