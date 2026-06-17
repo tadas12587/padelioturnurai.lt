@@ -82,6 +82,31 @@ class OverlayController extends Controller
     }
 
     /**
+     * List the tournament IDs the overlays actually need, so the external
+     * push bridge can follow the admin instead of a hardcoded ID. Same shared
+     * secret as ingest.
+     */
+    public function wanted(Request $request): JsonResponse
+    {
+        $expected = config('services.overlay.ingest_token');
+
+        if (! $expected || ! hash_equals($expected, (string) $request->header('X-Overlay-Token'))) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $ids = Overlay::query()
+            ->whereNotNull('tournament_external_id')
+            ->where('tournament_external_id', '!=', '')
+            ->pluck('tournament_external_id')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        return response()->json(['tournament_ids' => $ids]);
+    }
+
+    /**
      * Ingest a tournament snapshot pushed in by the external bridge.
      * Authenticated by a shared secret token (the host cannot reach the
      * Tournated API itself, so data is pushed in instead of pulled).
