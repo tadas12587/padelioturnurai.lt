@@ -85,8 +85,15 @@ async function fetchParticipants(tournamentId, categoryId) {
     if (nm) byReg.get(key).push(nm);
   }
 
+  // Drop incomplete (partner-pending) doubles entries: if any entry has a full
+  // pair, keep only entries of that size — mirrors the public participants list.
+  const groups = [...byReg.entries()];
+  const maxSize = groups.reduce((m, [, names]) => Math.max(m, names.length), 1);
+  const minNeeded = maxSize >= 2 ? 2 : 1;
+
   const out = [];
-  for (const [key, names] of byReg) {
+  for (const [key, names] of groups) {
+    if (names.length < minNeeded) continue;
     out.push({ id: key, name: names.join(' / ') || `#${key}`, seed: null, pot: null });
   }
   return out;
