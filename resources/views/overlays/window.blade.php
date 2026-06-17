@@ -192,7 +192,7 @@
         const b = d.bracket || { segments: [] };
         // Accept the legacy single-bracket shape as one segment.
         const segments = b.segments
-            || (b.rounds ? [{ label: '', rounds: b.rounds, third: b.third, placements: b.placements }] : []);
+            || (b.rounds ? [{ label: '', is_main: true, rounds: b.rounds, third: b.third, placements: b.placements }] : []);
 
         const setCells = (sets) => (sets || '').trim().split(/\s+/).filter(Boolean)
             .map((g) => `<span class="g">${g}</span>`).join('');
@@ -244,9 +244,8 @@
             return h;
         };
 
-        // Show a per-segment heading except for a single full main tree (stays clean).
-        const isFull = (seg) => (seg.rounds || []).length >= 2 || (seg.placements || []).length > 0;
-        const showTitles = segments.length > 1 || (segments.length === 1 && !isFull(segments[0]));
+        // Show a per-segment heading except for a single main tree shown alone (stays clean).
+        const showTitles = segments.length > 1 || (segments.length === 1 && !segments[0].is_main);
 
         let inner = headerHtml + '<div class="segments-row">';
         for (const seg of segments) {
