@@ -312,7 +312,7 @@ async function pushOnce(tournamentId) {
 
   const catCount = categories.length;
   const groupCount = Object.values(groupsByCategory).reduce((n, g) => n + g.length, 0);
-  console.log(`✅ [${new Date().toLocaleTimeString()}] Nusiųsta: "${tournament.title}" — ${catCount} kat., ${groupCount} grupių`);
+  console.log(`✅ [${new Date().toLocaleTimeString()}] Nusiųsta: "${tournament.title}" — ${catCount} kat., ${groupCount} grupių, ${matches.length} susitikimų`);
 }
 
 // ── Pagrindinis ciklas ──────────────────────────────────────
