@@ -94,6 +94,7 @@
                     scrim.style.opacity = 0;
                     const t = document.getElementById('ov-ticker'); if (t) t.remove();
                     const rv = document.getElementById('draw-reveal-host'); if (rv) rv.remove();
+                    const dh = document.getElementById('ov-draw'); if (dh) dh.remove();
                     return d;
                 }
 

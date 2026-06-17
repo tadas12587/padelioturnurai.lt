@@ -66,6 +66,53 @@ class DrawControlTest extends TestCase
         $this->assertCount(0, $placed);
     }
 
+    public function test_select_slot_then_place_team(): void
+    {
+        $overlay = $this->overlayWithDrawWindow();
+
+        Livewire::test(DrawControlPage::class)
+            ->set('overlayId', $overlay->id)
+            ->set('windowId', 'w1')
+            ->call('loadParticipants')
+            ->call('selectSlot', 'A1')
+            ->call('placeTeam', '1');
+
+        $this->assertSame('1', (string) $overlay->fresh()->state['draws']['w1']['slots']['A1']);
+    }
+
+    public function test_place_bye_into_selected_slot(): void
+    {
+        $overlay = $this->overlayWithDrawWindow();
+
+        Livewire::test(DrawControlPage::class)
+            ->set('overlayId', $overlay->id)
+            ->set('windowId', 'w1')
+            ->call('loadParticipants')
+            ->call('selectSlot', 'B1')
+            ->call('placeBye');
+
+        $this->assertSame('BYE', $overlay->fresh()->state['draws']['w1']['slots']['B1']);
+    }
+
+    public function test_add_and_remove_team_edits_pool(): void
+    {
+        $overlay = $this->overlayWithDrawWindow();
+
+        $comp = Livewire::test(DrawControlPage::class)
+            ->set('overlayId', $overlay->id)
+            ->set('windowId', 'w1')
+            ->call('loadParticipants')
+            ->set('newTeamName', 'Naujas / Žaidėjas')
+            ->call('addTeam');
+
+        $teams = $overlay->fresh()->state['draws']['w1']['teams'];
+        $this->assertCount(3, $teams);
+        $this->assertSame('Naujas / Žaidėjas', end($teams)['name']);
+
+        $comp->call('removeTeam', (string) $teams[0]['id']);
+        $this->assertCount(2, $overlay->fresh()->state['draws']['w1']['teams']);
+    }
+
     public function test_play_sets_active_window(): void
     {
         $overlay = $this->overlayWithDrawWindow();

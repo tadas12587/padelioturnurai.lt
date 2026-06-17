@@ -240,7 +240,11 @@
     // containers) so it can pin to the real screen bottom. Clear it each render;
     // the results branch re-creates it.
     { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
-    if ((d.window_type || 'groups') !== 'draw') { const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove(); window.__drawLastSlot = undefined; }
+    if ((d.window_type || 'groups') !== 'draw') {
+        const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
+        const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
+        window.__drawLastSlot = undefined;
+    }
 
     if ((d.window_type || 'groups') === 'sponsors') {
         clearInterval(window.__spTimer);
@@ -485,7 +489,14 @@
         const sponsors = (dr.sponsors || []).map((s) => `<img src="${s.logo}" alt="">`).join('');
         const sponsHtml = sponsors ? `<div class="draw-spons">${sponsors}</div>` : '';
 
-        stage.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
+        // The board is position:fixed, so it must live on <body> (outside #stage,
+        // whose will-change:transform would otherwise become its containing block
+        // and collapse it to a tiny box). Same trick as the results ticker.
+        stage.innerHTML = '';
+        const drawHost = document.getElementById('ov-draw') || (() => {
+            const h = document.createElement('div'); h.id = 'ov-draw'; document.body.appendChild(h); return h;
+        })();
+        drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
 
         // Reveal roulette: cycle remaining names ~2s then land on the current pick.
         clearInterval(window.__drawRoulette);
