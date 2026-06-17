@@ -221,25 +221,19 @@ class OverlayEndpointTest extends TestCase
                 'brackets_by_category' => [
                     '53642' => ['segments' => [
                         [
-                            'key' => '900', 'label' => 'Vyrai 40+', 'main_draw' => true,
+                            'key' => '900-main', 'label' => 'Pagrindinis', 'is_main' => true,
                             'rounds' => [
                                 ['title' => 'Finalas', 'matches' => [
                                     ['team1' => 'A', 'team2' => 'C', 'sets1' => '6', 'sets2' => '2', 'winner' => 1, 'court' => 'Kortas 2', 'time' => '10:00'],
                                 ]],
                             ],
                             'third' => ['team1' => 'B', 'team2' => 'D', 'sets1' => '', 'sets2' => '', 'winner' => 2],
-                            'placements' => [
-                                ['title' => 'Dėl 7 vietos', 'rounds' => [
-                                    ['title' => '', 'matches' => [
-                                        ['team1' => 'E', 'team2' => 'F', 'sets1' => '', 'sets2' => '', 'winner' => null],
-                                    ]],
-                                ]],
-                            ],
+                            'placements' => [],
                         ],
                         [
-                            'key' => '901', 'label' => 'Vyrai 40+ dėl 5 vietos', 'main_draw' => false,
-                            'rounds' => [['title' => 'Finalas', 'matches' => [
-                                ['team1' => 'G', 'team2' => 'H', 'sets1' => '', 'sets2' => '', 'winner' => null],
+                            'key' => '900-place-7', 'label' => '5-8', 'is_main' => false,
+                            'rounds' => [['title' => '', 'matches' => [
+                                ['team1' => 'E', 'team2' => 'F', 'sets1' => '', 'sets2' => '', 'winner' => null],
                             ]]],
                             'third' => null, 'placements' => [],
                         ],
@@ -257,11 +251,10 @@ class OverlayEndpointTest extends TestCase
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
             ->assertJson(['visible' => true, 'window_type' => 'bracket'])
-            ->assertJsonPath('bracket.segments.0.label', 'Vyrai 40+')
+            ->assertJsonPath('bracket.segments.0.label', 'Pagrindinis')
             ->assertJsonPath('bracket.segments.0.rounds.0.matches.0.court', 'Kortas 2')
             ->assertJsonPath('bracket.segments.0.third.team1', 'B')
-            ->assertJsonPath('bracket.segments.0.placements.0.title', 'Dėl 7 vietos')
-            ->assertJsonPath('bracket.segments.1.label', 'Vyrai 40+ dėl 5 vietos');
+            ->assertJsonPath('bracket.segments.1.label', '5-8');
     }
 
     public function test_bracket_window_filters_to_selected_segments(): void
