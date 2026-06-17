@@ -67,8 +67,9 @@ class OverlayData
         $b = $byCat[(string) $categoryId] ?? null;
 
         return [
-            'rounds' => $b['rounds'] ?? [],
-            'third'  => $b['third'] ?? null,
+            'rounds'     => $b['rounds'] ?? [],
+            'third'      => $b['third'] ?? null,
+            'placements' => $b['placements'] ?? [],
         ];
     }
 
