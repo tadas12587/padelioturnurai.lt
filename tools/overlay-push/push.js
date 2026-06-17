@@ -307,9 +307,4 @@ async function loop() {
   }
 }
 
-// Auto-run only when executed directly; allow requiring for tests.
-if (require.main === module) {
-  loop();
-}
-
-module.exports = { extractBracket };
+loop();
