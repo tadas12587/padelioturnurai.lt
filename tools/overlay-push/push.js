@@ -63,20 +63,31 @@ async function fetchGroups(categoryId) {
 }
 
 // ── Vienos kategorijos dalyviai (poros) ─────────────────────
-async function fetchParticipants(categoryId) {
+// Tournated grąžina po vieną eilutę kiekvienam žaidėjui; poros suporuojamos
+// pagal team.id (dvejetuose abu žaidėjai dalijasi ta pačia komanda).
+async function fetchParticipants(tournamentId, categoryId) {
   const data = await gql(`{
-    entries(filter: { tournamentCategory: ${categoryId} }) {
-      id seed registrationRequest { users { user { name surname } } }
+    tournamentRegistrationParticipants(tournament: ${tournamentId}, categoryId: ${categoryId}) {
+      registrationId
+      user { name surname }
+      team { id }
     }
   }`);
-  const pairName = (e) => (e.registrationRequest?.users || [])
-    .map((u) => `${u.user?.name || ''} ${u.user?.surname || ''}`.trim()).filter(Boolean).join(' / ');
-  return (data.entries || []).map((e) => ({
-    id: e.id,
-    name: pairName(e) || `#${e.id}`,
-    seed: e.seed ?? null,
-    pot: null,
-  }));
+  const rows = data.tournamentRegistrationParticipants || [];
+
+  const byTeam = new Map();
+  for (const r of rows) {
+    const key = (r.team && r.team.id) || `r${r.registrationId}`;
+    if (!byTeam.has(key)) byTeam.set(key, []);
+    const nm = `${r.user?.name || ''} ${r.user?.surname || ''}`.trim();
+    if (nm) byTeam.get(key).push(nm);
+  }
+
+  const out = [];
+  for (const [key, names] of byTeam) {
+    out.push({ id: key, name: names.join(' / ') || `#${key}`, seed: null, pot: null });
+  }
+  return out;
 }
 
 // ── Vienos kategorijos žaidynės (draws) ────────────────────
@@ -258,7 +269,7 @@ async function pushOnce(tournamentId) {
       groupsByCategory[String(cat.id)] = [];
     }
     try {
-      participantsByCategory[String(cat.id)] = await fetchParticipants(cat.id);
+      participantsByCategory[String(cat.id)] = await fetchParticipants(tournamentId, cat.id);
     } catch (e) {
       console.error(`  ! Dalyviai ${cat.id}: ${e.message}`);
       participantsByCategory[String(cat.id)] = [];
