@@ -93,7 +93,8 @@
                     if (shown) { stage.classList.remove('in'); shown = false; currentWindow = null; }
                     scrim.style.opacity = 0;
                     const t = document.getElementById('ov-ticker'); if (t) t.remove();
-                    return;
+                    const rv = document.getElementById('draw-reveal-host'); if (rv) rv.remove();
+                    return d;
                 }
 
                 setColors(d.colors);
@@ -102,7 +103,7 @@
 
                 const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
                     it: d.items, sc: d.schedule, sv: d.schedule_variant, nm: d.next_match,
-                    v: d.variant, tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
+                    dr: d.draw, v: d.variant, tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
 
                 if (!shown) {
                     render(d); playIntro(); shown = true; currentWindow = d.window_id; lastSig = sig;
@@ -112,10 +113,20 @@
                 } else if (sig !== lastSig) {
                     lastSig = sig; render(d);
                 }
-            } catch (e) { /* keep last good frame */ }
+                return d;
+            } catch (e) { /* keep last good frame */ return null; }
         }
-        tick();
-        setInterval(tick, POLL_MS);
+
+        // Self-scheduling poll: the draw window refreshes faster so the live
+        // reveal feels snappy; everything else stays on POLL_MS.
+        let pollTimer = null;
+        function schedule(d) {
+            const ms = (d && d.window_type === 'draw') ? 1000 : POLL_MS;
+            clearTimeout(pollTimer);
+            pollTimer = setTimeout(loop, ms);
+        }
+        async function loop() { const d = await tick(); schedule(d); }
+        loop();
     </script>
     @yield('extra_script')
 </body>

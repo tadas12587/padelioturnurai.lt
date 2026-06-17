@@ -195,6 +195,44 @@
     .spons.full img { width: min(640px, 60vw); height: min(360px, 52vh); object-fit: contain; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 
+    /* ── Draw (burtai) ───────────────────────────────────────── */
+    .draw-stage { position: fixed; inset: 0; padding: 28px 34px; display: flex; flex-direction: column; }
+    .draw-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .draw-head .left { display: flex; align-items: center; gap: 12px; }
+    .draw-head img { height: 46px; width: auto; object-fit: contain; }
+    .draw-head .tt { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 22px; color: var(--ov-text); line-height: 1.1; }
+    .draw-head .cat { font-size: 13px; color: var(--ov-muted); }
+    .draw-head .badge { font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 26px; color: var(--ov-accent); }
+    .draw-head .pot { font-family: 'Oswald',sans-serif; font-size: 12px; font-weight: 600; color: #0A0A0F; background: var(--ov-accent); padding: 3px 10px; border-radius: 6px; margin-left: 12px; }
+    .draw-body { flex: 1; display: flex; gap: 18px; min-height: 0; }
+    .draw-grid { flex: 1; display: grid; gap: 12px; align-content: start; }
+    .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px; padding: 8px 12px; }
+    .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 14px; color: var(--ov-accent); margin-bottom: 6px; }
+    .dg-slot { display: flex; gap: 8px; font-size: 15px; padding: 5px 0; border-top: 1px solid rgba(127,127,127,.14); }
+    .dg-slot:first-of-type { border-top: 0; }
+    .dg-slot .pos { color: var(--ov-muted); width: 18px; }
+    .dg-slot.empty .nm { color: #5a5a66; }
+    .dg-slot.just-in { animation: drawIn .6s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); background: var(--ov-accent); } to { opacity: 1; transform: none; } }
+    .db-pairs { flex: 1; display: grid; gap: 10px; align-content: start; }
+    .db-pair { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-left: 3px solid var(--ov-accent); border-radius: 6px; }
+    .db-pair .dg-slot { padding: 7px 12px; }
+    .draw-pool { width: 240px; flex: none; }
+    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--ov-muted); margin-bottom: 8px; }
+    .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .draw-pool .chip { font-size: 12px; background: rgba(127,127,127,.16); padding: 4px 9px; border-radius: 12px; color: var(--ov-text); }
+    .draw-reveal { position: fixed; left: 50%; top: 56%; transform: translate(-50%,-50%); background: var(--ov-accent); color: #0A0A0F; padding: 12px 26px; border-radius: 10px; text-align: center; box-shadow: 0 20px 50px -18px rgba(0,0,0,.7); }
+    .draw-reveal .k { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .14em; font-size: 11px; opacity: .7; }
+    .draw-reveal .nm { font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 22px; margin-top: 3px; }
+    .draw-reveal .to { font-size: 12px; margin-top: 2px; }
+    .draw-spons { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
+    .draw-spons img { height: 30px; width: auto; object-fit: contain; opacity: .9; }
+    .draw-done { color: var(--ov-accent); font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .14em; }
+    .draw-corner-bottom-right .draw-spons { padding-right: 32%; }
+    .draw-corner-bottom-left  .draw-spons { padding-left: 32%; }
+    .draw-corner-bottom-right .draw-pool,
+    .draw-corner-bottom-left  .draw-pool { margin-bottom: 22%; }
+
 @endsection
 
 @section('render_fn_body')
@@ -202,6 +240,7 @@
     // containers) so it can pin to the real screen bottom. Clear it each render;
     // the results branch re-creates it.
     { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
+    if ((d.window_type || 'groups') !== 'draw') { const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove(); window.__drawLastSlot = undefined; }
 
     if ((d.window_type || 'groups') === 'sponsors') {
         clearInterval(window.__spTimer);
@@ -400,6 +439,80 @@
 
         html += '</div>';
         stage.innerHTML = html;
+        return;
+    }
+
+    // ── Draw (burtai) ───────────────────────────────────────────
+    if ((d.window_type || 'groups') === 'draw') {
+        const dr = d.draw || {};
+        const slots = dr.slots || {};
+        const nameAt = (k) => (slots[k] && slots[k].name) || null;
+        const curSlot = dr.current && dr.current.slot;
+
+        const slotRow = (k, pos) => {
+            const nm = nameAt(k);
+            const justIn = (k === curSlot) ? ' just-in' : '';
+            return `<div class="dg-slot ${nm ? '' : 'empty'}${justIn}"><span class="pos">${pos}</span><span class="nm">${nm || '—'}</span></div>`;
+        };
+
+        let bodyHtml = '';
+        if (dr.format === 'bracket') {
+            bodyHtml = '<div class="db-pairs">';
+            for (const pair of (dr.board || [])) {
+                bodyHtml += `<div class="db-pair">${slotRow(pair[0], '')}${slotRow(pair[1], '')}</div>`;
+            }
+            bodyHtml += '</div>';
+        } else {
+            const groups = dr.board || [];
+            const cols = groups.length <= 2 ? groups.length : (groups.length <= 6 ? 3 : 4);
+            bodyHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols || 1},1fr)">`;
+            for (const g of groups) {
+                bodyHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
+                g.slots.forEach((k, i) => { bodyHtml += slotRow(k, (i + 1) + '.'); });
+                bodyHtml += '</div>';
+            }
+            bodyHtml += '</div>';
+        }
+
+        const pool = (dr.pool || []).map((t) => `<span class="chip">${t.name}</span>`).join('');
+        const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
+
+        const logo = dr.show_tournament && d.logo ? `<img src="${d.logo}" alt="">` : '';
+        const tt = dr.show_tournament ? (d.tournament_title || d.title || '') : '';
+        const headHtml = `<div class="draw-head"><div class="left">${logo}<div><div class="tt">${tt}</div><div class="cat">Burtai</div></div></div>`
+            + `<div><span class="badge">BURTAI</span>${dr.status !== 'done' ? `<span class="pot">Krepšelis ${dr.active_pot}</span>` : '<span class="draw-done">Baigta</span>'}</div></div>`;
+
+        const sponsors = (dr.sponsors || []).map((s) => `<img src="${s.logo}" alt="">`).join('');
+        const sponsHtml = sponsors ? `<div class="draw-spons">${sponsors}</div>` : '';
+
+        stage.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
+
+        // Reveal roulette: cycle remaining names ~2s then land on the current pick.
+        clearInterval(window.__drawRoulette);
+        const reveal = document.getElementById('draw-reveal-host') || (() => {
+            const h = document.createElement('div'); h.id = 'draw-reveal-host'; document.body.appendChild(h); return h;
+        })();
+        const cur = dr.current;
+        const prev = window.__drawLastSlot;
+        if (cur && cur.slot !== prev) {
+            window.__drawLastSlot = cur.slot;
+            const names = (dr.pool || []).map((t) => t.name).concat([cur.name]);
+            let i = 0, ticks = 0;
+            reveal.innerHTML = `<div class="draw-reveal"><div class="k">TRAUKIAMA…</div><div class="nm" id="rl-nm">${cur.name}</div><div class="to" id="rl-to"></div></div>`;
+            const nmEl = document.getElementById('rl-nm'), toEl = document.getElementById('rl-to');
+            window.__drawRoulette = setInterval(() => {
+                ticks++;
+                if (ticks < 16 && names.length > 1) { nmEl.textContent = names[i % names.length]; i++; }
+                else {
+                    clearInterval(window.__drawRoulette);
+                    nmEl.textContent = cur.name;
+                    toEl.textContent = '→ ' + cur.slot;
+                    setTimeout(() => { reveal.innerHTML = ''; }, 1800);
+                }
+            }, 110);
+        } else if (!cur) {
+            reveal.innerHTML = '';
+        }
         return;
     }
 
