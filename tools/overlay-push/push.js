@@ -63,6 +63,54 @@ async function fetchDraws(categoryId) {
   return data.draws || [];
 }
 
+// ── Bracket ištraukimas iš draw objekto ────────────────────
+function extractBracket(draw) {
+  const rounds = draw.rounds || [];
+  if (!rounds.length) return null;
+
+  const titleByCount = { 16: '1/16 finalis', 8: '1/8 finalis', 4: 'Ketvirtfinaliai', 2: 'Pusfinaliai', 1: 'Finalas' };
+  const pairName = (t) => (t.users || [])
+    .map((u) => `${u.user?.name || ''} ${u.user?.surname || ''}`.trim()).filter(Boolean).join(' / ');
+  const parseSets = (score) => {
+    const s1 = [], s2 = [];
+    (score || '').trim().split(/\s+/).filter(Boolean).forEach((tok) => {
+      const parts = tok.replace(/[\[\]]/g, '').split(':');
+      if (parts.length === 2) { s1.push(parts[0]); s2.push(parts[1]); }
+    });
+    return [s1.join(' '), s2.join(' ')];
+  };
+  const matchOf = (seed) => {
+    const teams = seed.teams || [];
+    const [sets1, sets2] = parseSets(seed.addScore && seed.addScore.addScore);
+    let winner = null;
+    if (seed.winner && teams[0] && seed.winner.id === teams[0].id) winner = 1;
+    else if (seed.winner && teams[1] && seed.winner.id === teams[1].id) winner = 2;
+    return {
+      team1: teams[0] ? pairName(teams[0]) : '',
+      team2: teams[1] ? pairName(teams[1]) : '',
+      sets1, sets2, winner,
+    };
+  };
+
+  const main = [];
+  let expected = (rounds[0].seeds || []).length;
+  for (const r of rounds) {
+    const c = (r.seeds || []).length;
+    if (c === expected) { main.push(r); if (c === 1) break; expected = c / 2; }
+    else break;
+  }
+  const outRounds = main.map((r) => ({
+    title: titleByCount[(r.seeds || []).length] || r.title || '',
+    matches: (r.seeds || []).map(matchOf),
+  }));
+
+  let third = null;
+  const t = rounds.find((r) => /3rd/i.test(r.title || '') && (r.seeds || []).length === 1);
+  if (t) third = matchOf(t.seeds[0]);
+
+  return { rounds: outRounds, third };
+}
+
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
 async function pushOnce() {
   const tournament = await fetchTournament(TOURNAMENT_ID);
@@ -81,6 +129,7 @@ async function pushOnce() {
   }
 
   const categoryStages = {};
+  const bracketsByCategory = {};
   for (const cat of categories) {
     const groups = groupsByCategory[String(cat.id)] || [];
     let draws = [];
@@ -91,6 +140,10 @@ async function pushOnce() {
       draw_type: draws[0]?.type ?? null,
       draw_size: draws[0]?.size ?? null,
     };
+    if (draws[0]) {
+      const b = extractBracket(draws[0]);
+      if (b && b.rounds.length) bracketsByCategory[String(cat.id)] = b;
+    }
   }
 
   const snapshot = {
@@ -99,6 +152,7 @@ async function pushOnce() {
     categories,
     groups_by_category: groupsByCategory,
     category_stages: categoryStages,
+    brackets_by_category: bracketsByCategory,
   };
 
   const res = await fetch(`${SITE_URL}/overlay/ingest`, {
