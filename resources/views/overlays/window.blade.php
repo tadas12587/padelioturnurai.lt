@@ -105,6 +105,10 @@
     .placement .bracket { padding: 0; }
     .placement .match { width: 198px; }
     .placement .team { font-size: 13px; padding: 6px 11px; }
+    /* 3rd place tucked under the final column */
+    .third-under { margin-top: 16px; display: flex; flex-direction: column; align-items: center; }
+    .third-under .match { width: 200px; }
+    .third-under .team { font-size: 13px; padding: 6px 11px; }
 
     /* ── Sponsors ────────────────────────────────────────────── */
     .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
@@ -194,11 +198,25 @@
             return h + '</div>';
         };
 
-        let inner = headerHtml + treeHtml(b.rounds);
+        // Main tree, with the 3rd-place match tucked under the final column (saves bottom space).
+        let mainHtml = '<div class="bracket">';
+        b.rounds.forEach((round, ri) => {
+            const last = ri === b.rounds.length - 1;
+            mainHtml += `<div class="round${last ? ' is-last' : ''}">`;
+            mainHtml += round.title ? `<div class="round-title">${round.title}</div>` : '';
+            mainHtml += '<div class="round-matches">';
+            for (const m of round.matches) mainHtml += `<div class="match-slot">${matchBox(m)}</div>`;
+            mainHtml += '</div>';
+            if (last && b.third) {
+                mainHtml += `<div class="third-under"><div class="placement-title">Dėl 3 vietos</div>${matchBox(b.third)}</div>`;
+            }
+            mainHtml += '</div>';
+        });
+        mainHtml += '</div>';
 
-        const blocks = [];
-        if (b.third) blocks.push({ title: 'Dėl 3 vietos', rounds: [{ title: '', matches: [b.third] }] });
-        for (const p of (b.placements || [])) blocks.push(p);
+        let inner = headerHtml + mainHtml;
+
+        const blocks = (b.placements || []);
         if (blocks.length) {
             inner += '<div class="placements-row">';
             for (const blk of blocks) {
