@@ -62,7 +62,10 @@ class OverlayController extends Controller
         $type = $window['type'] ?? 'groups';
 
         if ($type === 'bracket') {
-            $payload['bracket'] = $this->buildBracket($window['bracket_data'] ?? []);
+            $payload['bracket'] = $data->bracketForCategory(
+                (string) $overlay->tournament_external_id,
+                (int) ($window['category_id'] ?? 0),
+            );
         } elseif ($type === 'sponsors') {
             $payload['variant']        = $window['variant'] ?? 'corner';
             $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
@@ -79,74 +82,6 @@ class OverlayController extends Controller
     }
 
     /**
-     * Group the flat bracket match list into ordered rounds, auto-advancing
-     * winners into later rounds and filling the 3rd-place match from the
-     * semifinal losers. A non-empty stored team name overrides the derived one.
-     *
-     * @param  array<string,mixed>  $bracketData
-     * @return array{rounds:list<array{title:string,matches:list<array<string,mixed>>}>,third:?array<string,mixed>}
-     */
-    private function buildBracket(array $bracketData): array
-    {
-        $rounds = [];
-        $index = [];
-        $third = null;
-
-        $normalize = function (array $m): array {
-            $w = $m['winner'] ?? null;
-            return [
-                'team1'  => $m['team1'] ?? '',
-                'team2'  => $m['team2'] ?? '',
-                'sets1'  => $m['sets1'] ?? '',
-                'sets2'  => $m['sets2'] ?? '',
-                'winner' => ($w == 1) ? 1 : (($w == 2) ? 2 : null),
-            ];
-        };
-
-        foreach ($bracketData['matches'] ?? [] as $m) {
-            $entry = $normalize($m);
-            $title = $m['round'] ?? '';
-            if ($title === 'Dėl 3 vietos') {
-                $third = $entry;
-                continue;
-            }
-            if (! isset($index[$title])) {
-                $index[$title] = count($rounds);
-                $rounds[] = ['title' => $title, 'matches' => []];
-            }
-            $rounds[$index[$title]]['matches'][] = $entry;
-        }
-
-        $winnerName = fn (array $m) => $m['winner'] === 1 ? $m['team1'] : ($m['winner'] === 2 ? $m['team2'] : '');
-        $loserName  = fn (array $m) => $m['winner'] === 1 ? $m['team2'] : ($m['winner'] === 2 ? $m['team1'] : '');
-
-        for ($r = 1; $r < count($rounds); $r++) {
-            foreach ($rounds[$r]['matches'] as $i => &$match) {
-                $prev = $rounds[$r - 1]['matches'];
-                if ($match['team1'] === '' && isset($prev[2 * $i])) {
-                    $match['team1'] = $winnerName($prev[2 * $i]);
-                }
-                if ($match['team2'] === '' && isset($prev[2 * $i + 1])) {
-                    $match['team2'] = $winnerName($prev[2 * $i + 1]);
-                }
-            }
-            unset($match);
-        }
-
-        if ($third !== null && count($rounds) >= 2) {
-            $sf = $rounds[count($rounds) - 2]['matches'];
-            if (($third['team1'] ?? '') === '' && isset($sf[0])) {
-                $third['team1'] = $loserName($sf[0]);
-            }
-            if (($third['team2'] ?? '') === '' && isset($sf[1])) {
-                $third['team2'] = $loserName($sf[1]);
-            }
-        }
-
-        return ['rounds' => $rounds, 'third' => $third];
-    }
-
-    /**
      * Ingest a tournament snapshot pushed in by the external bridge.
      * Authenticated by a shared secret token (the host cannot reach the
      * Tournated API itself, so data is pushed in instead of pulled).
@@ -160,20 +95,22 @@ class OverlayController extends Controller
         }
 
         $validated = $request->validate([
-            'tournament_id'      => 'required',
-            'title'              => 'nullable|string',
-            'categories'         => 'array',
-            'groups_by_category' => 'array',
-            'category_stages'    => 'array',
+            'tournament_id'        => 'required',
+            'title'                => 'nullable|string',
+            'categories'           => 'array',
+            'groups_by_category'   => 'array',
+            'category_stages'      => 'array',
+            'brackets_by_category' => 'array',
         ]);
 
         OverlaySnapshot::updateOrCreate(
             ['tournament_external_id' => (string) $validated['tournament_id']],
             ['payload' => [
-                'title'              => $validated['title'] ?? null,
-                'categories'         => $validated['categories'] ?? [],
-                'groups_by_category' => $validated['groups_by_category'] ?? [],
-                'category_stages'    => $validated['category_stages'] ?? [],
+                'title'                => $validated['title'] ?? null,
+                'categories'           => $validated['categories'] ?? [],
+                'groups_by_category'   => $validated['groups_by_category'] ?? [],
+                'category_stages'      => $validated['category_stages'] ?? [],
+                'brackets_by_category' => $validated['brackets_by_category'] ?? [],
             ]],
         );
 

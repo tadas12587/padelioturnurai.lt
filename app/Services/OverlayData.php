@@ -56,6 +56,22 @@ class OverlayData
         return $this->payload($tournamentId)['categories'] ?? [];
     }
 
+    /**
+     * The stored normalized bracket for a category, from the pushed snapshot.
+     *
+     * @return array{rounds:array<int,mixed>,third:?array<string,mixed>}
+     */
+    public function bracketForCategory(string $tournamentId, int $categoryId): array
+    {
+        $byCat = $this->payload($tournamentId)['brackets_by_category'] ?? [];
+        $b = $byCat[(string) $categoryId] ?? null;
+
+        return [
+            'rounds' => $b['rounds'] ?? [],
+            'third'  => $b['third'] ?? null,
+        ];
+    }
+
     /** @return array<int,mixed> */
     public function groups(string $tournamentId, int $categoryId): array
     {

@@ -39,6 +39,7 @@ class OverlayIngestTest extends TestCase
                 '47817' => [['id' => 5, 'name' => 'A', 'entries' => [], 'matches' => []]],
             ],
             'category_stages' => ['47817' => ['has_groups' => true, 'has_bracket' => false]],
+            'brackets_by_category' => ['53642' => ['rounds' => [], 'third' => null]],
         ];
 
         $this->postJson('/overlay/ingest', $payload, ['X-Overlay-Token' => 'secret-token'])
@@ -50,6 +51,7 @@ class OverlayIngestTest extends TestCase
         $this->assertSame('Test turnyras', $snapshot->payload['title']);
         $this->assertArrayHasKey('47817', $snapshot->payload['groups_by_category']);
         $this->assertTrue($snapshot->payload['category_stages']['47817']['has_groups']);
+        $this->assertArrayHasKey('53642', $snapshot->payload['brackets_by_category']);
     }
 
     public function test_ingest_overwrites_previous_snapshot(): void

@@ -35,25 +35,6 @@ class OverlayResource extends Resource
 
     protected static ?string $navigationGroup = 'Transliacijos';
 
-    /**
-     * Persist winner advancement for every bracket window before saving, so the
-     * builder form (and overlay) fill later rounds with the winners.
-     *
-     * @param  array<string,mixed>  $data
-     * @return array<string,mixed>
-     */
-    public static function advanceBracketWindows(array $data): array
-    {
-        $data['windows'] = array_map(function ($window) {
-            if (($window['type'] ?? null) === 'bracket' && ! empty($window['bracket_data'])) {
-                $window['bracket_data'] = Overlay::advanceBracket($window['bracket_data']);
-            }
-            return $window;
-        }, $data['windows'] ?? []);
-
-        return $data;
-    }
-
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -186,33 +167,23 @@ class OverlayResource extends Resource
                                 ->columns(2)
                                 ->defaultItems(1),
 
-                            Select::make('bracket_data.size')
-                                ->label('Tinklelio dydis')
-                                ->options([8 => '8 komandų', 16 => '16 komandų'])
-                                ->live()
-                                ->afterStateUpdated(function ($state, Forms\Set $set) {
-                                    if ($state) {
-                                        $set('bracket_data.matches', Overlay::bracketSkeleton((int) $state));
+                            Select::make('category_id')
+                                ->label('Kategorija (bracketas)')
+                                ->options(function ($livewire) {
+                                    $tid = data_get($livewire, 'data.tournament_external_id');
+                                    if (! $tid) {
+                                        return [];
                                     }
+                                    $stages = app(OverlayData::class)->categoryStages((string) $tid);
+                                    $out = [];
+                                    foreach (app(OverlayData::class)->categories((string) $tid) as $c) {
+                                        if ($stages[(string) $c['id']]['has_bracket'] ?? false) {
+                                            $out[$c['id']] = $c['category']['name'] ?? ('#' . $c['id']);
+                                        }
+                                    }
+                                    return $out;
                                 })
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
-
-                            Repeater::make('bracket_data.matches')
-                                ->label('Mačai')
-                                ->helperText('Pildyk tik 1-ą raundą — vėlesni raundai užsipildo automatiškai pagal nugalėtojus.')
-                                ->addable(false)->deletable(false)->reorderable(false)
-                                ->itemLabel(fn (array $state) => $state['round'] ?? 'Mačas')
-                                ->schema([
-                                    Hidden::make('round'),
-                                    TextInput::make('team1')->label('Pora 1'),
-                                    TextInput::make('team2')->label('Pora 2'),
-                                    TextInput::make('sets1')->label('Setai (Pora 1), pvz. 6 6'),
-                                    TextInput::make('sets2')->label('Setai (Pora 2), pvz. 2 3'),
-                                    Select::make('winner')->label('Nugalėtojas')
-                                        ->options([1 => '1-as', 2 => '2-as'])->placeholder('—'),
-                                ])
-                                ->columns(2)
-                                ->collapsed()
+                                ->helperText('Bracketas užsipildo automatiškai iš turnyro tinklelio.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
 
                             Select::make('variant')

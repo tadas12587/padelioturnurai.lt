@@ -5,25 +5,12 @@ namespace App\Filament\Resources\OverlayResource\Pages;
 use App\Filament\Resources\OverlayResource;
 use App\Services\OverlayData;
 use Filament\Actions;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Contracts\View\View;
 
 class EditOverlay extends EditRecord
 {
     protected static string $resource = OverlayResource::class;
-
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        return OverlayResource::advanceBracketWindows($data);
-    }
-
-    protected function afterSave(): void
-    {
-        // Reload the form from the saved record so the auto-advanced bracket
-        // (winners moved up, 3rd place filled) shows immediately, no manual refresh.
-        $this->fillForm();
-    }
 
     protected function getHeaderActions(): array
     {
