@@ -196,45 +196,50 @@
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 
     /* ── Draw (burtai) ───────────────────────────────────────── */
-    .draw-stage { position: fixed; inset: 0; padding: 28px 34px; display: flex; flex-direction: column; }
-    .draw-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .draw-head .left { display: flex; align-items: center; gap: 12px; }
-    .draw-head img { height: 46px; width: auto; object-fit: contain; }
-    .draw-head .tt { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 22px; color: var(--ov-text); line-height: 1.1; }
-    .draw-head .cat { font-size: 13px; color: var(--ov-muted); }
-    .draw-head .badge { font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 26px; color: var(--ov-accent); }
-    .draw-head .pot { font-family: 'Oswald',sans-serif; font-size: 12px; font-weight: 600; color: #0A0A0F; background: var(--ov-accent); padding: 3px 10px; border-radius: 6px; margin-left: 12px; }
-    .draw-body { flex: 1; display: flex; gap: 18px; min-height: 0; }
-    .draw-grid { flex: 1; display: grid; gap: 12px; align-content: start; }
-    .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px; padding: 8px 12px; }
-    .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 14px; color: var(--ov-accent); margin-bottom: 6px; }
-    .dg-slot { display: flex; gap: 8px; font-size: 15px; padding: 5px 0; border-top: 1px solid rgba(127,127,127,.14); }
+    /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
+       body names ~28px (TV min 24–28), big group title ~46px, ~5% safe margin. */
+    .draw-stage { position: fixed; inset: 0; padding: 48px 64px; display: flex; flex-direction: column; }
+    .draw-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+    .draw-head .left { display: flex; align-items: center; gap: 18px; }
+    .draw-head img { height: 70px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 7px rgba(0,0,0,.6)); }
+    .draw-head .tt { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; font-size: 46px;
+        color: var(--ov-text); line-height: 1.04; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+    .draw-head .cat { font-family: 'Oswald',sans-serif; font-weight: 500; letter-spacing: .04em; font-size: 24px;
+        color: var(--ov-muted); text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+    .draw-head .badge { font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 42px;
+        color: var(--ov-accent); text-shadow: 0 2px 10px rgba(0,0,0,.6); white-space: nowrap; }
+    .draw-body { flex: 1; display: flex; gap: 30px; min-height: 0; }
+    .draw-grid { flex: 1; display: grid; gap: 18px; align-content: start; }
+    .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 4px solid var(--ov-accent); border-radius: 10px; padding: 14px 20px; }
+    .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 24px; color: var(--ov-accent); margin-bottom: 8px; }
+    .dg-slot { display: flex; gap: 14px; font-size: 28px; padding: 9px 0; border-top: 1px solid rgba(127,127,127,.14); line-height: 1.15; }
     .dg-slot:first-of-type { border-top: 0; }
-    .dg-slot .pos { color: var(--ov-muted); width: 18px; }
+    .dg-slot .pos { color: var(--ov-muted); min-width: 30px; flex: none; }
+    .dg-slot .nm { font-weight: 500; }
     .dg-slot.empty .nm { color: #5a5a66; font-style: italic; }
     .dg-slot.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
     .dg-slot.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
     @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
     /* bracket draw: first-round seeding sheet (match cards in a grid) */
-    .draw-bracket { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 14px 30px; align-content: start; }
-    .dmatch { display: flex; align-items: center; gap: 12px; }
-    .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 14px; color: var(--ov-muted);
-        min-width: 22px; text-align: right; flex: none; }
+    .draw-bracket { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        gap: 18px 38px; align-content: start; }
+    .dmatch { display: flex; align-items: center; gap: 14px; }
+    .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 26px; color: var(--ov-muted);
+        min-width: 32px; text-align: right; flex: none; }
     .dmatch-card { flex: 1; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28);
-        border-left: 3px solid var(--ov-accent); border-radius: 8px; overflow: hidden;
+        border-left: 4px solid var(--ov-accent); border-radius: 10px; overflow: hidden;
         box-shadow: 0 14px 32px -20px rgba(0,0,0,.7); }
-    .dteam { display: flex; align-items: center; gap: 12px; padding: 10px 14px; font-size: 16px; color: var(--ov-text); }
+    .dteam { display: flex; align-items: center; gap: 16px; padding: 13px 20px; font-size: 28px; color: var(--ov-text); line-height: 1.15; }
     .dteam + .dteam { border-top: 1px solid rgba(127,127,127,.16); }
-    .dteam .pos { font-family: 'Oswald',sans-serif; font-size: 12px; color: var(--ov-muted); min-width: 18px; text-align: center; }
+    .dteam .pos { font-family: 'Oswald',sans-serif; font-size: 19px; color: var(--ov-muted); min-width: 26px; text-align: center; flex: none; }
     .dteam .nm { font-weight: 500; }
     .dteam.empty .nm { color: #5a5a66; font-style: italic; }
     .dteam.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
     .dteam.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
-    .draw-pool { width: 240px; flex: none; }
-    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--ov-muted); margin-bottom: 8px; }
-    .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .draw-pool .chip { font-size: 12px; background: rgba(127,127,127,.16); padding: 4px 9px; border-radius: 12px; color: var(--ov-text); }
+    .draw-pool { width: 280px; flex: none; }
+    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 18px; color: var(--ov-muted); margin-bottom: 12px; }
+    .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .draw-pool .chip { font-size: 19px; background: rgba(127,127,127,.16); padding: 6px 12px; border-radius: 14px; color: var(--ov-text); }
     .draw-reveal { position: fixed; left: 50%; top: 56%; transform: translate(-50%,-50%); background: var(--ov-accent); color: #0A0A0F; padding: 12px 26px; border-radius: 10px; text-align: center; box-shadow: 0 20px 50px -18px rgba(0,0,0,.7); }
     .draw-reveal .k { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .14em; font-size: 11px; opacity: .7; }
     .draw-reveal .nm { font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 22px; margin-top: 3px; }
@@ -242,8 +247,8 @@
     .draw-spons { margin-top: 14px; overflow: hidden; }
     .sp-track { display: flex; width: max-content; animation-name: spMarquee; animation-timing-function: linear; animation-iteration-count: infinite; }
     @keyframes spMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    .sp-tile { width: 150px; height: 56px; flex: none; margin-right: 12px; display: flex; align-items: center; justify-content: center;
-        background: rgba(255,255,255,.06); border: 1px solid rgba(127,127,127,.22); border-radius: 8px; padding: 8px; }
+    .sp-tile { width: 180px; height: 72px; flex: none; margin-right: 14px; display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,.06); border: 1px solid rgba(127,127,127,.22); border-radius: 8px; padding: 10px; }
     .sp-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .draw-done { margin-left: 12px; color: var(--ov-accent); font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .14em; }
     /* Reserve a wide band on the camera side for the live video feed. */
