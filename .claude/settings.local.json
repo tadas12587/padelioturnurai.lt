@@ -87,7 +87,8 @@
       "Bash(rm -f _raw.json)",
       "Bash(gh pr *)",
       "Bash(gh repo *)",
-      "Bash(php -l app/Filament/Pages/DrawControlPage.php)"
+      "Bash(php -l app/Filament/Pages/DrawControlPage.php)",
+      "WebSearch"
     ]
   }
 }

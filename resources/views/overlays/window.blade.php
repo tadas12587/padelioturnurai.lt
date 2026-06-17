@@ -211,12 +211,26 @@
     .dg-slot { display: flex; gap: 8px; font-size: 15px; padding: 5px 0; border-top: 1px solid rgba(127,127,127,.14); }
     .dg-slot:first-of-type { border-top: 0; }
     .dg-slot .pos { color: var(--ov-muted); width: 18px; }
-    .dg-slot.empty .nm { color: #5a5a66; }
-    .dg-slot.just-in { animation: drawIn .6s cubic-bezier(.16,1,.3,1) both; }
-    @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); background: var(--ov-accent); } to { opacity: 1; transform: none; } }
-    .db-pairs { flex: 1; display: grid; gap: 10px; align-content: start; }
-    .db-pair { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-left: 3px solid var(--ov-accent); border-radius: 6px; }
-    .db-pair .dg-slot { padding: 7px 12px; }
+    .dg-slot.empty .nm { color: #5a5a66; font-style: italic; }
+    .dg-slot.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
+    .dg-slot.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    /* bracket draw: first-round seeding sheet (match cards in a grid) */
+    .draw-bracket { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 14px 30px; align-content: start; }
+    .dmatch { display: flex; align-items: center; gap: 12px; }
+    .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 14px; color: var(--ov-muted);
+        min-width: 22px; text-align: right; flex: none; }
+    .dmatch-card { flex: 1; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28);
+        border-left: 3px solid var(--ov-accent); border-radius: 8px; overflow: hidden;
+        box-shadow: 0 14px 32px -20px rgba(0,0,0,.7); }
+    .dteam { display: flex; align-items: center; gap: 12px; padding: 10px 14px; font-size: 16px; color: var(--ov-text); }
+    .dteam + .dteam { border-top: 1px solid rgba(127,127,127,.16); }
+    .dteam .pos { font-family: 'Oswald',sans-serif; font-size: 12px; color: var(--ov-muted); min-width: 18px; text-align: center; }
+    .dteam .nm { font-weight: 500; }
+    .dteam.empty .nm { color: #5a5a66; font-style: italic; }
+    .dteam.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
+    .dteam.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
     .draw-pool { width: 240px; flex: none; }
     .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--ov-muted); margin-bottom: 8px; }
     .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -451,20 +465,23 @@
         const dr = d.draw || {};
         const slots = dr.slots || {};
         const nameAt = (k) => (slots[k] && slots[k].name) || null;
-        const curSlot = dr.current && dr.current.slot;
-
-        const slotRow = (k, pos) => {
+        // Animate only the slot that changed since the previous render (once).
+        const animSlot = (dr.current && dr.current.slot !== window.__drawLastSlot) ? dr.current.slot : null;
+        const cellClass = (k) => {
             const nm = nameAt(k);
-            const justIn = (k === curSlot) ? ' just-in' : '';
-            return `<div class="dg-slot ${nm ? '' : 'empty'}${justIn}"><span class="pos">${pos}</span><span class="nm">${nm || '—'}</span></div>`;
+            return [nm ? '' : 'empty', nm === 'BYE' ? 'bye' : '', k === animSlot ? 'just-in' : ''].filter(Boolean).join(' ');
         };
 
         let bodyHtml = '';
         if (dr.format === 'bracket') {
-            bodyHtml = '<div class="db-pairs">';
-            for (const pair of (dr.board || [])) {
-                bodyHtml += `<div class="db-pair">${slotRow(pair[0], '')}${slotRow(pair[1], '')}</div>`;
-            }
+            // First-round match cards (the seeding sheet) — clean, professional,
+            // scales to 8/16/32. Physical slot number shown as the seed position.
+            const teamRow = (k) => `<div class="dteam ${cellClass(k)}"><span class="pos">${k}</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+            bodyHtml = '<div class="draw-bracket">';
+            (dr.board || []).forEach((pair, i) => {
+                bodyHtml += `<div class="dmatch"><div class="dmatch-no">${i + 1}</div>`
+                    + `<div class="dmatch-card">${teamRow(pair[0])}${teamRow(pair[1])}</div></div>`;
+            });
             bodyHtml += '</div>';
         } else {
             const groups = dr.board || [];
@@ -472,7 +489,9 @@
             bodyHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols || 1},1fr)">`;
             for (const g of groups) {
                 bodyHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
-                g.slots.forEach((k, i) => { bodyHtml += slotRow(k, (i + 1) + '.'); });
+                g.slots.forEach((k, i) => {
+                    bodyHtml += `<div class="dg-slot ${cellClass(k)}"><span class="pos">${i + 1}.</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+                });
                 bodyHtml += '</div>';
             }
             bodyHtml += '</div>';
@@ -498,32 +517,9 @@
         })();
         drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
 
-        // Reveal roulette: cycle remaining names ~2s then land on the current pick.
-        clearInterval(window.__drawRoulette);
-        const reveal = document.getElementById('draw-reveal-host') || (() => {
-            const h = document.createElement('div'); h.id = 'draw-reveal-host'; document.body.appendChild(h); return h;
-        })();
-        const cur = dr.current;
-        const prev = window.__drawLastSlot;
-        if (cur && cur.slot !== prev) {
-            window.__drawLastSlot = cur.slot;
-            const names = (dr.pool || []).map((t) => t.name).concat([cur.name]);
-            let i = 0, ticks = 0;
-            reveal.innerHTML = `<div class="draw-reveal"><div class="k">TRAUKIAMA…</div><div class="nm" id="rl-nm">${cur.name}</div><div class="to" id="rl-to"></div></div>`;
-            const nmEl = document.getElementById('rl-nm'), toEl = document.getElementById('rl-to');
-            window.__drawRoulette = setInterval(() => {
-                ticks++;
-                if (ticks < 16 && names.length > 1) { nmEl.textContent = names[i % names.length]; i++; }
-                else {
-                    clearInterval(window.__drawRoulette);
-                    nmEl.textContent = cur.name;
-                    toEl.textContent = '→ ' + cur.slot;
-                    setTimeout(() => { reveal.innerHTML = ''; }, 1800);
-                }
-            }, 110);
-        } else if (!cur) {
-            reveal.innerHTML = '';
-        }
+        // Remember which slot was last filled so the slide-in only fires once.
+        window.__drawLastSlot = dr.current ? dr.current.slot : undefined;
+        const _rv = document.getElementById('draw-reveal-host'); if (_rv) _rv.remove();
         return;
     }
 
