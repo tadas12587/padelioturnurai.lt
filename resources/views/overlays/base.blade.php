@@ -92,6 +92,7 @@
                 if (!d.visible) {
                     if (shown) { stage.classList.remove('in'); shown = false; currentWindow = null; }
                     scrim.style.opacity = 0;
+                    const t = document.getElementById('ov-ticker'); if (t) t.remove();
                     return;
                 }
 
@@ -100,8 +101,8 @@
                 root.className = 'pos-' + (d.position || 'bottom-left');
 
                 const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
-                    it: d.items, nm: d.next_match, v: d.variant, tt: d.tournament_title,
-                    ti: d.title, lg: d.logo, c: d.columns });
+                    it: d.items, sc: d.schedule, sv: d.schedule_variant, nm: d.next_match,
+                    v: d.variant, tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
 
                 if (!shown) {
                     render(d); playIntro(); shown = true; currentWindow = d.window_id; lastSig = sig;

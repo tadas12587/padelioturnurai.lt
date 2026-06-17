@@ -388,12 +388,16 @@ class OverlayEndpointTest extends TestCase
             'score' => $score, 'finished_at' => $finished, 'team1' => ['A B'], 'team2' => ['C D'], 'winner' => 1,
         ];
 
+        $live = $base(5, '14:00', 'in_progress', null, '3:2');
+        $live['in_progress'] = true; // has a score but still playing → excluded
+
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
             'matches' => [
                 $base(1, '11:00', 'completed', '2026-04-18T11:50:00', '6:2'),
                 $base(2, '12:00', 'completed', '2026-04-18T13:05:00', '7:5'),
                 $base(3, '13:00', 'pending', null, null),
                 $base(4, '10:00', 'completed', null, null), // no score → excluded
+                $live,
             ],
         ]]);
 
