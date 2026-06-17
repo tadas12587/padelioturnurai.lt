@@ -126,6 +126,29 @@
     .third-under .match { width: 200px; }
     .third-under .team { font-size: 13px; padding: 6px 11px; }
 
+    /* ── Schedule (order of play) ─────────────────────────────── */
+    .sc-wrap { display: flex; flex-direction: column; gap: 14px; }
+    .sc-empty { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .1em;
+        color: var(--ov-muted); padding: 18px; }
+    .sc-cols { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-start; }
+    .sc-col { flex: 1 1 200px; min-width: 200px; background: var(--ov-bg);
+        border: 1px solid rgba(127,127,127,.22); border-radius: 8px; overflow: hidden; }
+    .sc-col-head { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase;
+        letter-spacing: .08em; font-size: 14px; color: var(--ov-accent);
+        padding: 9px 13px; border-bottom: 1px solid rgba(127,127,127,.22); }
+    .sc-row, .sc-card { padding: 9px 13px; border-bottom: 1px solid rgba(127,127,127,.12); }
+    .sc-list { display: flex; flex-direction: column; gap: 10px; }
+    .sc-card { border: 1px solid rgba(127,127,127,.22); border-left: 3px solid rgba(127,127,127,.4);
+        border-radius: 6px; background: var(--ov-bg); }
+    .sc-card.live { border-left-color: var(--ov-accent); box-shadow: 0 0 16px -6px var(--ov-accent); }
+    .sc-meta { font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: .06em;
+        font-size: 11px; color: var(--ov-muted); margin-bottom: 4px; }
+    .sc-teams { display: flex; flex-direction: column; gap: 2px; font-family: 'Barlow', sans-serif;
+        font-size: 14px; color: var(--ov-text); }
+    .sc-teams .win { color: var(--ov-accent); font-weight: 700; }
+    .sc-score { font-family: 'Oswald', sans-serif; font-variant-numeric: tabular-nums;
+        font-size: 12px; color: var(--ov-muted); margin-top: 4px; }
+
     /* ── Sponsors ────────────────────────────────────────────── */
     .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
     .sp-item.show { opacity: 1; }
@@ -272,6 +295,57 @@
                 }
             });
         }
+        return;
+    }
+
+    // ── Schedule (order of play) ────────────────────────────────
+    if ((d.window_type || 'groups') === 'schedule') {
+        const sc = d.schedule || {};
+        const variant = d.schedule_variant || 'by_court';
+        const pair = (t) => (t && t.length) ? t.join(' / ') : 'TBD';
+        const teams = (m) =>
+            `<div class="sc-teams"><span class="${m.winner === 1 ? 'win' : ''}">${pair(m.team1)}</span>`
+          + `<span class="${m.winner === 2 ? 'win' : ''}">${pair(m.team2)}</span></div>`;
+        const meta = (parts) => `<div class="sc-meta">${parts.filter(Boolean).join(' · ')}</div>`;
+
+        let html = headerHtml + '<div class="sc-wrap">';
+
+        if (variant === 'now' || variant === 'next') {
+            const items = sc.items || [];
+            if (!items.length) {
+                html += '<div class="sc-empty">Nėra suplanuotų rungtynių</div>';
+            } else {
+                html += `<div class="sc-list ${variant}">`;
+                for (const m of items) {
+                    html += `<div class="sc-card${variant === 'now' ? ' live' : ''}">`
+                        + meta([m.time, m.court, m.category].filter(Boolean))
+                        + teams(m)
+                        + (m.score ? `<div class="sc-score">${m.score}</div>` : '')
+                        + '</div>';
+                }
+                html += '</div>';
+            }
+        } else {
+            const groups = sc.groups || [];
+            if (!groups.length) {
+                html += '<div class="sc-empty">Nėra suplanuotų rungtynių</div>';
+            } else {
+                html += `<div class="sc-cols ${variant}">`;
+                for (const g of groups) {
+                    html += `<div class="sc-col"><div class="sc-col-head">${g.heading || '—'}</div>`;
+                    for (const m of g.matches) {
+                        const tag = variant === 'by_time' ? m.court : m.time;
+                        html += `<div class="sc-row">${meta([tag, m.category].filter(Boolean))}${teams(m)}`
+                            + (m.score ? `<div class="sc-score">${m.score}</div>` : '') + '</div>';
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+        }
+
+        html += '</div>';
+        stage.innerHTML = html;
         return;
     }
 
