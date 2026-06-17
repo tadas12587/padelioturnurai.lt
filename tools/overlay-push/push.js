@@ -69,6 +69,50 @@ async function fetchDraws(categoryId) {
   return data.draws || [];
 }
 
+// ── Susitikimai (order of play) ─────────────────────────────
+function normalizeMatch(m) {
+  const names = (p) => (p && p.users)
+    ? p.users.map((u) => `${u.name || ''} ${u.surname || ''}`.trim()).filter(Boolean) : [];
+  const e1 = m.entry1 && m.entry1.id;
+  const e2 = m.entry2 && m.entry2.id;
+  const w = m.winner && m.winner.id;
+  let winner = null;
+  if (w != null && e1 != null && w === e1) winner = 1;
+  else if (w != null && e2 != null && w === e2) winner = 2;
+  return {
+    id: m.id,
+    date: (m.date || '').slice(0, 10),
+    time: m.time || null,
+    duration: m.duration || null,
+    court: (m.court && m.court.name) || null,
+    court_id: (m.court && m.court.id) || null,
+    category_id: (m.tournamentCategory && m.tournamentCategory.id) || null,
+    category: (m.tournamentCategory && m.tournamentCategory.category && m.tournamentCategory.category.name) || null,
+    status: m.status || null,
+    in_progress: !!m.isMatchInProgress,
+    round: m.round || null,
+    segment: m.bracketType || null,
+    score: m.score || null,
+    team1: names(m.participant1),
+    team2: names(m.participant2),
+    winner,
+  };
+}
+
+async function fetchMatches(tournamentId) {
+  const data = await gql(`{
+    matches(filter: { tournament: ${tournamentId} }) {
+      id time date duration status isMatchInProgress round bracketType score
+      court { id name }
+      tournamentCategory { id category { name } }
+      entry1 { id } entry2 { id } winner { id }
+      participant1 { users { name surname } }
+      participant2 { users { name surname } }
+    }
+  }`);
+  return (data.matches || []).map(normalizeMatch);
+}
+
 // ── Bracket ištraukimas iš draw objekto ────────────────────
 function extractBracket(draw) {
   const rounds = draw.rounds || [];
@@ -238,6 +282,9 @@ async function pushOnce(tournamentId) {
     if (segments.length) bracketsByCategory[String(cat.id)] = { segments };
   }
 
+  let matches = [];
+  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
+
   const snapshot = {
     tournament_id: tournamentId,
     title: tournament.title || null,
@@ -245,6 +292,7 @@ async function pushOnce(tournamentId) {
     groups_by_category: groupsByCategory,
     category_stages: categoryStages,
     brackets_by_category: bracketsByCategory,
+    matches,
   };
 
   const res = await fetch(`${SITE_URL}/overlay/ingest`, {
@@ -307,9 +355,4 @@ async function loop() {
   }
 }
 
-// Auto-run only when executed directly; allow requiring for tests.
-if (require.main === module) {
-  loop();
-}
-
-module.exports = { extractBracket };
+loop();

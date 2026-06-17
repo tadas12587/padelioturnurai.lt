@@ -8,6 +8,7 @@ use App\Services\OverlayData;
 use Filament\Forms;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -112,7 +113,7 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'sponsors' => 'Rėmėjai'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
                                 ->default('groups')
                                 ->live(),
 
@@ -221,6 +222,53 @@ class OverlayResource extends Resource
                                     return app(OverlayData::class)->bracketSegments((string) $tid, (int) $cid);
                                 })
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'bracket'),
+
+                            Select::make('schedule_variant')
+                                ->label('Variantas')
+                                ->options([
+                                    'by_court' => 'Pagal kortą',
+                                    'by_time'  => 'Pagal laiką',
+                                    'now'      => 'Dabar žaidžiama',
+                                    'next'     => 'Toliau',
+                                ])
+                                ->default('by_court')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
+
+                            DatePicker::make('date')
+                                ->label('Data')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
+
+                            Select::make('category_ids')
+                                ->label('Kategorijos')
+                                ->placeholder('Visos kategorijos')
+                                ->multiple()
+                                ->options(function ($livewire) {
+                                    $tid = data_get($livewire, 'data.tournament_external_id');
+                                    if (! $tid) {
+                                        return [];
+                                    }
+                                    $out = [];
+                                    foreach (app(OverlayData::class)->categories((string) $tid) as $c) {
+                                        $out[$c['id']] = $c['category']['name'] ?? ('#' . $c['id']);
+                                    }
+                                    return $out;
+                                })
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
+
+                            Select::make('courts')
+                                ->label('Kortai')
+                                ->placeholder('Visi kortai')
+                                ->multiple()
+                                ->options(function ($livewire) {
+                                    $tid = data_get($livewire, 'data.tournament_external_id');
+                                    return $tid ? app(OverlayData::class)->courts((string) $tid) : [];
+                                })
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
+
+                            TextInput::make('limit')
+                                ->label('Kiek rodyti (Dabar / Toliau)')
+                                ->numeric()->minValue(1)->default(6)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'schedule'),
 
                             Select::make('variant')
                                 ->label('Variantas')
