@@ -239,8 +239,10 @@
     .draw-reveal .k { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .14em; font-size: 11px; opacity: .7; }
     .draw-reveal .nm { font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 22px; margin-top: 3px; }
     .draw-reveal .to { font-size: 12px; margin-top: 2px; }
-    .draw-spons { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
-    .draw-spons img { height: 30px; width: auto; object-fit: contain; opacity: .9; }
+    .draw-spons { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    .sp-tile { width: 150px; height: 56px; flex: none; display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,.06); border: 1px solid rgba(127,127,127,.22); border-radius: 8px; padding: 8px; }
+    .sp-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .draw-done { color: var(--ov-accent); font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .14em; }
     .draw-corner-bottom-right .draw-spons { padding-right: 32%; }
     .draw-corner-bottom-left  .draw-spons { padding-left: 32%; }
@@ -257,6 +259,7 @@
     if ((d.window_type || 'groups') !== 'draw') {
         const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
         const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
+        clearInterval(window.__drawSpons);
         window.__drawLastSlot = undefined;
     }
 
@@ -505,8 +508,8 @@
         const headHtml = `<div class="draw-head"><div class="left">${logo}<div><div class="tt">${tt}</div><div class="cat">Burtai</div></div></div>`
             + `<div><span class="badge">BURTAI</span>${dr.status !== 'done' ? `<span class="pot">Krepšelis ${dr.active_pot}</span>` : '<span class="draw-done">Baigta</span>'}</div></div>`;
 
-        const sponsors = (dr.sponsors || []).map((s) => `<img src="${s.logo}" alt="">`).join('');
-        const sponsHtml = sponsors ? `<div class="draw-spons">${sponsors}</div>` : '';
+        const allSponsors = dr.sponsors || [];
+        const sponsHtml = allSponsors.length ? '<div class="draw-spons" id="draw-spons"></div>' : '';
 
         // The board is position:fixed, so it must live on <body> (outside #stage,
         // whose will-change:transform would otherwise become its containing block
@@ -516,6 +519,23 @@
             const h = document.createElement('div'); h.id = 'ov-draw'; document.body.appendChild(h); return h;
         })();
         drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
+
+        // Sponsors: equal-size tiles, max 6 at a time, paging every rotate_seconds.
+        clearInterval(window.__drawSpons);
+        const spEl = document.getElementById('draw-spons');
+        if (spEl && allSponsors.length) {
+            const PER = 6;
+            const pages = [];
+            for (let i = 0; i < allSponsors.length; i += PER) pages.push(allSponsors.slice(i, i + PER));
+            let p = 0;
+            const paint = () => {
+                spEl.innerHTML = pages[p].map((s) => `<div class="sp-tile"><img src="${s.logo}" alt=""></div>`).join('');
+            };
+            paint();
+            if (pages.length > 1) {
+                window.__drawSpons = setInterval(() => { p = (p + 1) % pages.length; paint(); }, (dr.rotate_seconds || 8) * 1000);
+            }
+        }
 
         // Remember which slot was last filled so the slide-in only fires once.
         window.__drawLastSlot = dr.current ? dr.current.slot : undefined;

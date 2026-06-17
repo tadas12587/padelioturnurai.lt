@@ -254,6 +254,7 @@ class OverlayData
             'camera_corner' => $window['camera_corner'] ?? 'bottom-right',
             'show_tournament' => (bool) ($window['show_tournament'] ?? true),
             'sponsors' => $this->resolveSponsors($window),
+            'rotate_seconds' => (int) ($window['rotate_seconds'] ?? 8),
         ];
     }
 

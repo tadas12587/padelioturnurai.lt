@@ -315,6 +315,10 @@ class OverlayResource extends Resource
                             FileUpload::make('images')->label('Arba įkelk rėmėjų logotipus')
                                 ->image()->multiple()->reorderable()->disk('public')->directory('overlay-sponsors')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            TextInput::make('rotate_seconds')->label('Rėmėjų keitimo intervalas (s)')
+                                ->numeric()->default(8)->minValue(2)
+                                ->helperText('Rodoma po 6, keičiasi kas tiek sekundžių.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
 
                             Select::make('variant')
                                 ->label('Variantas')
