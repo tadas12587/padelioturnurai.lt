@@ -196,6 +196,83 @@ class OverlayData
         return ['groups' => $groups, 'subgroup_count' => count($groups)];
     }
 
+    /**
+     * Resolve a schedule (order-of-play) window from the snapshot matches.
+     *
+     * @param  array<string,mixed>  $window
+     * @return array<string,mixed>
+     */
+    public function resolveSchedule(string $tournamentId, array $window): array
+    {
+        $variant = $window['schedule_variant'] ?? 'by_court';
+        $matches = $this->payload($tournamentId)['matches'] ?? [];
+
+        if (! empty($window['date'])) {
+            $date = substr((string) $window['date'], 0, 10);
+            $matches = array_filter($matches, fn ($m) => ($m['date'] ?? null) === $date);
+        }
+        if (! empty($window['category_ids'])) {
+            $cats = array_map('intval', $window['category_ids']);
+            $matches = array_filter($matches, fn ($m) => in_array((int) ($m['category_id'] ?? 0), $cats, true));
+        }
+        if (! empty($window['courts'])) {
+            $courts = array_map('intval', $window['courts']);
+            $matches = array_filter($matches, fn ($m) => in_array((int) ($m['court_id'] ?? 0), $courts, true));
+        }
+        $matches = array_values($matches);
+
+        $byTime = fn ($a, $b) => strcmp((string) ($a['time'] ?? ''), (string) ($b['time'] ?? ''));
+
+        if ($variant === 'now' || $variant === 'next') {
+            $items = $variant === 'now'
+                ? array_filter($matches, fn ($m) => ! empty($m['in_progress']))
+                : array_filter($matches, fn ($m) => ($m['status'] ?? null) === 'pending');
+            $items = array_values($items);
+            usort($items, $byTime);
+            $limit = (int) ($window['limit'] ?? 0);
+            if ($limit > 0) {
+                $items = array_slice($items, 0, $limit);
+            }
+
+            return ['variant' => $variant, 'items' => $items];
+        }
+
+        usort($matches, $byTime);
+        $key = $variant === 'by_time' ? 'time' : 'court';
+        $groups = [];
+        foreach ($matches as $m) {
+            $groups[(string) ($m[$key] ?? '—')][] = $m;
+        }
+        if ($variant === 'by_court') {
+            ksort($groups);
+        }
+
+        return ['variant' => $variant, 'groups' => array_map(
+            fn ($heading, $ms) => ['heading' => $heading, 'matches' => $ms],
+            array_keys($groups),
+            array_values($groups),
+        )];
+    }
+
+    /**
+     * Distinct courts (id => name) from the snapshot matches, for the admin select.
+     *
+     * @return array<int,string>
+     */
+    public function courts(string $tournamentId): array
+    {
+        $out = [];
+        foreach ($this->payload($tournamentId)['matches'] ?? [] as $m) {
+            $id = $m['court_id'] ?? null;
+            if ($id) {
+                $out[(int) $id] = $m['court'] ?? ('#' . $id);
+            }
+        }
+        asort($out);
+
+        return $out;
+    }
+
     public function updatedAt(string $tournamentId): ?Carbon
     {
         return OverlaySnapshot::where('tournament_external_id', $tournamentId)->value('updated_at');

@@ -61,7 +61,10 @@ class OverlayController extends Controller
 
         $type = $window['type'] ?? 'groups';
 
-        if ($type === 'bracket') {
+        if ($type === 'schedule') {
+            $payload['schedule_variant'] = $window['schedule_variant'] ?? 'by_court';
+            $payload['schedule'] = $data->resolveSchedule((string) $overlay->tournament_external_id, $window);
+        } elseif ($type === 'bracket') {
             $segments = $data->bracketSegmentsForCategory(
                 (string) $overlay->tournament_external_id,
                 (int) ($window['category_id'] ?? 0),
@@ -136,6 +139,7 @@ class OverlayController extends Controller
             'groups_by_category'   => 'array',
             'category_stages'      => 'array',
             'brackets_by_category' => 'array',
+            'matches'              => 'array',
         ]);
 
         OverlaySnapshot::updateOrCreate(
@@ -146,6 +150,7 @@ class OverlayController extends Controller
                 'groups_by_category'   => $validated['groups_by_category'] ?? [],
                 'category_stages'      => $validated['category_stages'] ?? [],
                 'brackets_by_category' => $validated['brackets_by_category'] ?? [],
+                'matches'              => $validated['matches'] ?? [],
             ]],
         );
 
