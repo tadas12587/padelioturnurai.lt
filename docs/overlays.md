@@ -147,6 +147,38 @@ nugalėtoją ir rezultatą). Bendri pozicijos nustatymai jai negalioja. Techniš
 juosta įdedama tiesiai į `<body>` (už pozicionuojamų konteinerių), kad
 `position: fixed; bottom: 0` priliptų prie tikro ekrano apačios.
 
+### 4.5 Traukimas / Burtai (`draw`)
+Gyva burtų ceremonija: operatorius traukia komandas (atsitiktinai su ruletės
+animacija arba rankiniu būdu) į grupių lenteles arba sėkluotą bracketą. Skiriasi
+nuo kitų langų — lentos turinį **kuria operatorius gyvai**, jis saugomas
+`overlay.state['draws'][windowId]` (snapshot'as naudojamas tik dalyvių sąrašui).
+
+**Lango nustatymai (admine):**
+- **Kategorija (traukimui)** — iš jos užkrausi dalyvius.
+- **Formatas** — „Grupių lentelės" arba „Bracket (sėklavimas)".
+- **Grupių skaičius / Komandų grupėje** (groups) arba **Bracket dydis** 8/16/32 (bracket).
+- **Naudoti krepšelius / sėklas** — krepšelių (pots) sistema.
+- **Kameros kampas** — kuris kampas paliekamas skaidrus gyvam vaizdui.
+- **Rodyti turnyro logo + pavadinimą**; **Rėmėjai** iš sąrašo arba įkelti logotipai.
+
+**Krepšelių logika.** *Grupės:* Krepšelis 1 = top komandos, dalijamos po vieną į
+kiekvieną grupę; tada Krepšelis 2 ir t.t. (Čempionų lygos stilius). *Bracket:*
+krepšeliai = sėklų juostos (1–2, 3–4, 5–8, …); kiekvienos juostos komandos
+traukiamos į savo kanonines sėklų vietas, be sėklų — į likusias. Standartinė
+sėklų-pozicijų lentelė dydžiams 8/16/32.
+
+**Valdymas — „Traukimo valdymas" puslapis** (atskiras nuo „Overlay valdymas"):
+- **Užkrauti dalyvius iš Tournated** — nukopijuoja kategorijos komandas į užšaldytą
+  pool (vieną kartą; po to gali redaguoti rankiniu būdu).
+- **TRAUKTI** — atsitiktinai parenka komandą iš aktyvaus krepšelio + įdeda su
+  ruletės atskleidimu. **Atšaukti** (undo), **Iš naujo** (reset).
+- **Įdėti rankiniu būdu** — paieška + tuščios vietos pasirinkimas.
+- **Rodyti / Sustabdyti (OBS)** — įjungia šį langą transliacijai.
+
+**Techniškai.** Traukimo langas pollina **~1s** (vietoj 3s), kad atskleidimas būtų
+greitas; ~2s ruletės animacija paslepia vėlavimą. Be websocket'ų. Logika —
+`App\Services\DrawEngine` (grynos funkcijos, pilnai unit-testuota).
+
 ---
 
 ## 5. push.js (tavo PC)
