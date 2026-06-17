@@ -138,4 +138,52 @@ class DrawEngineTest extends TestCase
         $state = $this->e->drawNext($config, $state, $rng);  // unseeded → remaining free slot
         $this->assertContains($state['current']['slot'], ['2', '4']);
     }
+
+    public function test_manual_place_sets_slot_and_records_history(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 2];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'A'], ['id' => 2, 'name' => 'B']]);
+
+        $state = $this->e->place($config, $state, 2, 'A2');
+
+        $this->assertSame(2, $state['slots']['A2']);
+        $this->assertSame(['team_id' => 2, 'slot' => 'A2'], end($state['history']));
+    }
+
+    public function test_place_rejects_occupied_slot(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 2];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'A'], ['id' => 2, 'name' => 'B']]);
+        $state = $this->e->place($config, $state, 1, 'A1');
+
+        $this->expectException(\RuntimeException::class);
+        $this->e->place($config, $state, 2, 'A1');
+    }
+
+    public function test_undo_frees_last_slot_and_returns_team_to_pool(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 2, 'use_pots' => false];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'A'], ['id' => 2, 'name' => 'B']]);
+        $state = $this->e->drawNext($config, $state, fn (int $c) => 0);
+        $slot = $state['current']['slot'];
+
+        $state = $this->e->undo($config, $state);
+
+        $this->assertNull($state['slots'][$slot]);
+        $this->assertSame([], $state['history']);
+        $this->assertSame('idle', $state['status']);
+    }
+
+    public function test_reset_clears_all_slots_but_keeps_teams(): void
+    {
+        $config = ['format' => 'groups', 'group_count' => 1, 'group_size' => 2];
+        $state = $this->e->init($config, [['id' => 1, 'name' => 'A'], ['id' => 2, 'name' => 'B']]);
+        $state = $this->e->place($config, $state, 1, 'A1');
+
+        $state = $this->e->reset($config, $state);
+
+        $this->assertSame(['A1' => null, 'A2' => null], $state['slots']);
+        $this->assertCount(2, $state['teams']);
+        $this->assertSame([], $state['history']);
+    }
 }
