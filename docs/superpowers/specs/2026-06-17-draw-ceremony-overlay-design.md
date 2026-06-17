@@ -51,9 +51,16 @@ OBS Browser Source ──► GET /overlay/{token}/data (poll ~1s) ──► rend
   bracket_size,                 // bracket formatui (8 / 16 / 32)
   use_pots: true,
   camera_corner: 'bottom-right',// kampas, paliekamas skaidrus gyvam vaizdui
+  show_tournament: true,        // rodyti turnyro logo + pavadinimą antraštėje
+  sponsor_ids: [...],           // rėmėjai iš sistemos (Sponsor modelis)
+  images: [...],                // arba įkelti logotipai (FileUpload)
   scrim_enabled, scrim_opacity  // panaudojama esama logika
 }
 ```
+
+Turnyro logo = esamas `overlay.config.logo` (įkeliamas redagavimo lange), turnyro
+pavadinimas = snapshot `title` (`tournament_title`). Rėmėjai panaudoja tą patį
+mechanizmą kaip „Rėmėjai" langas (`Sponsor` modelis + `FileUpload`).
 
 ### Gyva būsena (`overlay.state['draws'][windowId]`)
 
@@ -143,7 +150,11 @@ pollina ir animuoja.
 
 Beveik per visą ekraną išskleista lenta, vienas kampas paliekamas skaidrus gyvam vaizdui.
 
-- **Antraštė** viršuje: kategorija + „BURTAI" + aktyvaus krepšelio indikatorius.
+- **Antraštė** viršuje: turnyro logo + turnyro pavadinimas (kairėje), kategorija +
+  „BURTAI" + aktyvaus krepšelio indikatorius (dešinėje).
+- **Rėmėjų juosta** apačioje (arba šone) — logotipai vienoje eilėje; vengia kameros
+  kampo. Imama iš `resolveSponsors($window)`: pirma pasirinkti sistemos rėmėjai
+  (`sponsor_ids`, pagal `sort_order`), tada įkelti paveiksliukai (`images`).
 - **Groups:** grupių lentelės tinkleliu; tuščios pozicijos rodo pilką „—".
 - **Bracket:** tas pats medis kaip esamame bracket lange, tik su tuščiomis sėklų vietomis.
 - **Pool** („Liko traukti"): likusios komandos kaip „chip"ai; ištraukta dingsta.
