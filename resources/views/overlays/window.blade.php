@@ -223,16 +223,16 @@
     @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
     /* bracket draw: first-round seeding sheet (match cards in a grid) */
     .draw-bracket { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-flow: column;
-        gap: 18px 38px; align-content: start; }
-    .dmatch { display: flex; align-items: center; gap: 14px; }
-    .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 26px; color: var(--ov-muted);
-        min-width: 32px; text-align: right; flex: none; }
+        gap: 13px 32px; align-content: start; }
+    .dmatch { display: flex; align-items: center; gap: 12px; }
+    .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 24px; color: var(--ov-muted);
+        min-width: 30px; text-align: right; flex: none; }
     .dmatch-card { flex: 1; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28);
         border-left: 4px solid var(--ov-accent); border-radius: 10px; overflow: hidden;
         box-shadow: 0 14px 32px -20px rgba(0,0,0,.7); }
-    .dteam { display: flex; align-items: center; gap: 16px; padding: 13px 20px; font-size: 28px; color: var(--ov-text); line-height: 1.15; }
+    .dteam { display: flex; align-items: center; gap: 14px; padding: 11px 18px; font-size: 26px; color: var(--ov-text); line-height: 1.12; }
     .dteam + .dteam { border-top: 1px solid rgba(127,127,127,.16); }
-    .dteam .pos { font-family: 'Oswald',sans-serif; font-size: 19px; color: var(--ov-muted); min-width: 26px; text-align: center; flex: none; }
+    .dteam .pos { font-family: 'Oswald',sans-serif; font-size: 18px; color: var(--ov-muted); min-width: 24px; text-align: center; flex: none; }
     .dteam .nm { font-weight: 500; }
     .dteam.empty .nm { color: #5a5a66; font-style: italic; }
     .dteam.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
