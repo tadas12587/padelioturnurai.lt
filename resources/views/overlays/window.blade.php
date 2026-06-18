@@ -174,12 +174,17 @@
     /* ── Sponsors ────────────────────────────────────────────── */
     .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
     .sp-item.show { opacity: 1; }
-    .spons.corner { position: relative; width: 240px; height: 120px; background: var(--ov-bg);
-        border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px;
+    /* Corner bug — sized ~2:1 for 800×400 logos, minimal filler around the image. */
+    .spons.corner { position: fixed; width: 360px; height: 188px; background: var(--ov-bg);
+        border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 10px;
         box-shadow: 0 20px 45px -20px rgba(0,0,0,.75); }
-    .spons.corner .sp-item { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 18px; transform: scale(.96); }
+    .spons.corner .sp-item { position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center; transform: scale(.96); }
     .spons.corner .sp-item.show { transform: none; }
-    .spons.corner img { width: 200px; height: 84px; object-fit: contain; }
+    .spons.corner img { width: 100%; height: 100%; object-fit: contain; }
+    .sp-pos-top-left { top: 40px; left: 40px; }
+    .sp-pos-top-right { top: 40px; right: 40px; }
+    .sp-pos-bottom-left { bottom: 40px; left: 40px; }
+    .sp-pos-bottom-right { bottom: 40px; right: 40px; }
     .spons.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 92px; background: var(--ov-bg);
         border-top: 3px solid var(--ov-accent); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.6); }
     .spons.bar .sp-item { position: absolute; inset: 0; display: flex; align-items: center; gap: 22px; padding: 0 48px; transform: translateY(12px); }
@@ -272,6 +277,7 @@
     // containers) so it can pin to the real screen bottom. Clear it each render;
     // the results branch re-creates it.
     { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
+    if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
     if ((d.window_type || 'groups') !== 'draw') {
         const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
         const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
@@ -284,7 +290,7 @@
     if ((d.window_type || 'groups') === 'sponsors') {
         clearInterval(window.__spTimer);
         const items = d.items || [];
-        if (!items.length) { stage.innerHTML = ''; return; }
+        if (!items.length) { stage.innerHTML = ''; const _e = document.getElementById('ov-spons'); if (_e) _e.remove(); return; }
         const variant = d.variant || 'corner';
 
         const itemHtml = (it, i) => {
@@ -299,9 +305,23 @@
         };
 
         const cls = variant === 'bar' ? 'bar' : (variant === 'fullscreen' ? 'full' : 'corner');
-        stage.innerHTML = `<div class="spons ${cls}">${items.map(itemHtml).join('')}</div>`;
 
-        const els = stage.querySelectorAll('.sp-item');
+        // Sponsors are position:fixed → must live on <body> (outside #stage's
+        // will-change:transform), so the corner/bar/fullscreen pin to the screen,
+        // not to the overlay's general position box.
+        const host = document.getElementById('ov-spons') || (() => {
+            const h = document.createElement('div'); h.id = 'ov-spons'; document.body.appendChild(h); return h;
+        })();
+
+        // Corner bug goes to a screen corner; center-ish positions → bottom-right.
+        let pos = d.position || 'bottom-left';
+        if (pos === 'center' || pos.endsWith('-center') || pos.startsWith('mid-')) pos = 'bottom-right';
+        const posCls = variant === 'corner' ? ' sp-pos-' + pos : '';
+
+        stage.innerHTML = '';
+        host.innerHTML = `<div class="spons ${cls}${posCls}">${items.map(itemHtml).join('')}</div>`;
+
+        const els = host.querySelectorAll('.sp-item');
         if (els.length > 1) {
             let i = 0;
             window.__spTimer = setInterval(() => {

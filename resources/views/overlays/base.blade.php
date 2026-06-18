@@ -95,7 +95,8 @@
                     const t = document.getElementById('ov-ticker'); if (t) t.remove();
                     const rv = document.getElementById('draw-reveal-host'); if (rv) rv.remove();
                     const dh = document.getElementById('ov-draw'); if (dh) dh.remove();
-                    clearInterval(window.__drawSpons);
+                    const sp = document.getElementById('ov-spons'); if (sp) sp.remove();
+                    clearInterval(window.__drawSpons); clearInterval(window.__spTimer);
                     window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
                     return d;
                 }
