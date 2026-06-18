@@ -305,6 +305,35 @@ perpaleisk.
 
 > `push.js` yra ES modulis (`package.json` turi `"type": "module"`).
 
+### 5.1 Transliacijos įrankis (parsisiunčiama programa, PC/Mac)
+
+Kad transliuoti būtų galima iš bet kurio kompiuterio be Node.js diegimo, `push.js`
+supakuojamas į savarankiškus dvejetainius failus, kuriuos transliuotojas parsisiunčia
+iš admin puslapio **„Transliacijos įrankis"** (grupė „Transliacijos").
+
+**Build (vieną kartą, tavo PC; reikia [Bun](https://bun.sh)):**
+```powershell
+# Įdiegti Bun (jei dar nėra):
+powershell -c "irm bun.sh/install.ps1 | iex"
+# Sukompiliuoti visus tris (Windows + Mac arm + Mac intel):
+node tools/overlay-push/build.mjs
+```
+Sukuria `tools/overlay-push/dist/`: `overlay-push-win.exe`, `overlay-push-mac-arm`,
+`overlay-push-mac-intel`. (Bun kryžmiškai kompiliuoja visus iš vienos mašinos.)
+
+**Įkėlimas į serverį:** nukopijuok tuos tris failus į serverio
+`storage/app/public/broadcaster/` (FTP arba scp). Turi egzistuoti `public/storage`
+nuoroda (`php artisan storage:link`) — kitaip atsisiuntimas mes 404. Admin puslapis
+juos pateikia automatiškai (kol neįkelti — rodo „dar neįkelta").
+
+**Pastabos:**
+- Dvejetainiai dideli (~50–90 MB) — **necommit'inami** (`dist/` yra `.gitignore`).
+- Perbuild'inti reikia tik pasikeitus `push.js` logikai ar `INGEST_TOKEN`.
+- **macOS:** programa nepasirašyta → pirmą kartą dešinys pelės mygtukas → „Open" →
+  „Open" (arba `xattr -d com.apple.quarantine <failas>`). Apple notarizacija (be
+  įspėjimo) reikalauja $99/m. paskyros — kol kas nedaroma.
+- Failas savarankiškas: token ir svetainės adresas įmontuoti, dukart spusteli → veikia.
+
 ---
 
 ## 6. Serverio maršrutai
