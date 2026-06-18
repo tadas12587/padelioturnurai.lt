@@ -251,6 +251,11 @@
         background: rgba(255,255,255,.06); border: 1px solid rgba(127,127,127,.22); border-radius: 8px; padding: 10px; }
     .sp-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
     .draw-done { margin-left: 12px; color: var(--ov-accent); font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .14em; }
+    /* Flying clone: travels from a "Liko traukti" chip to its slot. */
+    .draw-fly { position: fixed; z-index: 9999; pointer-events: none; will-change: transform;
+        padding: 8px 16px; border-radius: 10px; background: var(--ov-accent); color: #0A0A0F;
+        font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 24px; white-space: nowrap;
+        box-shadow: 0 16px 40px -10px rgba(0,0,0,.7); }
     /* Reserve a wide band on the camera side for the live video feed. */
     .draw-corner-bottom-right .draw-head, .draw-corner-top-right .draw-head,
     .draw-corner-bottom-right .draw-body, .draw-corner-top-right .draw-body,
@@ -271,6 +276,8 @@
         const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
         clearInterval(window.__drawSpons);
         window.__drawLastSlot = undefined;
+        window.__drawPoolRects = undefined;
+        window.__drawHandledKey = undefined;
     }
 
     if ((d.window_type || 'groups') === 'sponsors') {
@@ -478,8 +485,15 @@
         const dr = d.draw || {};
         const slots = dr.slots || {};
         const nameAt = (k) => (slots[k] && slots[k].name) || null;
-        // Animate only the slot that changed since the previous render (once).
-        const animSlot = (dr.current && dr.current.slot !== window.__drawLastSlot) ? dr.current.slot : null;
+        // A placement is "new" if its (slot|team) hasn't been handled yet. New
+        // placements that still have a source chip in the pool fly from it to the
+        // slot; the rest (e.g. BYE) just slide in.
+        const cur = dr.current;
+        const curKey = cur ? (cur.slot + '|' + cur.team_id) : null;
+        const isNew = !!(curKey && curKey !== window.__drawHandledKey);
+        const prevPoolRects = window.__drawPoolRects || {};
+        const willFly = !!(isNew && cur.team_id && cur.team_id !== 'BYE' && prevPoolRects[cur.team_id]);
+        const animSlot = (isNew && !willFly) ? cur.slot : null;
         const cellClass = (k) => {
             const nm = nameAt(k);
             return [nm ? '' : 'empty', nm === 'BYE' ? 'bye' : '', k === animSlot ? 'just-in' : ''].filter(Boolean).join(' ');
@@ -489,7 +503,7 @@
         if (dr.format === 'bracket') {
             // First-round match cards (the seeding sheet) — clean, professional,
             // scales to 8/16/32. Physical slot number shown as the seed position.
-            const teamRow = (k) => `<div class="dteam ${cellClass(k)}"><span class="pos">${k}</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+            const teamRow = (k) => `<div class="dteam ${cellClass(k)}" data-slot="${k}"><span class="pos">${k}</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
             bodyHtml = '<div class="draw-bracket">';
             (dr.board || []).forEach((pair, i) => {
                 bodyHtml += `<div class="dmatch"><div class="dmatch-no">${i + 1}</div>`
@@ -503,14 +517,14 @@
             for (const g of groups) {
                 bodyHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
                 g.slots.forEach((k, i) => {
-                    bodyHtml += `<div class="dg-slot ${cellClass(k)}"><span class="pos">${i + 1}.</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+                    bodyHtml += `<div class="dg-slot ${cellClass(k)}" data-slot="${k}"><span class="pos">${i + 1}.</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
                 });
                 bodyHtml += '</div>';
             }
             bodyHtml += '</div>';
         }
 
-        const pool = (dr.pool || []).map((t) => `<span class="chip">${t.name}</span>`).join('');
+        const pool = (dr.pool || []).map((t) => `<span class="chip" data-team="${t.id}">${t.name}</span>`).join('');
         const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
 
         const logo = dr.show_tournament && d.logo ? `<img src="${d.logo}" alt="">` : '';
@@ -545,7 +559,47 @@
             spEl.innerHTML = `<div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div>`;
         }
 
-        // Remember which slot was last filled so the slide-in only fires once.
+        // Clone the pool chip and arc it to the assigned slot, then reveal it.
+        const flyTeam = (name, src, targetEl) => {
+            const dst = targetEl.getBoundingClientRect();
+            const nmEl = targetEl.querySelector('.nm');
+            if (nmEl) nmEl.style.visibility = 'hidden';
+            const fly = document.createElement('div');
+            fly.className = 'draw-fly';
+            fly.textContent = name;
+            fly.style.left = (src.left + src.width / 2) + 'px';
+            fly.style.top = (src.top + src.height / 2) + 'px';
+            document.body.appendChild(fly);
+            const tx = (dst.left + dst.width / 2) - (src.left + src.width / 2);
+            const ty = (dst.top + dst.height / 2) - (src.top + src.height / 2);
+            const anim = fly.animate([
+                { transform: 'translate(-50%,-50%) translate(0,0) scale(1)', opacity: 1, offset: 0 },
+                { transform: `translate(-50%,-50%) translate(${tx * 0.5}px, ${ty * 0.5 - 48}px) scale(1.16)`, opacity: 1, offset: 0.55 },
+                { transform: `translate(-50%,-50%) translate(${tx}px, ${ty}px) scale(1)`, opacity: 1, offset: 1 },
+            ], { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' });
+            anim.onfinish = () => {
+                fly.remove();
+                if (nmEl) nmEl.style.visibility = '';
+                targetEl.classList.add('just-in');
+            };
+        };
+
+        // Fly the just-placed team from its pool chip to the assigned slot.
+        if (isNew) {
+            if (willFly) {
+                const targetEl = drawHost.querySelector(`[data-slot="${cur.slot}"]`);
+                if (targetEl) flyTeam(cur.name, prevPoolRects[cur.team_id], targetEl);
+            }
+            window.__drawHandledKey = curKey;
+        }
+
+        // Capture current pool-chip positions so the next placement can fly from
+        // where its chip actually sat (it's gone from the pool by then).
+        const poolRects = {};
+        drawHost.querySelectorAll('.chip[data-team]').forEach((el) => {
+            poolRects[el.getAttribute('data-team')] = el.getBoundingClientRect();
+        });
+        window.__drawPoolRects = poolRects;
         window.__drawLastSlot = dr.current ? dr.current.slot : undefined;
         const _rv = document.getElementById('draw-reveal-host'); if (_rv) _rv.remove();
         return;
