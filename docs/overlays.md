@@ -321,10 +321,17 @@ node tools/overlay-push/build.mjs
 Sukuria `tools/overlay-push/dist/`: `overlay-push-win.exe`, `overlay-push-mac-arm`,
 `overlay-push-mac-intel`. (Bun kryžmiškai kompiliuoja visus iš vienos mašinos.)
 
-**Įkėlimas į serverį:** nukopijuok tuos tris failus į serverio
-`storage/app/public/broadcaster/` (FTP arba scp). Turi egzistuoti `public/storage`
-nuoroda (`php artisan storage:link`) — kitaip atsisiuntimas mes 404. Admin puslapis
-juos pateikia automatiškai (kol neįkelti — rodo „dar neįkelta").
+**Įkėlimas į serverį:** šiame hoste `public` disk'as yra **`~/web/storage`** (ten, kur
+`overlay-logos`, `overlay-sponsors`), **ne** `storage/app/public`. Įkelk tris failus į
+**`~/web/storage/broadcaster/`** (FTP — į tą patį aplanką, kur matosi `overlay-sponsors`;
+arba `scp`/`mv`). Admin puslapis tikrina `Storage::disk('public')->exists()` = tas pats
+`~/web/storage`, ir nginx jį patiekia kaip `/storage/...`. Kol neįkelti — „dar neįkelta".
+
+```bash
+# scp tiesiai į teisingą vietą:
+ssh -p 2231 kdphuwnpqv@web4.freehosting.lt "mkdir -p ~/web/storage/broadcaster"
+scp -P 2231 tools/overlay-push/dist/overlay-push-* kdphuwnpqv@web4.freehosting.lt:~/web/storage/broadcaster/
+```
 
 **Pastabos:**
 - Dvejetainiai dideli (~50–90 MB) — **necommit'inami** (`dist/` yra `.gitignore`).
