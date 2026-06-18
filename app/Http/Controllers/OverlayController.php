@@ -94,9 +94,11 @@ class OverlayController extends Controller
             }
             $payload['draw']['category'] = $catName;
         } elseif ($type === 'sponsors') {
-            $payload['variant']        = $window['variant'] ?? 'corner';
-            $payload['rotate_seconds'] = (int) ($window['rotate_seconds'] ?? 6);
-            $payload['items']          = $data->resolveSponsors($window);
+            $payload['variant']         = $window['variant'] ?? 'corner';
+            $payload['rotate_seconds']  = (int) ($window['rotate_seconds'] ?? 6);
+            $payload['corner_position'] = $window['corner_position'] ?? 'bottom-right';
+            $payload['corner_size']     = $window['corner_size'] ?? 'm';
+            $payload['items']           = $data->resolveSponsors($window);
         } else {
             $resolved = $data->resolveWindow((string) $overlay->tournament_external_id, $window);
             if (empty($resolved['groups'])) {

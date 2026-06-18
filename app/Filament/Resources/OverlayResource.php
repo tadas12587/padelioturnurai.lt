@@ -327,8 +327,23 @@ class OverlayResource extends Resource
                                     'bar'        => 'Apačios juosta',
                                     'fullscreen' => 'Per visą ekraną',
                                 ])
-                                ->default('corner')
+                                ->default('corner')->live()
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                            Select::make('corner_position')
+                                ->label('Kampas')
+                                ->options([
+                                    'top-left'     => 'Viršus — kairė',
+                                    'top-right'    => 'Viršus — dešinė',
+                                    'bottom-left'  => 'Apačia — kairė',
+                                    'bottom-right' => 'Apačia — dešinė',
+                                ])
+                                ->default('bottom-right')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors' && ($get('variant') ?? 'corner') === 'corner'),
+                            Select::make('corner_size')
+                                ->label('Dydis')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])
+                                ->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors' && ($get('variant') ?? 'corner') === 'corner'),
                             Select::make('sponsor_ids')
                                 ->label('Rėmėjai iš sąrašo')
                                 ->multiple()
