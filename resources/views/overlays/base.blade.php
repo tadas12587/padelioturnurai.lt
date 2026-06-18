@@ -96,6 +96,7 @@
                     const rv = document.getElementById('draw-reveal-host'); if (rv) rv.remove();
                     const dh = document.getElementById('ov-draw'); if (dh) dh.remove();
                     clearInterval(window.__drawSpons);
+                    window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
                     return d;
                 }
 
@@ -123,7 +124,7 @@
         // reveal feels snappy; everything else stays on POLL_MS.
         let pollTimer = null;
         function schedule(d) {
-            const ms = (d && d.window_type === 'draw') ? 1000 : POLL_MS;
+            const ms = (d && d.window_type === 'draw') ? 500 : POLL_MS;
             clearTimeout(pollTimer);
             pollTimer = setTimeout(loop, ms);
         }

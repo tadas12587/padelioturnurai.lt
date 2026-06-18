@@ -238,7 +238,12 @@ class OverlayData
 
         $current = $drawState['current'] ?? null;
         if ($current) {
-            $current = ['name' => $teams[$current['team_id']]['name'] ?? '', 'slot' => $current['slot']];
+            $tid = $current['team_id'] ?? null;
+            $current = [
+                'team_id' => $tid,
+                'name' => $tid === \App\Services\DrawEngine::BYE ? 'BYE' : ($teams[$tid]['name'] ?? ''),
+                'slot' => $current['slot'],
+            ];
         }
 
         $board = $layout['format'] === 'bracket' ? $layout['pairs'] : $layout['groups'];
