@@ -148,36 +148,127 @@ juosta įdedama tiesiai į `<body>` (už pozicionuojamų konteinerių), kad
 `position: fixed; bottom: 0` priliptų prie tikro ekrano apačios.
 
 ### 4.5 Traukimas / Burtai (`draw`)
-Gyva burtų ceremonija: operatorius traukia komandas (atsitiktinai su ruletės
-animacija arba rankiniu būdu) į grupių lenteles arba sėkluotą bracketą. Skiriasi
-nuo kitų langų — lentos turinį **kuria operatorius gyvai**, jis saugomas
-`overlay.state['draws'][windowId]` (snapshot'as naudojamas tik dalyvių sąrašui).
 
-**Lango nustatymai (admine):**
-- **Kategorija (traukimui)** — iš jos užkrausi dalyvius.
-- **Formatas** — „Grupių lentelės" arba „Bracket (sėklavimas)".
-- **Grupių skaičius / Komandų grupėje** (groups) arba **Bracket dydis** 8/16/32 (bracket).
-- **Naudoti krepšelius / sėklas** — krepšelių (pots) sistema.
-- **Kameros kampas** — kuris kampas paliekamas skaidrus gyvam vaizdui.
-- **Rodyti turnyro logo + pavadinimą**; **Rėmėjai** iš sąrašo arba įkelti logotipai.
+Gyva burtų ceremonija: operatorius dėlioja komandas (rankiniu būdu arba atsitiktiniu
+„TRAUKTI") į grupių lenteles arba sėkluotą bracketą. **Esminis skirtumas nuo kitų
+langų** — lentos turinį (kas kur padėta) **kuria operatorius gyvai serveryje**;
+snapshot'as naudojamas tik dalyvių sąrašui užkrauti. Žemiau — pilnas „kaip veikia",
+kad būtų lengva koreguoti.
 
-**Krepšelių logika.** *Grupės:* Krepšelis 1 = top komandos, dalijamos po vieną į
-kiekvieną grupę; tada Krepšelis 2 ir t.t. (Čempionų lygos stilius). *Bracket:*
-krepšeliai = sėklų juostos (1–2, 3–4, 5–8, …); kiekvienos juostos komandos
-traukiamos į savo kanonines sėklų vietas, be sėklų — į likusias. Standartinė
-sėklų-pozicijų lentelė dydžiams 8/16/32.
+#### Failai (kur kas yra)
 
-**Valdymas — „Traukimo valdymas" puslapis** (atskiras nuo „Overlay valdymas"):
-- **Užkrauti dalyvius iš Tournated** — nukopijuoja kategorijos komandas į užšaldytą
-  pool (vieną kartą; po to gali redaguoti rankiniu būdu).
-- **TRAUKTI** — atsitiktinai parenka komandą iš aktyvaus krepšelio + įdeda su
-  ruletės atskleidimu. **Atšaukti** (undo), **Iš naujo** (reset).
-- **Įdėti rankiniu būdu** — paieška + tuščios vietos pasirinkimas.
-- **Rodyti / Sustabdyti (OBS)** — įjungia šį langą transliacijai.
+| Failas | Atsakomybė |
+|---|---|
+| `app/Services/DrawEngine.php` | Gryna logika: vietų išdėstymas, sėklų tvarka, krepšeliai, `drawNext` / `place` / `undo` / `reset`. Be DB/HTTP, pilnai unit-testuota. |
+| `app/Filament/Pages/DrawControlPage.php` + `resources/views/filament/pages/draw-control.blade.php` (+ `partials/draw-slot.blade.php`) | Operatoriaus konsolė (Livewire). |
+| `app/Filament/Resources/OverlayResource.php` | `type:'draw'` lango nustatymų laukai. |
+| `app/Http/Controllers/OverlayController.php` (`data()` draw šaka) | Sudeda payload'ą + kategorijos pavadinimą. |
+| `app/Services/OverlayData.php` (`resolveDraw`, `participants`) | Payload'o surinkimas; dalyvių skaitymas iš snapshot. |
+| `resources/views/overlays/window.blade.php` (draw šaka + CSS) | Overlay atvaizdavimas + animacijos. |
+| `resources/views/overlays/base.blade.php` | Polling intervalas, change-signature, valymas. |
+| `tools/overlay-push/push.js` (`fetchParticipants`) | Dalyvių traukimas iš Tournated. |
+| `tests/Unit/DrawEngineTest.php`, `tests/Feature/DrawControlTest.php` | Testai. |
 
-**Techniškai.** Traukimo langas pollina **~1s** (vietoj 3s), kad atskleidimas būtų
-greitas; ~2s ruletės animacija paslepia vėlavimą. Be websocket'ų. Logika —
-`App\Services\DrawEngine` (grynos funkcijos, pilnai unit-testuota).
+#### Būsenos forma — `overlay.state['draws'][<windowId>]`
+
+```
+{ teams:[{id,name,seed,pot}],         // užšaldytas pool (kopija, ne snapshot)
+  slots:{ '<key>': teamId | 'BYE' | null },
+  current:{team_id,slot} | null,      // paskutinis padėjimas (varo animaciją)
+  history:[{team_id,slot}],           // Undo
+  active_pot:int, status:'idle'|'done' }
+```
+Vietų raktai: grupės — `A1..A{n}`, `B1..`; bracket — `"1".."N"` (fizinės pozicijos
+viršus→apačia). **PHP skaitinius raktus paverčia int** — todėl `place()` ir lyginimai
+naudoja `(string)` (žr. `DrawEngine::place`, kodėl).
+
+#### DrawEngine taisyklės (ką koreguoti čia)
+
+- `layout($config)` → grupėms `{groups:[{label,slots[]}]}`, bracket'ui `{pairs:[[k,k]]}`.
+- `bracketSeedOrder($n)` — kanoninė sėklų→pozicijų tvarka (rekursinis dvigubinimas):
+  `n=4 → [1,4,2,3]`, `n=8 → [1,8,4,5,2,7,3,6]`. `bracketPotOfSeed()` — juostos:
+  `{1,2}=1, {3,4}=2, {5–8}=3, …` (`ceil(log2(seed))`).
+- **Krepšeliai (pots).** *Grupės:* aktyvaus krepšelio komandos dalijamos po vieną į
+  kiekvieną grupę, tada kitas krepšelis (Čempionų lygos stilius). *Bracket:* sėklos
+  dedamos į savo juostos kanonines vietas, be sėklų — į likusias. **Jei duomenyse
+  nėra pot/seed** (dabar Tournated sėklų neatiduoda), variklis nelūžta — visi laikomi
+  vienu krepšeliu (`pickGroups`/`pickBracket` „lastPot/unseededPot" logika).
+- `place($config,$state,$teamId,$slot)` — rankinis/lock dėjimas. `'BYE'` (= `DrawEngine::BYE`)
+  galima dėti į kelias vietas; į pool nebaigtumą neįskaitomas (`poolEmpty`).
+- `undo` / `reset` — atšaukia paskutinį / išvalo iki pool.
+
+#### Dalyviai (Tournated → pool)
+
+`push.js::fetchParticipants` naudoja `tournamentRegistrationParticipants(tournament, categoryId)`
+(grąžina po eilutę kiekvienam žaidėjui). **Poros grupuojamos pagal `registrationId`**
+(`team` yra asmeninis žaidėjo objektas, ne pora!). **Nepilnos registracijos** (vieno
+žmogaus, laukiančios partnerio) **atmetamos**, jei kategorijoje yra dvejetų — kad
+skaičius sutaptų su viešu dalyvių sąrašu. Seed=null, pot=null (Tournated „Skirstymas"
+sėklų per šią užklausą neatiduoda; jei reikės — atskira užklausa). Pridėta į snapshot
+kaip `participants_by_category`; konsolė nukopijuoja **vieną kartą** į užšaldytą pool.
+
+#### Konsolė (`DrawControlPage`)
+
+- **Užkrauti dalyvius iš Tournated** (`loadParticipants`) → `DrawEngine::init`.
+- **Galimi žaidėjai** — redaguojami: `addTeam` / `renameTeam` / `removeTeam`
+  (rankiniai id = `'m'+random`).
+- **Lenta** — kiekviena vieta yra mygtukas: laisva → `selectSlot` atidaro **popup**
+  (`partials/draw-slot.blade.php` + modalas blade gale); užimta → `removeFromSlot`.
+- **Popup'e**: paieška (`remainingTeams`, **be diakritikų** per `fold()` — „seskauskas"
+  randa „Šeškauskas"), komandų mygtukai (`placeTeam`) ir **BYE** (`placeBye`).
+- **TRAUKTI** (`drawNext`, atsitiktinis), **Atšaukti** (`undo`), **Iš naujo**
+  (`resetBoard` — pervadintas, nes `reset` koliduoja su Livewire), **Rodyti/Sustabdyti**
+  (`play`/`stop` → `state.active_window_id`).
+- Visi veiksmai per `run()` rašo į `state.draws[windowId]`; klaidos → Filament notification.
+
+#### Payload (`resolveDraw` + controller)
+
+`data()` draw šaka grąžina `draw: { format, board, slots{key→{id,name}}, pool[], current{team_id,name,slot},
+status, active_pot, camera_corner, show_tournament, sponsors[], rotate_seconds, category }`.
+`category` (grupės/kategorijos pavadinimas) pridedamas kontroleryje pagal `category_id`.
+
+#### Overlay atvaizdavimas (`window.blade.php` draw šaka)
+
+- **Piešiama į `<body>` host'ą `#ov-draw`** (ne į `#stage`), nes `.draw-stage` yra
+  `position:fixed`, o `#stage` `will-change:transform` taptų jos containing-block ir
+  suspaustų. (Ta pati priežastis kaip rezultatų juostos.)
+- **Antraštė**: turnyro pavadinimas (mažas) + kategorija/grupė (didelis) + „BURTAI".
+  „Krepšelis N" **nerodomas**. Tekstas su šešėliu (virš gyvo vaizdo).
+- **Išdėstymas — column-major**: 2 stulpeliai, `rows=ceil(n/2)`, `grid-auto-flow:column`
+  → numeracija 1–4 žemyn 1 stulpelyje, 5–8 antrame.
+- **Telpa į aukštį**: `.draw-fit` apvalkalas; jei `scrollHeight > clientHeight`,
+  `transform:scale(avail/natural)` (sinchroniškai, prieš animaciją). Be to bracket'o
+  šriftas ~6% mažesnis nei grupių, kad 16 komandų tilptų be vyniojimo.
+- **Skridimo animacija (FLIP/clone-and-fly)**: padėjus komandą, jos „Liko traukti"
+  chip'o klonas lanku nuskrieja iki vietos (~720ms), tada vieta atskleidžiama
+  (`.just-in`). Veikia ir rankiniam, ir TRAUKTI. Mechanika: chip'ai turi `data-team`,
+  vietos `data-slot`; pozicijos imamos `getBoundingClientRect`; praeito render'io pool
+  pozicijos saugomos `window.__drawPoolRects`; padėjimas „naujas", jei
+  `slot|team_id !== window.__drawHandledKey`. BYE neturi chip'o → tiesiog įslysta.
+- **Rėmėjai** — nuolatinė juosta (marquee): vienodos plytelės slenka po vieną į šoną
+  (rinkinys dubliuotas, `translateX -50%`), greitis = `rotate_seconds`.
+- **Kameros juosta**: pagal `camera_corner` paliekama **30% pločio** laisva juosta
+  (`padding-*` ant `.draw-head/.draw-body/.draw-spons`).
+
+#### Dydžiai / konstantos (dažniausiai koreguojama)
+
+| Ką | Kur | Dabar |
+|---|---|---|
+| Polling (draw) | `base.blade.php` `schedule()` | 500 ms |
+| Skridimo trukmė / lankas | `window.blade.php` `flyTeam` | 720 ms, vidurys −48px |
+| Grupių/bracket šriftai | `window.blade.php` CSS `.dg-slot` / `.dteam` | 28px / 26px |
+| Grupės pavadinimas, „BURTAI" | `.draw-head .tt` / `.badge` | 46px / 42px |
+| Kameros juostos plotis | `.draw-corner-* padding` | 30% |
+| Rėmėjų plytelė | `.sp-tile` | 180×72 |
+| „Title-safe" paraštės | `.draw-stage padding` | 48×64px |
+
+Dydžiai parinkti 1920×1080 transliacijai (TV min. 24–28px, antraštės ≥50% didesnės).
+
+#### Apribojimai (v1)
+
+Vienas operatorius, last-write-wins. Be websocket'ų (polling). Sėklos/krepšeliai
+realiai neveikia, kol Tournated „Skirstymas" neperduodamas (komandos be pot/seed —
+traukimas tampa atsitiktinis vienoje juostoje; rankinis dėjimas pilnas).
 
 ---
 
