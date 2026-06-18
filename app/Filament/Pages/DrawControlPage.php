@@ -237,18 +237,30 @@ class DrawControlPage extends Page
         Notification::make()->title('■ Sustabdyta')->send();
     }
 
-    /** Remaining (unplaced) teams, filtered by search. @return list<array<string,mixed>> */
+    /** Remaining (unplaced) teams, filtered by an accent-insensitive search. @return list<array<string,mixed>> */
     public function remainingTeams(): array
     {
         $s = $this->drawState();
         $placed = array_values(array_filter($s['slots'] ?? [], fn ($t) => $t !== null));
+        $needle = $this->fold($this->search);
         $teams = array_filter(
             $s['teams'] ?? [],
             fn ($t) => ! in_array($t['id'], $placed, true)
-                && ($this->search === '' || stripos($t['name'] ?? '', $this->search) !== false),
+                && ($needle === '' || str_contains($this->fold($t['name'] ?? ''), $needle)),
         );
 
         return array_values($teams);
+    }
+
+    /** Lowercase and strip Lithuanian/Polish diacritics so "seskauskas" matches "Šeškauskas". */
+    private function fold(string $s): string
+    {
+        $map = [
+            'ą' => 'a', 'č' => 'c', 'ę' => 'e', 'ė' => 'e', 'į' => 'i', 'š' => 's', 'ų' => 'u', 'ū' => 'u', 'ž' => 'z',
+            'ł' => 'l', 'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z', 'ń' => 'n', 'ć' => 'c',
+        ];
+
+        return strtr(mb_strtolower($s), $map);
     }
 
     /** All teams in the pool (for the editable list). @return list<array<string,mixed>> */

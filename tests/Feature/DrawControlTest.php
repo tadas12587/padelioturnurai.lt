@@ -113,6 +113,24 @@ class DrawControlTest extends TestCase
         $this->assertCount(2, $overlay->fresh()->state['draws']['w1']['teams']);
     }
 
+    public function test_search_is_accent_insensitive(): void
+    {
+        $overlay = $this->overlayWithDrawWindow();
+
+        $comp = Livewire::test(DrawControlPage::class)
+            ->set('overlayId', $overlay->id)
+            ->set('windowId', 'w1')
+            ->call('loadParticipants')
+            ->set('newTeamName', 'Šeškauskas / Žukas')
+            ->call('addTeam')
+            ->set('search', 'seskauskas');
+
+        $teams = $comp->instance()->remainingTeams();
+
+        $this->assertCount(1, $teams);
+        $this->assertSame('Šeškauskas / Žukas', $teams[0]['name']);
+    }
+
     public function test_play_sets_active_window(): void
     {
         $overlay = $this->overlayWithDrawWindow();
