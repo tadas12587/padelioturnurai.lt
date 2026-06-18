@@ -107,7 +107,8 @@
 
                 const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
                     it: d.items, sc: d.schedule, sv: d.schedule_variant, nm: d.next_match,
-                    dr: d.draw, v: d.variant, tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
+                    dr: d.draw, v: d.variant, cp: d.corner_position, csz: d.corner_size,
+                    tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
 
                 if (!shown) {
                     render(d); playIntro(); shown = true; currentWindow = d.window_id; lastSig = sig;

@@ -185,11 +185,11 @@
     .sp-pos-top-right { top: 40px; right: 40px; }
     .sp-pos-bottom-left { bottom: 40px; left: 40px; }
     .sp-pos-bottom-right { bottom: 40px; right: 40px; }
-    .spons.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 92px; background: var(--ov-bg);
-        border-top: 3px solid var(--ov-accent); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.6); }
-    .spons.bar .sp-item { position: absolute; inset: 0; display: flex; align-items: center; gap: 22px; padding: 0 48px; transform: translateY(12px); }
-    .spons.bar .sp-item.show { transform: none; }
-    .spons.bar img { width: 160px; height: 64px; object-fit: contain; flex: none; }
+    .spons.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 96px; background: var(--ov-bg);
+        border-top: 3px solid var(--ov-accent); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.6); overflow: hidden; }
+    .spons.bar .sp-track { align-items: center; height: 100%; }
+    .spons.bar .sp-cell { display: flex; align-items: center; gap: 18px; padding: 0 44px; height: 100%; }
+    .spons.bar img { height: 60px; width: auto; object-fit: contain; }
     .spons.bar .meta { display: flex; flex-direction: column; }
     .spons.bar .nm { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 22px; color: var(--ov-text); }
     .spons.bar .url { font-family: 'Barlow',sans-serif; font-size: 16px; color: var(--ov-accent); }
@@ -290,36 +290,40 @@
     if ((d.window_type || 'groups') === 'sponsors') {
         clearInterval(window.__spTimer);
         const items = d.items || [];
-        if (!items.length) { stage.innerHTML = ''; const _e = document.getElementById('ov-spons'); if (_e) _e.remove(); return; }
-        const variant = d.variant || 'corner';
-
-        const itemHtml = (it, i) => {
-            if (variant === 'bar') {
-                const meta = (it.name || it.url)
-                    ? `<div class="meta">${it.name ? `<span class="nm">${it.name}</span>` : ''}${it.url ? `<span class="url">${it.url}</span>` : ''}</div>`
-                    : '';
-                return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt="">${meta}</div>`;
-            }
-            // fullscreen and corner: logo only (name/url shown only in the bar)
-            return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt=""></div>`;
-        };
-
-        const cls = variant === 'bar' ? 'bar' : (variant === 'fullscreen' ? 'full' : 'corner');
-
-        // Sponsors are position:fixed → must live on <body> (outside #stage's
-        // will-change:transform), so the corner/bar/fullscreen pin to the screen,
-        // not to the overlay's general position box.
+        // Sponsors are position:fixed → live on <body> (outside #stage's
+        // will-change:transform) so they pin to the screen, not the overlay box.
         const host = document.getElementById('ov-spons') || (() => {
             const h = document.createElement('div'); h.id = 'ov-spons'; document.body.appendChild(h); return h;
         })();
-
-        // Corner bug goes to a screen corner; center-ish positions → bottom-right.
-        let pos = d.position || 'bottom-left';
-        if (pos === 'center' || pos.endsWith('-center') || pos.startsWith('mid-')) pos = 'bottom-right';
-        const posCls = variant === 'corner' ? ' sp-pos-' + pos : '';
-
+        if (!items.length) { stage.innerHTML = ''; host.remove(); return; }
+        const variant = d.variant || 'corner';
         stage.innerHTML = '';
-        host.innerHTML = `<div class="spons ${cls}${posCls}">${items.map(itemHtml).join('')}</div>`;
+
+        // Bottom bar — continuous marquee sliding to the side (like the draw strip).
+        if (variant === 'bar') {
+            const cell = (it) => {
+                const meta = (it.name || it.url)
+                    ? `<div class="meta">${it.name ? `<span class="nm">${it.name}</span>` : ''}${it.url ? `<span class="url">${it.url}</span>` : ''}</div>`
+                    : '';
+                return `<div class="sp-cell"><img src="${it.logo}" alt="">${meta}</div>`;
+            };
+            const set = items.map(cell).join('');
+            const secs = Math.max(items.length, 4) * (d.rotate_seconds || 5);
+            host.innerHTML = `<div class="spons bar"><div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div></div>`;
+            return;
+        }
+
+        // Corner / fullscreen — cross-fade between logos.
+        const itemHtml = (it, i) => `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt=""></div>`;
+        const cls = variant === 'fullscreen' ? 'full' : 'corner';
+        let posCls = '', sizeStyle = '';
+        if (variant === 'corner') {
+            posCls = ' sp-pos-' + (d.corner_position || 'bottom-right');
+            const sizes = { s: [280, 148], m: [360, 188], l: [460, 240], xl: [560, 292] };
+            const [w, h] = sizes[d.corner_size || 'm'] || sizes.m;
+            sizeStyle = ` style="width:${w}px;height:${h}px"`;
+        }
+        host.innerHTML = `<div class="spons ${cls}${posCls}"${sizeStyle}>${items.map(itemHtml).join('')}</div>`;
 
         const els = host.querySelectorAll('.sp-item');
         if (els.length > 1) {
