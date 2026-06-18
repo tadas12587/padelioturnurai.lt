@@ -209,7 +209,8 @@
     .draw-head .badge { font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 42px;
         color: var(--ov-accent); text-shadow: 0 2px 10px rgba(0,0,0,.6); white-space: nowrap; }
     .draw-body { flex: 1; display: flex; gap: 30px; min-height: 0; }
-    .draw-grid { flex: 1; display: grid; gap: 18px; align-content: start; }
+    .draw-fit { flex: 1; min-width: 0; transform-origin: top center; }
+    .draw-grid { display: grid; gap: 18px; align-content: start; }
     .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 4px solid var(--ov-accent); border-radius: 10px; padding: 14px 20px; }
     .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 24px; color: var(--ov-accent); margin-bottom: 8px; }
     .dg-slot { display: flex; gap: 14px; font-size: 28px; padding: 9px 0; border-top: 1px solid rgba(127,127,127,.14); line-height: 1.15; }
@@ -221,7 +222,7 @@
     .dg-slot.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
     @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
     /* bracket draw: first-round seeding sheet (match cards in a grid) */
-    .draw-bracket { flex: 1; display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    .draw-bracket { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-flow: column;
         gap: 18px 38px; align-content: start; }
     .dmatch { display: flex; align-items: center; gap: 14px; }
     .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 26px; color: var(--ov-muted);
@@ -499,30 +500,34 @@
             return [nm ? '' : 'empty', nm === 'BYE' ? 'bye' : '', k === animSlot ? 'just-in' : ''].filter(Boolean).join(' ');
         };
 
-        let bodyHtml = '';
+        // Numbering goes DOWN the first column then the second (column-major):
+        // 2 columns, rows = ceil(n/2), grid-auto-flow:column → 1..4 | 5..8.
+        let boardHtml = '';
         if (dr.format === 'bracket') {
-            // First-round match cards (the seeding sheet) — clean, professional,
-            // scales to 8/16/32. Physical slot number shown as the seed position.
             const teamRow = (k) => `<div class="dteam ${cellClass(k)}" data-slot="${k}"><span class="pos">${k}</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
-            bodyHtml = '<div class="draw-bracket">';
-            (dr.board || []).forEach((pair, i) => {
-                bodyHtml += `<div class="dmatch"><div class="dmatch-no">${i + 1}</div>`
+            const pairs = dr.board || [];
+            const rows = Math.max(1, Math.ceil(pairs.length / 2));
+            boardHtml = `<div class="draw-bracket" style="grid-template-rows:repeat(${rows},auto)">`;
+            pairs.forEach((pair, i) => {
+                boardHtml += `<div class="dmatch"><div class="dmatch-no">${i + 1}</div>`
                     + `<div class="dmatch-card">${teamRow(pair[0])}${teamRow(pair[1])}</div></div>`;
             });
-            bodyHtml += '</div>';
+            boardHtml += '</div>';
         } else {
             const groups = dr.board || [];
-            const cols = Math.min(2, groups.length || 1); // always 2 columns
-            bodyHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols},1fr)">`;
+            const cols = Math.min(2, groups.length || 1);
+            const rows = Math.max(1, Math.ceil((groups.length || 1) / cols));
+            boardHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},auto);grid-auto-flow:column">`;
             for (const g of groups) {
-                bodyHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
+                boardHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
                 g.slots.forEach((k, i) => {
-                    bodyHtml += `<div class="dg-slot ${cellClass(k)}" data-slot="${k}"><span class="pos">${i + 1}.</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+                    boardHtml += `<div class="dg-slot ${cellClass(k)}" data-slot="${k}"><span class="pos">${i + 1}.</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
                 });
-                bodyHtml += '</div>';
+                boardHtml += '</div>';
             }
-            bodyHtml += '</div>';
+            boardHtml += '</div>';
         }
+        const bodyHtml = `<div class="draw-fit">${boardHtml}</div>`;
 
         const pool = (dr.pool || []).map((t) => `<span class="chip" data-team="${t.id}">${t.name}</span>`).join('');
         const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
@@ -546,6 +551,19 @@
             const h = document.createElement('div'); h.id = 'ov-draw'; document.body.appendChild(h); return h;
         })();
         drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
+
+        // Shrink the board to fit the available height so a full draw never
+        // clips. Done synchronously (before the fly) so slot rects stay correct.
+        const fitEl = drawHost.querySelector('.draw-fit');
+        const bodyEl = drawHost.querySelector('.draw-body');
+        if (fitEl && bodyEl) {
+            fitEl.style.transform = 'none';
+            const avail = bodyEl.clientHeight;
+            const natural = fitEl.scrollHeight;
+            if (natural > avail && avail > 0) {
+                fitEl.style.transform = `scale(${Math.max(0.5, avail / natural)})`;
+            }
+        }
 
         // Sponsors: continuous marquee — equal tiles slide one-by-one to the
         // side, so the strip is always full. The set is duplicated so the loop
