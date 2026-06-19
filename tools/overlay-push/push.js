@@ -196,7 +196,14 @@ function extractBracket(draw) {
   }));
 
   const thirdRound = rounds.find((r) => /3rd/i.test(r.title || '') && (r.seeds || []).length === 1);
-  const third = thirdRound ? matchOf(thirdRound.seeds[0]) : null;
+  let third = thirdRound ? matchOf(thirdRound.seeds[0]) : null;
+  // Some formats (double-elimination) keep the 3rd-place match in a separate
+  // `thirdPlaceRound` field instead of in `rounds`.
+  if (!third && draw.thirdPlaceRound) {
+    const tp = draw.thirdPlaceRound;
+    const seed = Array.isArray(tp.seeds) ? tp.seeds[0] : (tp && tp.teams ? tp : null);
+    if (seed) third = matchOf(seed);
+  }
 
   // Placement brackets: leftover rounds (not main, not 3rd place) grouped into
   // blocks, each ending in a "Nth place" round. The block's place range is the
@@ -246,6 +253,15 @@ function extractBracket(draw) {
       placements.push({ key: `place-${named}`, title: label, rounds: displayRounds });
       acc = [];
     }
+  }
+
+  // Consolation rounds with no "Nth place" title (e.g. double-elimination R1/R2
+  // that decide 5-8). Group the leftovers into one segment, labelled from size.
+  if (placements.length === 0 && acc.length) {
+    const size = Number(draw.size) || 0;
+    const start = size ? Math.floor(size / 2) + 1 : 0;
+    const label = start > 1 ? `${start}-${size}` : 'Paguodos';
+    placements.push({ key: 'consolation', title: label, rounds: acc });
   }
 
   return { rounds: outRounds, third, placements };
