@@ -391,9 +391,7 @@ class OverlayResource extends Resource
                     ->color('gray')
                     ->action(function () {})
                     ->extraAttributes(fn ($record) => [
-                        'x-on:click' => 'window.navigator.clipboard.writeText('
-                            . json_encode(url('/overlay/' . $record->token))
-                            . '); $tooltip(' . json_encode('Nukopijuota!') . ', { timeout: 1500 })',
+                        'x-on:click' => self::copyOnClick(url('/overlay/' . $record->token)),
                     ]),
 
                 Tables\Actions\Action::make('copyControlUrl')
@@ -402,15 +400,31 @@ class OverlayResource extends Resource
                     ->color('gray')
                     ->action(function () {})
                     ->extraAttributes(fn ($record) => [
-                        'x-on:click' => 'window.navigator.clipboard.writeText('
-                            . json_encode(url('/overlay/' . $record->token . '/control'))
-                            . '); $tooltip(' . json_encode('Nukopijuota!') . ', { timeout: 1500 })',
+                        'x-on:click' => self::copyOnClick(url('/overlay/' . $record->token . '/control')),
                     ]),
 
                 EditAction::make(),
 
                 DeleteAction::make(),
             ]);
+    }
+
+    /**
+     * Robust copy-to-clipboard for a table action: synchronous textarea +
+     * execCommand (works in non-secure contexts and before any Livewire
+     * re-render), plus the async Clipboard API, plus a tooltip.
+     */
+    private static function copyOnClick(string $url): string
+    {
+        $u = json_encode($url);
+        $msg = json_encode('Nukopijuota!');
+
+        return "(() => { const u = {$u};"
+            . " const t = document.createElement('textarea'); t.value = u; t.style.position = 'fixed'; t.style.top = '-1000px';"
+            . " document.body.appendChild(t); t.focus(); t.select();"
+            . " try { document.execCommand('copy'); } catch (e) {} t.remove();"
+            . " if (navigator.clipboard) { try { navigator.clipboard.writeText(u); } catch (e) {} }"
+            . " \$tooltip({$msg}, { timeout: 1500 }); })()";
     }
 
     public static function getPages(): array
