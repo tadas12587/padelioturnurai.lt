@@ -396,6 +396,17 @@ class OverlayResource extends Resource
                             . '); $tooltip(' . json_encode('Nukopijuota!') . ', { timeout: 1500 })',
                     ]),
 
+                Tables\Actions\Action::make('copyControlUrl')
+                    ->label('Valdymas (OBS dock)')
+                    ->icon('heroicon-o-play')
+                    ->color('gray')
+                    ->action(function () {})
+                    ->extraAttributes(fn ($record) => [
+                        'x-on:click' => 'window.navigator.clipboard.writeText('
+                            . json_encode(url('/overlay/' . $record->token . '/control'))
+                            . '); $tooltip(' . json_encode('Nukopijuota!') . ', { timeout: 1500 })',
+                    ]),
+
                 EditAction::make(),
 
                 DeleteAction::make(),

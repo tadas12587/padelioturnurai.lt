@@ -367,7 +367,12 @@ scp -P 2231 tools/overlay-push/dist/overlay-push-* kdphuwnpqv@web4.freehosting.l
    `https://.../overlay/{token}`.
 4. **Valdymo puslapyje** (Transliacijos) įjungi/išjungi langus (Play/Stop) —
    tai nustato `state.active_window_id`.
-5. Sąrašo viršuje „Kaip paleisti duomenų siuntimą" modalas primena push komandą.
+5. **Supaprastintas valdymas OBS dock'e** — sąraše „Valdymas (OBS dock)" mygtukas
+   nukopijuoja `https://.../overlay/{token}/control`. Tai atskiras, be prisijungimo,
+   tamsus skydelis (dideli mygtukai langams Play/Stop), skirtas OBS → **Docks → Custom
+   Browser Docks** (įklijuoji URL). Autorizuoja token URL’e; `POST .../control` CSRF
+   išjungtas (`bootstrap/app.php`). Aktyvų langą pollina iš `/data` kas ~2 s.
+6. Sąrašo viršuje „Kaip paleisti duomenų siuntimą" modalas primena push komandą.
 
 ---
 

@@ -15,6 +15,30 @@ class OverlayController extends Controller
         return view('overlays.window', ['overlay' => $overlay]);
     }
 
+    /** Simplified, login-free control panel for an OBS browser dock. */
+    public function control(Overlay $overlay)
+    {
+        return view('overlays.control', ['overlay' => $overlay]);
+    }
+
+    /** Play/stop a window from the control panel (token-authorised, CSRF-exempt). */
+    public function controlAction(Overlay $overlay, Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'action'    => 'required|in:play,stop',
+            'window_id' => 'nullable|string',
+        ]);
+
+        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
+        $state['active_window_id'] = $validated['action'] === 'play'
+            ? ($validated['window_id'] ?? null)
+            : null;
+        $overlay->state = $state;
+        $overlay->save();
+
+        return response()->json(['active_window_id' => $state['active_window_id']]);
+    }
+
     public function data(Overlay $overlay, OverlayData $data): JsonResponse
     {
         $config = array_merge(Overlay::defaultConfig(), $overlay->config ?? []);
