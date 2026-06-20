@@ -380,51 +380,23 @@ class OverlayResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state === 'bracket' ? 'Brackets' : 'Grupės'),
 
-                TextColumn::make('token')
-                    ->label('Token')
-                    ->copyable(),
+                TextColumn::make('obs_url')
+                    ->label('OBS URL')
+                    ->state(fn ($record) => url('/overlay/' . $record->token))
+                    ->copyable()->copyMessage('Nukopijuota!')->wrap()
+                    ->description('Įklijuok į OBS → Sources → Browser'),
+
+                TextColumn::make('control_url')
+                    ->label('Valdymas (OBS dock)')
+                    ->state(fn ($record) => url('/overlay/' . $record->token . '/control'))
+                    ->copyable()->copyMessage('Nukopijuota!')->wrap()
+                    ->description('Įklijuok į OBS → Docks → Custom Browser Docks'),
             ])
             ->actions([
-                Tables\Actions\Action::make('copyUrl')
-                    ->label('OBS URL')
-                    ->icon('heroicon-o-clipboard')
-                    ->color('gray')
-                    ->action(function () {})
-                    ->extraAttributes(fn ($record) => [
-                        'x-on:click' => self::copyOnClick(url('/overlay/' . $record->token)),
-                    ]),
-
-                Tables\Actions\Action::make('copyControlUrl')
-                    ->label('Valdymas (OBS dock)')
-                    ->icon('heroicon-o-play')
-                    ->color('gray')
-                    ->action(function () {})
-                    ->extraAttributes(fn ($record) => [
-                        'x-on:click' => self::copyOnClick(url('/overlay/' . $record->token . '/control')),
-                    ]),
-
                 EditAction::make(),
 
                 DeleteAction::make(),
             ]);
-    }
-
-    /**
-     * Robust copy-to-clipboard for a table action: synchronous textarea +
-     * execCommand (works in non-secure contexts and before any Livewire
-     * re-render), plus the async Clipboard API, plus a tooltip.
-     */
-    private static function copyOnClick(string $url): string
-    {
-        $u = json_encode($url);
-        $msg = json_encode('Nukopijuota!');
-
-        return "(() => { const u = {$u};"
-            . " const t = document.createElement('textarea'); t.value = u; t.style.position = 'fixed'; t.style.top = '-1000px';"
-            . " document.body.appendChild(t); t.focus(); t.select();"
-            . " try { document.execCommand('copy'); } catch (e) {} t.remove();"
-            . " if (navigator.clipboard) { try { navigator.clipboard.writeText(u); } catch (e) {} }"
-            . " \$tooltip({$msg}, { timeout: 1500 }); })()";
     }
 
     public static function getPages(): array
