@@ -22,6 +22,7 @@ return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR
         // bridge (no session/CSRF token); it is protected by a secret token.
         $middleware->validateCsrfTokens(except: [
             'overlay/ingest',
+            'overlay/*/control',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

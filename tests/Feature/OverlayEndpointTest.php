@@ -241,6 +241,33 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('draw.current.slot', 'A1');
     }
 
+    public function test_control_action_play_and_stop(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'C', 'type' => 'group_standings',
+            'windows' => [['id' => 'w1', 'type' => 'groups', 'name' => 'W1']],
+            'state' => ['active_window_id' => null, 'next_match' => ''],
+        ]);
+
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w1'])
+            ->assertOk()->assertJson(['active_window_id' => 'w1']);
+        $this->assertSame('w1', $overlay->fresh()->state['active_window_id']);
+
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'stop'])
+            ->assertOk()->assertJson(['active_window_id' => null]);
+        $this->assertNull($overlay->fresh()->state['active_window_id']);
+    }
+
+    public function test_control_page_renders_windows(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'C', 'type' => 'group_standings',
+            'windows' => [['id' => 'w1', 'type' => 'groups', 'name' => 'Grupės A']],
+        ]);
+
+        $this->get("/overlay/{$overlay->token}/control")->assertOk()->assertSee('Grupės A');
+    }
+
     public function test_wanted_rejects_without_token(): void
     {
         config(['services.overlay.ingest_token' => 'secret']);

@@ -20,6 +20,11 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 // declared before the /overlay/{overlay} wildcard so it isn't treated as a token.
 Route::get('/overlay/wanted', [OverlayController::class, 'wanted'])->name('overlay.wanted');
 
+// Simplified control panel (OBS browser dock) — token-authorised, CSRF-exempt.
+// Declared before the /overlay/{overlay} wildcard so "control" isn't a token.
+Route::get('/overlay/{overlay}/control',  [OverlayController::class, 'control'])->name('overlay.control');
+Route::post('/overlay/{overlay}/control', [OverlayController::class, 'controlAction'])->name('overlay.control.action');
+
 // Broadcast overlays (public, polled by OBS browser sources)
 Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
 Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');
