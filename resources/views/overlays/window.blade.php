@@ -234,13 +234,13 @@
     .h2h-imgwrap { display: flex; align-items: flex-end; }
     /* Each player capped in width so a pair fits side-by-side on its own half
        (keeps both teammates together, leaves a clear gap between the two teams). */
-    .h2h-imgwrap img { width: auto; height: auto; max-width: 24vw; max-height: 94vh; object-fit: contain; display: block; margin-bottom: -5vh; image-rendering: auto;
+    .h2h-imgwrap img { width: auto; height: auto; max-width: 40vw; max-height: 100vh; object-fit: contain; display: block; margin-bottom: -10vh; image-rendering: auto;
         /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
            white cut-out fringe (keeps full image quality + GIF animation). */
         filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
-    /* Teammates may overlap up to ~50% of a player's width (max-width 24vw). */
-    .h2h-left .p1 { margin-left: -12vw; }
-    .h2h-right .p1 { margin-right: -12vw; }
+    /* Teammates overlap heavily so the bigger photos still fit on their side. */
+    .h2h-left .p1 { margin-left: -24vw; }
+    .h2h-right .p1 { margin-right: -24vw; }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
     /* per-team info card (fixed size, readable from a distance) */
