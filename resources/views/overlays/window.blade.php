@@ -206,6 +206,13 @@
         background: linear-gradient(90deg,
             color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 0%, var(--ov-bg) 36%,
             var(--ov-bg) 64%, color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 100%); }
+    /* subtle, slow accent glow drifting in the background (not distracting) */
+    .h2h-stage::before, .h2h-stage::after { content: ''; position: absolute; inset: -25%; z-index: 0; pointer-events: none;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--ov-accent) 28%, transparent), transparent 72%); opacity: .5; }
+    .h2h-stage::before { animation: h2hGlowA 26s ease-in-out infinite alternate; }
+    .h2h-stage::after  { animation: h2hGlowB 34s ease-in-out infinite alternate; }
+    @keyframes h2hGlowA { from { transform: translate(-16%,-10%) scale(1); } to { transform: translate(10%,8%) scale(1.25); } }
+    @keyframes h2hGlowB { from { transform: translate(18%,12%) scale(1.1); } to { transform: translate(-12%,-6%) scale(1.3); } }
     .h2h-empty { display: flex; align-items: center; justify-content: center;
         font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 30px; color: var(--ov-muted); }
     /* tournament header (logo + name + category) — like other overlays */
@@ -217,29 +224,34 @@
         font-size: 30px; color: var(--ov-text); text-shadow: 0 2px 10px rgba(0,0,0,.7); }
     .h2h-header .cat { font-family: 'Oswald',sans-serif; font-size: 16px; letter-spacing: .14em; text-transform: uppercase; color: var(--ov-muted); }
     /* Players: equal size, shown close (bottom crops), slightly overlapping. */
-    .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; }
+    .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; z-index: 1; }
     .h2h-left { left: 1%; }
     .h2h-right { right: 1%; flex-direction: row-reverse; }
     .h2h-player { position: relative; width: 27vw; height: 100vh; overflow: hidden; }
     .h2h-imgwrap { position: absolute; left: 50%; bottom: -16vh; transform: translateX(-50%); height: 108vh; }
-    .h2h-imgwrap img { height: 100%; width: auto; object-fit: contain;
-        /* feMorphology erode trims the outer ~1.4px (the white cut-out fringe);
-           tight dark + soft shadows add depth. */
-        filter: url(#h2h-defringe) drop-shadow(0 0 1px rgba(0,0,0,.6)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
+    .h2h-imgwrap img { height: 100%; width: auto; object-fit: contain; image-rendering: auto;
+        /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
+           white cut-out fringe (keeps full image quality + GIF animation). */
+        filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
     .h2h-left .p1 { margin-left: -9vw; }
     .h2h-right .p1 { margin-right: -9vw; }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
-    /* per-team info card (readable from a distance) */
-    .h2h-team-info { position: absolute; bottom: 3.5vh; z-index: 4; background: rgba(0,0,0,.5);
-        border: 1px solid color-mix(in srgb, var(--ov-accent) 40%, transparent); border-radius: 12px; padding: 12px 20px; }
-    .h2h-team-info.left { left: 2.5vw; }
-    .h2h-team-info.right { right: 2.5vw; text-align: right; }
+    /* per-team info card (fixed size, readable from a distance) */
+    .h2h-team-info { position: absolute; bottom: 3.5vh; z-index: 4; width: 33vw; background: rgba(0,0,0,.52);
+        border: 1px solid color-mix(in srgb, var(--ov-accent) 40%, transparent); border-radius: 12px; padding: 14px 22px; }
+    .h2h-team-info.left { left: 2vw; }
+    .h2h-team-info.right { right: 2vw; text-align: right; }
+    .h2h-team-rating { display: flex; align-items: baseline; gap: 12px; padding-bottom: 8px; margin-bottom: 6px;
+        border-bottom: 1px solid rgba(255,255,255,.18); }
+    .h2h-team-info.right .h2h-team-rating { justify-content: flex-end; }
+    .h2h-team-rating .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; color: var(--ov-muted); }
+    .h2h-team-rating .val { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; line-height: 1; color: var(--ov-accent); }
     .h2h-row { padding: 8px 0; }
     .h2h-row + .h2h-row { border-top: 1px solid rgba(255,255,255,.14); }
     .h2h-rn { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
-        font-size: 27px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); }
-    .h2h-rsub { display: flex; gap: 16px; align-items: center; margin-top: 4px; font-family: 'Barlow',sans-serif; font-size: 19px; }
+        font-size: 27px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h2h-rsub { display: flex; gap: 16px; align-items: center; margin-top: 4px; font-family: 'Barlow',sans-serif; font-size: 19px; white-space: nowrap; }
     .h2h-team-info.right .h2h-rsub { justify-content: flex-end; }
     .h2h-rt { color: var(--ov-accent); font-weight: 600; }
     .h2h-rc { display: inline-flex; align-items: center; gap: 7px; color: var(--ov-text); }
@@ -419,7 +431,17 @@
             ].filter(Boolean).join('');
             return `<div class="h2h-row"><div class="h2h-rn">${p.name}</div>${sub ? `<div class="h2h-rsub">${sub}</div>` : ''}</div>`;
         };
-        const teamInfo = (players, cls) => `<div class="h2h-team-info ${cls}">${(players || []).map(infoRow).join('')}</div>`;
+        const teamRating = (players) => {
+            const nums = (players || []).map((p) => parseFloat(String(p.rating_points || '').replace(',', '.'))).filter((n) => !isNaN(n));
+            if (!nums.length) return null;
+            const sum = nums.reduce((a, b) => a + b, 0);
+            return Number.isInteger(sum) ? String(sum) : sum.toFixed(1);
+        };
+        const teamInfo = (players, cls) => {
+            const tr = teamRating(players);
+            const head = tr ? `<div class="h2h-team-rating"><span class="lbl">Komandos reitingas</span><span class="val">${tr}</span></div>` : '';
+            return `<div class="h2h-team-info ${cls}">${head}${(players || []).map(infoRow).join('')}</div>`;
+        };
 
         const c = h.center || {};
         const show = h.show || [];
@@ -439,10 +461,7 @@
         const tt = d.tournament_title || d.title || '';
         const header = `<div class="h2h-header"><div class="hrow">${d.logo ? `<img src="${d.logo}" alt="">` : ''}${tt ? `<span class="tt">${tt}</span>` : ''}</div>${h.category ? `<span class="cat">${h.category}</span>` : ''}</div>`;
 
-        // SVG defringe filter (erodes the alpha edge → trims white cut-out fringe).
-        const defs = '<svg class="h2h-defs" width="0" height="0" style="position:absolute"><filter id="h2h-defringe" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="erode" radius="1.4"/></filter></svg>';
-
-        host.innerHTML = `<div class="h2h-stage">${defs}${header}`
+        host.innerHTML = `<div class="h2h-stage">${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
