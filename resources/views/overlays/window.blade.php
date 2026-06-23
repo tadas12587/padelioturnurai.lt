@@ -272,6 +272,11 @@
     .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .04em; color: var(--ov-text); }
     .h2h-court { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 22px; color: var(--ov-text);
         letter-spacing: .08em; text-transform: uppercase; margin-top: 7px; }
+    /* with the sponsor bar: cards rise above it and shrink slightly */
+    .h2h-has-bar .spons.bar { z-index: 6; }
+    .h2h-has-bar .h2h-team-info { bottom: 13vh; }
+    .h2h-has-bar .h2h-team-info.left { transform: scale(.9); transform-origin: bottom left; }
+    .h2h-has-bar .h2h-team-info.right { transform: scale(.9); transform-origin: bottom right; }
 
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
@@ -468,10 +473,25 @@
         const tt = d.tournament_title || d.title || '';
         const header = `<div class="h2h-header"><div class="hrow">${d.logo ? `<img src="${d.logo}" alt="">` : ''}${tt ? `<span class="tt">${tt}</span>` : ''}</div>${h.category ? `<span class="cat">${h.category}</span>` : ''}</div>`;
 
-        host.innerHTML = `<div class="h2h-stage">${header}`
+        // Optional second layer: a scrolling sponsor bar at the bottom.
+        const sponsors = h.sponsors || [];
+        let barHtml = '', stageCls = 'h2h-stage';
+        if (sponsors.length) {
+            stageCls += ' h2h-has-bar';
+            const cell = (it) => {
+                const meta = (it.name || it.url) ? `<div class="meta">${it.name ? `<span class="nm">${it.name}</span>` : ''}${it.url ? `<span class="url">${it.url}</span>` : ''}</div>` : '';
+                return `<div class="sp-cell"><img src="${it.logo}" alt="">${meta}</div>`;
+            };
+            const set = sponsors.map(cell).join('');
+            const secs = Math.max(sponsors.length, 4) * (h.rotate_seconds || 5);
+            barHtml = `<div class="spons bar"><div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div></div>`;
+        }
+
+        host.innerHTML = `<div class="${stageCls}">${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
+            + barHtml
             + `</div>`;
         return;
     }
