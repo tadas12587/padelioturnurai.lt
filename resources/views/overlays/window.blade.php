@@ -236,8 +236,10 @@
         /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
            white cut-out fringe (keeps full image quality + GIF animation). */
         filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
-    .h2h-left .p1 { margin-left: -10vw; }
-    .h2h-right .p1 { margin-right: -10vw; }
+    /* Teammates overlap a lot (stand close); this narrows each pair so the two
+       opposing teams end up further apart toward the screen edges. */
+    .h2h-left .p1 { margin-left: -16vw; }
+    .h2h-right .p1 { margin-right: -16vw; }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
     /* per-team info card (fixed size, readable from a distance) */
