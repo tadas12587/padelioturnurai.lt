@@ -200,6 +200,38 @@
     .spons.full img { width: min(640px, 60vw); height: min(360px, 52vh); object-fit: contain; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 
+    /* ── Akistata (Head to Head) ─────────────────────────────── */
+    .h2h-stage { position: fixed; inset: 0; overflow: hidden;
+        background: linear-gradient(90deg, #16213a 0%, #0c0e13 40%, #0c0e13 60%, #3a1620 100%); }
+    .h2h-empty { display: flex; align-items: center; justify-content: center;
+        font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 30px; color: var(--ov-muted); }
+    .h2h-top { position: absolute; top: 30px; left: 44px; right: 44px; display: flex; align-items: center; justify-content: space-between;
+        font-family: 'Oswald',sans-serif; }
+    .h2h-plate { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 28px; color: var(--ov-text);
+        text-shadow: 0 2px 10px rgba(0,0,0,.7); max-width: 40%; }
+    .h2h-plate.right { text-align: right; }
+    .h2h-cat { font-size: 15px; color: var(--ov-muted); letter-spacing: .12em; text-transform: uppercase; }
+    .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; }
+    .h2h-left { left: 3%; }
+    .h2h-right { right: 3%; flex-direction: row-reverse; }
+    .h2h-player { display: flex; flex-direction: column; align-items: center; }
+    .h2h-player img { height: 66vh; width: auto; max-width: 32vw; object-fit: contain; object-position: bottom;
+        filter: drop-shadow(0 12px 30px rgba(0,0,0,.55)); }
+    .h2h-player.p1 img { height: 55vh; }
+    .h2h-left .p1 { margin-left: -4vw; margin-bottom: 2vh; }
+    .h2h-right .p1 { margin-right: -4vw; margin-bottom: 2vh; }
+    .h2h-pname { margin-top: 6px; font-family: 'Oswald',sans-serif; font-weight: 500; text-transform: uppercase;
+        letter-spacing: .04em; font-size: 20px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.7); }
+    .h2h-player.p1 .h2h-pname { font-size: 17px; color: #c7ccd6; }
+    @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.06); } }
+    .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
+    .h2h-center { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); text-align: center; }
+    .h2h-vs { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 72px; line-height: 1; color: var(--ov-accent);
+        text-shadow: 0 3px 16px rgba(0,0,0,.7); }
+    .h2h-cbox { margin-top: 14px; background: rgba(0,0,0,.5); border: 1px solid rgba(201,168,76,.5); border-radius: 10px; padding: 8px 22px; }
+    .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 32px; letter-spacing: .04em; }
+    .h2h-court { font-size: 13px; color: var(--ov-muted); letter-spacing: .08em; text-transform: uppercase; margin-top: 3px; }
+
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
        body names ~28px (TV min 24–28), big group title ~46px, ~5% safe margin. */
@@ -278,6 +310,7 @@
     // the results branch re-creates it.
     { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
     if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
+    if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
     if ((d.window_type || 'groups') !== 'draw') {
         const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
         const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
@@ -334,6 +367,46 @@
                 els[i].classList.add('show');
             }, (d.rotate_seconds || 6) * 1000);
         }
+        return;
+    }
+
+    // ── Akistata (Head to Head) ─────────────────────────────────
+    if ((d.window_type || 'groups') === 'h2h') {
+        const h = d.h2h || {};
+        const host = document.getElementById('ov-h2h') || (() => {
+            const el = document.createElement('div'); el.id = 'ov-h2h'; document.body.appendChild(el); return el;
+        })();
+        stage.innerHTML = '';
+
+        if (!h.found) {
+            host.innerHTML = '<div class="h2h-stage h2h-empty">Pasirink rungtynes</div>';
+            return;
+        }
+
+        const zoom = h.animate ? ' h2h-zoom' : '';
+        const player = (p, i) => `<div class="h2h-player p${i}"><img class="${zoom.trim()}" src="${p.photo}" alt=""><div class="h2h-pname">${p.name}</div></div>`;
+        const side = (players, cls) => `<div class="h2h-side h2h-${cls}">${(players || []).map(player).join('')}</div>`;
+        const plate = (players, cls) => `<div class="h2h-plate ${cls}">${(players || []).map((p) => p.name).join(' / ')}</div>`;
+
+        const c = h.center || {};
+        const show = h.show || [];
+        let main = '';
+        if (show.includes('score') && c.in_progress && c.score) {
+            main = `<div class="h2h-score">${c.score}</div>`;
+        } else if (show.includes('time') && (c.time || c.date)) {
+            main = `<div class="h2h-time">${[c.date, c.time].filter(Boolean).join(' ')}</div>`;
+        }
+        const courtLine = show.includes('court') ? [c.court, c.round].filter(Boolean).join(' · ') : '';
+        const vs = show.includes('vs') ? (h.custom_text || 'VS') : 'VS';
+        const cbox = (main || courtLine)
+            ? `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`
+            : '';
+
+        host.innerHTML = `<div class="h2h-stage">`
+            + `<div class="h2h-top">${plate(h.team1, 'left')}<span class="h2h-cat">${h.category || ''}</span>${plate(h.team2, 'right')}</div>`
+            + side(h.team1, 'left') + side(h.team2, 'right')
+            + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
+            + `</div>`;
         return;
     }
 
