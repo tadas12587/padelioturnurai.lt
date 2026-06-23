@@ -234,7 +234,7 @@
     .h2h-imgwrap { display: flex; align-items: flex-end; }
     /* Each player capped in width so a pair fits side-by-side on its own half
        (keeps both teammates together, leaves a clear gap between the two teams). */
-    .h2h-imgwrap img { width: auto; height: auto; max-width: 40vw; max-height: 100vh; object-fit: contain; display: block; margin-bottom: -10vh; image-rendering: auto;
+    .h2h-imgwrap img { height: 96vh; width: auto; max-width: 44vw; display: block; margin-bottom: -6vh; image-rendering: auto;
         /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
            white cut-out fringe (keeps full image quality + GIF animation). */
         filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
