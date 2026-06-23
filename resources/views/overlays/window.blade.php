@@ -274,12 +274,12 @@
         letter-spacing: .08em; text-transform: uppercase; margin-top: 7px; }
     /* centre sponsor (between the teams) — shows only when set */
     .h2h-sponsor { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); z-index: 4; text-align: center;
-        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
         background: rgba(0,0,0,.55); border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent);
-        border-radius: 12px; padding: 12px 24px; }
-    .h2h-sponsor img { height: 66px; width: auto; max-width: 26vw; object-fit: contain; }
+        border-radius: 14px; padding: 20px 40px; }
+    .h2h-sponsor img { height: 132px; width: auto; max-width: 40vw; object-fit: contain; }
     .h2h-sponsor .txt { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
-        font-size: 24px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+        font-size: 44px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); }
     .h2h-has-bar .h2h-sponsor { bottom: 18vh; }
     /* with the sponsor bar: cards rise above it and shrink slightly */
     .h2h-has-bar .spons.bar { z-index: 6; }
