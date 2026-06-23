@@ -332,6 +332,13 @@ class OverlayResource extends Resource
                             Toggle::make('h2h_show_sponsors')->label('Rodyti rėmėjų juostą apačioje')->default(false)->live()
                                 ->helperText('Komandų lentelės pakyla ir truputį sumažėja. Rėmėjus pasirink žemiau.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            FileUpload::make('h2h_sponsor_logo')->label('Centrinis rėmėjas — logo (vidury)')
+                                ->acceptedFileTypes(['image/gif', 'image/png', 'image/webp', 'image/jpeg'])
+                                ->disk('public')->directory('overlay-sponsors')
+                                ->helperText('Įkėlus — matosi vidury tarp komandų; neįkėlus — nesimato.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_sponsor_text')->label('Centrinis rėmėjas — tekstas')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
 
                             Select::make('variant')
                                 ->label('Variantas')
