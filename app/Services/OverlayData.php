@@ -209,6 +209,96 @@ class OverlayData
         return ['groups' => $groups, 'subgroup_count' => count($groups)];
     }
 
+    /** Lowercase + strip Lithuanian/Polish diacritics (stable person key). */
+    public function personKey(string $name): string
+    {
+        $map = [
+            'ą' => 'a', 'č' => 'c', 'ę' => 'e', 'ė' => 'e', 'į' => 'i', 'š' => 's', 'ų' => 'u', 'ū' => 'u', 'ž' => 'z',
+            'ł' => 'l', 'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z', 'ń' => 'n', 'ć' => 'c',
+        ];
+
+        return trim(strtr(mb_strtolower($name), $map));
+    }
+
+    private function genderFromCategory(?string $cat): string
+    {
+        $c = mb_strtolower($cat ?? '');
+
+        return (str_contains($c, 'moter') || str_contains($c, 'women') || str_contains($c, 'female')) ? 'M' : 'V';
+    }
+
+    /** Distinct individual people across a tournament's participant pairs. @return list<string> */
+    public function participantsPeople(string $tournamentId): array
+    {
+        $out = [];
+        foreach ($this->payload($tournamentId)['participants_by_category'] ?? [] as $teams) {
+            foreach ($teams as $t) {
+                foreach (explode(' / ', (string) ($t['name'] ?? '')) as $person) {
+                    $person = trim($person);
+                    if ($person !== '') {
+                        $out[$this->personKey($person)] = $person;
+                    }
+                }
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /** @return array{name:string,photo:string,is_stock:bool} */
+    public function photoFor(string $tournamentId, string $name, string $fallbackGender): array
+    {
+        $row = \App\Models\PlayerPhoto::where('tournament_external_id', $tournamentId)
+            ->where('person_key', $this->personKey($name))
+            ->first();
+
+        if ($row && $row->photo) {
+            return ['name' => $name, 'photo' => Storage::url($row->photo), 'is_stock' => false];
+        }
+
+        $gender = $row->gender ?? $fallbackGender;
+        $file = $gender === 'M' ? 'player-female.svg' : 'player-male.svg';
+
+        return ['name' => $name, 'photo' => asset('img/h2h/' . $file), 'is_stock' => true];
+    }
+
+    /**
+     * Resolve the chosen head-to-head match into two photo-bearing sides + centre.
+     *
+     * @param  array<string,mixed>  $window
+     * @return array<string,mixed>
+     */
+    public function resolveH2h(string $tournamentId, $matchId, array $window): array
+    {
+        $matches = $this->payload($tournamentId)['matches'] ?? [];
+        $m = collect($matches)->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId);
+
+        if (! $m) {
+            return ['found' => false];
+        }
+
+        $gender = $this->genderFromCategory($m['category'] ?? null);
+        $side = fn ($players) => array_map(fn ($n) => $this->photoFor($tournamentId, $n, $gender), $players ?: []);
+
+        return [
+            'found'       => true,
+            'team1'       => $side($m['team1'] ?? []),
+            'team2'       => $side($m['team2'] ?? []),
+            'category'    => $m['category'] ?? null,
+            'center'      => [
+                'time'        => $m['time'] ?? null,
+                'date'        => $m['date'] ?? null,
+                'score'       => $m['score'] ?? null,
+                'court'       => $m['court'] ?? null,
+                'round'       => $m['round'] ?? null,
+                'in_progress' => ! empty($m['in_progress']),
+            ],
+            'show'        => $window['h2h_center'] ?? ['time', 'score', 'court'],
+            'custom_text' => $window['h2h_text'] ?? 'VS',
+            'animate'     => (bool) ($window['h2h_animate'] ?? true),
+        ];
+    }
+
     /**
      * Assemble the draw-window payload from the live runtime state + config.
      *
