@@ -251,21 +251,33 @@ class OverlayData
         return array_values($out);
     }
 
-    /** @return array{name:string,photo:string,is_stock:bool} */
+    /** @return array<string,mixed> */
     public function photoFor(string $tournamentId, string $name, string $fallbackGender): array
     {
         $row = \App\Models\PlayerPhoto::where('tournament_external_id', $tournamentId)
             ->where('person_key', $this->personKey($name))
             ->first();
 
+        $info = [
+            'rating_type'   => $row->rating_type ?? null,
+            'rating_points' => $row->rating_points ?? null,
+            'country'       => $row->country ?? null,
+            'city'          => $row->city ?? null,
+        ];
+
         if ($row && $row->photo) {
-            return ['name' => $name, 'photo' => Storage::url($row->photo), 'is_stock' => false];
+            return array_merge(['name' => $name, 'photo' => Storage::url($row->photo), 'is_stock' => false], $info);
         }
 
+        // No own photo → an admin-uploaded stock, else the bundled silhouette.
         $gender = $row->gender ?? $fallbackGender;
-        $file = $gender === 'M' ? 'player-female.svg' : 'player-male.svg';
+        $isFemale = $gender === 'M';
+        $custom = \App\Models\Setting::get($isFemale ? 'h2h_stock_female' : 'h2h_stock_male');
+        $photo = $custom
+            ? Storage::url($custom)
+            : asset('img/h2h/' . ($isFemale ? 'player-female.svg' : 'player-male.svg'));
 
-        return ['name' => $name, 'photo' => asset('img/h2h/' . $file), 'is_stock' => true];
+        return array_merge(['name' => $name, 'photo' => $photo, 'is_stock' => true], $info);
     }
 
     /**

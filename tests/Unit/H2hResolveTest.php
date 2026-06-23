@@ -47,6 +47,7 @@ class H2hResolveTest extends TestCase
         PlayerPhoto::create([
             'tournament_external_id' => '10424', 'person_key' => 'jonas petraitis',
             'name' => 'Jonas Petraitis', 'gender' => 'V', 'photo' => 'player-photos/j.gif',
+            'rating_type' => 'LTU', 'rating_points' => '1234', 'country' => 'Lietuva', 'city' => 'Vilnius',
         ]);
 
         $h = app(OverlayData::class)->resolveH2h('10424', 99, []);
@@ -55,6 +56,8 @@ class H2hResolveTest extends TestCase
         $this->assertSame('Jonas Petraitis', $h['team1'][0]['name']);
         $this->assertStringContainsString('player-photos/j.gif', $h['team1'][0]['photo']);
         $this->assertFalse($h['team1'][0]['is_stock']);
+        $this->assertSame('1234', $h['team1'][0]['rating_points']);
+        $this->assertSame('Vilnius', $h['team1'][0]['city']);
         // No photo for the partner → male stock (category "Vyrai A").
         $this->assertTrue($h['team1'][1]['is_stock']);
         $this->assertStringContainsString('player-male', $h['team1'][1]['photo']);

@@ -91,7 +91,10 @@
       "WebSearch",
       "Bash(php -l app/Http/Controllers/OverlayController.php)",
       "Bash(printf '\\\\n/tools/overlay-push/dist/\\\\n')",
-      "Bash(node --check tools/overlay-push/build.mjs)"
+      "Bash(node --check tools/overlay-push/build.mjs)",
+      "Bash(php -l app/Filament/Resources/PlayerPhotoResource.php)",
+      "Bash(php -l app/Filament/Pages/H2hControlPage.php)",
+      "Bash(php -l app/Filament/Resources/PlayerPhotoResource/Pages/ListPlayerPhotos.php)"
     ]
   }
 }
