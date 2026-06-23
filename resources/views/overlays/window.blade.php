@@ -227,8 +227,8 @@
         background: rgba(0,0,0,.4); padding: 3px 14px; border-radius: 8px; }
     /* Players: equal size, shown close (bottom crops), slightly overlapping. */
     .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; z-index: 1; }
-    .h2h-left { left: 1%; }
-    .h2h-right { right: 1%; flex-direction: row-reverse; }
+    .h2h-left { left: 0; }
+    .h2h-right { right: 0; flex-direction: row-reverse; }
     /* No side clipping — only the bottom may crop (via the stage's overflow). */
     .h2h-player { position: relative; display: flex; align-items: flex-end; }
     .h2h-imgwrap { display: flex; align-items: flex-end; }
@@ -236,8 +236,8 @@
         /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
            white cut-out fringe (keeps full image quality + GIF animation). */
         filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
-    .h2h-left .p1 { margin-left: -7vw; }
-    .h2h-right .p1 { margin-right: -7vw; }
+    .h2h-left .p1 { margin-left: -10vw; }
+    .h2h-right .p1 { margin-right: -10vw; }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
     /* per-team info card (fixed size, readable from a distance) */
