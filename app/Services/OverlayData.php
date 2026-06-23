@@ -209,6 +209,12 @@ class OverlayData
         return ['groups' => $groups, 'subgroup_count' => count($groups)];
     }
 
+    /** Raw snapshot matches (fixtures) for a tournament. @return array<int,mixed> */
+    public function matches(string $tournamentId): array
+    {
+        return $this->payload($tournamentId)['matches'] ?? [];
+    }
+
     /** Lowercase + strip Lithuanian/Polish diacritics (stable person key). */
     public function personKey(string $name): string
     {
