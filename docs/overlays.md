@@ -270,6 +270,38 @@ Vienas operatorius, last-write-wins. Be websocket'ų (polling). Sėklos/krepšel
 realiai neveikia, kol Tournated „Skirstymas" neperduodamas (komandos be pot/seed —
 traukimas tampa atsitiktinis vienoje juostoje; rankinis dėjimas pilnas).
 
+### 4.6 Akistata / Head to Head (`h2h`)
+
+Dvi komandos viena prieš kitą su žaidėjų nuotraukomis (apkarpyto žmogaus GIF), centre —
+VS + rungtynių laikas / live rezultatas / kortas·etapas / laisvas tekstas. Lėtas zoom
+link žiūrovo. Padel = dvejetai, tad po 2 žaidėjus pusėje.
+
+**Nuotraukų biblioteka** — puslapis „Žaidėjų nuotraukos" (grupė „Transliacijos"):
+- **„Užkrauti dalyvius"** — iš snapshot užkrauna visus turnyro žmones (lytis spėjama iš
+  kategorijos, redaguojama). Tada prie kiekvieno įkeli **GIF/PNG** (apkarpytas žmogus,
+  skaidrus fonas).
+- Saugoma `player_photos` lentelėje, raktas — **normalizuotas vardas** (`person_key`).
+- Nuotraukos su rungtynių žaidėjais surišamos **pagal vardą** (vardai ateina iš to paties
+  Tournated šaltinio ir sutampa). Jei žmogus be nuotraukos — **stock** pagal lytį
+  (`public/img/h2h/player-male.svg` / `player-female.svg`; gali pakeisti savais).
+
+**Lango nustatymai (`type:'h2h'`):** kuriuos centro elementus rodyti (laikas / live
+rezultatas / kortas·etapas / VS-tekstas), centro tekstas, lėtos animacijos jungiklis.
+
+**Valdymas — „Akistata (H2H)" puslapis:** pasirenki overlay → akistatos langą → rungtynes
+iš tvarkaraščio (paieška pagal žaidėją) → Rodyti. Nustato `state['h2h_match_id']` +
+įjungia langą. Centras automatiškai: prieš rungtynes — laikas; vykstant — live rezultatas.
+
+**Techniškai:** `OverlayData::resolveH2h` randa rungtynes pagal id, surenka abi komandas
+(nuotraukos arba stock) + centro duomenis; renderis (`window.blade` h2h šaka) piešia į
+`<body>` host'ą `#ov-h2h` (kaip kiti fixed langai); priekinis žaidėjas didesnis (`.p0`),
+partneris truputį už (`.p1`); GIF animuojasi savaime + `h2h-zoom` (~22 s).
+
+#### Apribojimai (v1)
+
+Vienas operatorius. Rišimas pagal vardą (sutampantys vardai gali reikalauti rankinio
+patikslinimo). Be veido auto-apkarpymo (stock = 2 paveiksliukai). Be pilnos statistikos.
+
 ---
 
 ## 5. push.js (tavo PC)
