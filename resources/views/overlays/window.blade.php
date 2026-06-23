@@ -208,7 +208,7 @@
             var(--ov-bg) 64%, color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 100%); }
     /* subtle, slow accent glow drifting in the background (not distracting) */
     .h2h-stage::before, .h2h-stage::after { content: ''; position: absolute; inset: -25%; z-index: 0; pointer-events: none;
-        background: radial-gradient(closest-side, color-mix(in srgb, var(--ov-accent) 28%, transparent), transparent 72%); opacity: .5; }
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--ov-accent) 42%, transparent), transparent 72%); opacity: .8; }
     .h2h-stage::before { animation: h2hGlowA 26s ease-in-out infinite alternate; }
     .h2h-stage::after  { animation: h2hGlowB 34s ease-in-out infinite alternate; }
     @keyframes h2hGlowA { from { transform: translate(-16%,-10%) scale(1); } to { transform: translate(10%,8%) scale(1.25); } }
@@ -222,7 +222,9 @@
     .h2h-header img { height: 56px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 7px rgba(0,0,0,.6)); }
     .h2h-header .tt { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
         font-size: 30px; color: var(--ov-text); text-shadow: 0 2px 10px rgba(0,0,0,.7); }
-    .h2h-header .cat { font-family: 'Oswald',sans-serif; font-size: 16px; letter-spacing: .14em; text-transform: uppercase; color: var(--ov-muted); }
+    .h2h-header .cat { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 24px; letter-spacing: .12em; text-transform: uppercase;
+        color: var(--ov-accent); text-shadow: 0 2px 10px rgba(0,0,0,.7);
+        background: rgba(0,0,0,.4); padding: 3px 14px; border-radius: 8px; }
     /* Players: equal size, shown close (bottom crops), slightly overlapping. */
     .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; z-index: 1; }
     .h2h-left { left: 1%; }
@@ -238,8 +240,8 @@
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
     /* per-team info card (fixed size, readable from a distance) */
-    .h2h-team-info { position: absolute; bottom: 3.5vh; z-index: 4; width: 33vw; background: rgba(0,0,0,.52);
-        border: 1px solid color-mix(in srgb, var(--ov-accent) 40%, transparent); border-radius: 12px; padding: 14px 22px; }
+    .h2h-team-info { position: absolute; bottom: 3.5vh; z-index: 4; width: 34vw; background: rgba(0,0,0,.82);
+        border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent); border-radius: 12px; padding: 14px 22px; }
     .h2h-team-info.left { left: 2vw; }
     .h2h-team-info.right { right: 2vw; text-align: right; }
     .h2h-team-rating { display: flex; align-items: baseline; gap: 12px; padding-bottom: 8px; margin-bottom: 6px;
@@ -250,12 +252,12 @@
     .h2h-row { padding: 8px 0; }
     .h2h-row + .h2h-row { border-top: 1px solid rgba(255,255,255,.14); }
     .h2h-rn { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
-        font-size: 27px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .h2h-rsub { display: flex; gap: 16px; align-items: center; margin-top: 4px; font-family: 'Barlow',sans-serif; font-size: 19px; white-space: nowrap; }
+        font-size: 33px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h2h-rsub { display: flex; gap: 18px; align-items: center; margin-top: 5px; font-family: 'Barlow',sans-serif; font-size: 24px; white-space: nowrap; }
     .h2h-team-info.right .h2h-rsub { justify-content: flex-end; }
-    .h2h-rt { color: var(--ov-accent); font-weight: 600; }
-    .h2h-rc { display: inline-flex; align-items: center; gap: 7px; color: var(--ov-text); }
-    .h2h-flag { height: 19px; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+    .h2h-rt { color: var(--ov-accent); font-weight: 700; }
+    .h2h-rc { display: inline-flex; align-items: center; gap: 8px; color: var(--ov-text); }
+    .h2h-flag { height: 24px; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
     .h2h-rcity { color: var(--ov-muted); }
     /* centre */
     .h2h-center { position: absolute; left: 50%; top: 44%; transform: translate(-50%,-50%); text-align: center; z-index: 5; }
@@ -264,7 +266,8 @@
     .h2h-cbox { margin-top: 16px; background: rgba(0,0,0,.62); border: 1px solid color-mix(in srgb, var(--ov-accent) 60%, transparent);
         border-radius: 12px; padding: 12px 30px; }
     .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .04em; color: var(--ov-text); }
-    .h2h-court { font-size: 15px; color: var(--ov-muted); letter-spacing: .1em; text-transform: uppercase; margin-top: 5px; }
+    .h2h-court { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 22px; color: var(--ov-text);
+        letter-spacing: .08em; text-transform: uppercase; margin-top: 7px; }
 
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
