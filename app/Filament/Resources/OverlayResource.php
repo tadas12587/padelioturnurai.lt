@@ -329,6 +329,9 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
                             Toggle::make('h2h_animate')->label('Lėta animacija (zoom link žiūrovo)')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Toggle::make('h2h_show_sponsors')->label('Rodyti rėmėjų juostą apačioje')->default(false)->live()
+                                ->helperText('Komandų lentelės pakyla ir truputį sumažėja. Rėmėjus pasirink žemiau.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
 
                             Select::make('variant')
                                 ->label('Variantas')
@@ -358,16 +361,16 @@ class OverlayResource extends Resource
                                 ->label('Rėmėjai iš sąrašo')
                                 ->multiple()
                                 ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
                             FileUpload::make('images')
                                 ->label('Arba įkelk nuotraukas (masiškai)')
                                 ->image()->multiple()->reorderable()
                                 ->disk('public')->directory('overlay-sponsors')
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
                             TextInput::make('rotate_seconds')
                                 ->label('Keitimo intervalas (s)')
                                 ->numeric()->default(6)->minValue(2)
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
                         ])
                         ->collapsible()
                         ->itemLabel(fn (array $state) => $state['name'] ?? 'Langas')
@@ -375,6 +378,14 @@ class OverlayResource extends Resource
                         ->addActionLabel('Pridėti langą'),
                 ]),
         ]);
+    }
+
+    /** Sponsor source fields show for a sponsors window, or an h2h window with the bar on. */
+    private static function sponsorFieldsVisible(Forms\Get $get): bool
+    {
+        $type = $get('type') ?? 'groups';
+
+        return $type === 'sponsors' || ($type === 'h2h' && $get('h2h_show_sponsors'));
     }
 
     public static function table(Table $table): Table

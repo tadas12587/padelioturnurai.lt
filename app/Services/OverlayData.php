@@ -361,6 +361,8 @@ class OverlayData
             'show'        => $window['h2h_center'] ?? ['time', 'score', 'court'],
             'custom_text' => $window['h2h_text'] ?? 'VS',
             'animate'     => (bool) ($window['h2h_animate'] ?? true),
+            'sponsors'    => ! empty($window['h2h_show_sponsors']) ? $this->resolveSponsors($window) : [],
+            'rotate_seconds' => (int) ($window['rotate_seconds'] ?? 5),
         ];
     }
 
