@@ -96,6 +96,7 @@
                     const rv = document.getElementById('draw-reveal-host'); if (rv) rv.remove();
                     const dh = document.getElementById('ov-draw'); if (dh) dh.remove();
                     const sp = document.getElementById('ov-spons'); if (sp) sp.remove();
+                    const hh = document.getElementById('ov-h2h'); if (hh) hh.remove();
                     clearInterval(window.__drawSpons); clearInterval(window.__spTimer);
                     window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
                     return d;
@@ -107,7 +108,7 @@
 
                 const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
                     it: d.items, sc: d.schedule, sv: d.schedule_variant, nm: d.next_match,
-                    dr: d.draw, v: d.variant, cp: d.corner_position, csz: d.corner_size,
+                    dr: d.draw, h2: d.h2h, v: d.variant, cp: d.corner_position, csz: d.corner_size,
                     tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
 
                 if (!shown) {
