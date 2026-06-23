@@ -208,39 +208,51 @@
             var(--ov-bg) 64%, color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 100%); }
     .h2h-empty { display: flex; align-items: center; justify-content: center;
         font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 30px; color: var(--ov-muted); }
-    .h2h-top { position: absolute; top: 30px; left: 44px; right: 44px; display: flex; align-items: center; justify-content: space-between;
-        font-family: 'Oswald',sans-serif; z-index: 3; }
-    .h2h-plate { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 28px; color: var(--ov-text);
-        text-shadow: 0 2px 10px rgba(0,0,0,.7); max-width: 40%; }
-    .h2h-plate.right { text-align: right; }
-    .h2h-cat { font-size: 15px; color: var(--ov-muted); letter-spacing: .12em; text-transform: uppercase; }
-    /* Players: equal size, shown close (bottom may crop), slightly overlapping. */
+    /* tournament header (logo + name + category) — like other overlays */
+    .h2h-header { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 5;
+        display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .h2h-header .hrow { display: flex; align-items: center; gap: 14px; }
+    .h2h-header img { height: 56px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 7px rgba(0,0,0,.6)); }
+    .h2h-header .tt { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        font-size: 30px; color: var(--ov-text); text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+    .h2h-header .cat { font-family: 'Oswald',sans-serif; font-size: 16px; letter-spacing: .14em; text-transform: uppercase; color: var(--ov-muted); }
+    /* Players: equal size, shown close (bottom crops), slightly overlapping. */
     .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; }
-    .h2h-left { left: 1.5%; }
-    .h2h-right { right: 1.5%; flex-direction: row-reverse; }
+    .h2h-left { left: 1%; }
+    .h2h-right { right: 1%; flex-direction: row-reverse; }
     .h2h-player { position: relative; width: 27vw; height: 100vh; overflow: hidden; }
-    .h2h-imgwrap { position: absolute; left: 50%; bottom: -7vh; transform: translateX(-50%); height: 107vh; }
+    .h2h-imgwrap { position: absolute; left: 50%; bottom: -16vh; transform: translateX(-50%); height: 108vh; }
     .h2h-imgwrap img { height: 100%; width: auto; object-fit: contain;
-        /* Tight dark edge hugs the alpha silhouette to absorb white cut-out fringe. */
-        filter: drop-shadow(0 0 1.5px rgba(0,0,0,.85)) drop-shadow(0 0 1.5px rgba(0,0,0,.85))
-                drop-shadow(0 14px 28px rgba(0,0,0,.5)); }
+        /* feMorphology erode trims the outer ~1.4px (the white cut-out fringe);
+           tight dark + soft shadows add depth. */
+        filter: url(#h2h-defringe) drop-shadow(0 0 1px rgba(0,0,0,.6)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
     .h2h-left .p1 { margin-left: -9vw; }
     .h2h-right .p1 { margin-right: -9vw; }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
-    .h2h-cap { position: absolute; left: 50%; bottom: 2.5vh; transform: translateX(-50%); z-index: 2; text-align: center; white-space: nowrap; }
-    .h2h-pname { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
-        font-size: 24px; color: var(--ov-text); text-shadow: 0 2px 10px rgba(0,0,0,.9); }
-    .h2h-pinfo { margin-top: 3px; font-family: 'Barlow',sans-serif; line-height: 1.25; text-shadow: 0 2px 8px rgba(0,0,0,.9); }
-    .h2h-rating { font-size: 16px; color: var(--ov-accent); font-weight: 600; }
-    .h2h-geo { font-size: 14px; color: var(--ov-muted); }
-    .h2h-center { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); text-align: center; z-index: 3; }
-    .h2h-vs { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 72px; line-height: 1; color: var(--ov-accent);
-        text-shadow: 0 3px 16px rgba(0,0,0,.7); }
-    .h2h-cbox { margin-top: 14px; background: rgba(0,0,0,.5); border: 1px solid color-mix(in srgb, var(--ov-accent) 55%, transparent);
-        border-radius: 10px; padding: 8px 22px; }
-    .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 32px; letter-spacing: .04em; color: var(--ov-text); }
-    .h2h-court { font-size: 13px; color: var(--ov-muted); letter-spacing: .08em; text-transform: uppercase; margin-top: 3px; }
+    /* per-team info card (readable from a distance) */
+    .h2h-team-info { position: absolute; bottom: 3.5vh; z-index: 4; background: rgba(0,0,0,.5);
+        border: 1px solid color-mix(in srgb, var(--ov-accent) 40%, transparent); border-radius: 12px; padding: 12px 20px; }
+    .h2h-team-info.left { left: 2.5vw; }
+    .h2h-team-info.right { right: 2.5vw; text-align: right; }
+    .h2h-row { padding: 8px 0; }
+    .h2h-row + .h2h-row { border-top: 1px solid rgba(255,255,255,.14); }
+    .h2h-rn { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+        font-size: 27px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+    .h2h-rsub { display: flex; gap: 16px; align-items: center; margin-top: 4px; font-family: 'Barlow',sans-serif; font-size: 19px; }
+    .h2h-team-info.right .h2h-rsub { justify-content: flex-end; }
+    .h2h-rt { color: var(--ov-accent); font-weight: 600; }
+    .h2h-rc { display: inline-flex; align-items: center; gap: 7px; color: var(--ov-text); }
+    .h2h-flag { height: 19px; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+    .h2h-rcity { color: var(--ov-muted); }
+    /* centre */
+    .h2h-center { position: absolute; left: 50%; top: 44%; transform: translate(-50%,-50%); text-align: center; z-index: 5; }
+    .h2h-vs { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 78px; line-height: 1; color: var(--ov-accent);
+        text-shadow: 0 3px 18px rgba(0,0,0,.8); }
+    .h2h-cbox { margin-top: 16px; background: rgba(0,0,0,.62); border: 1px solid color-mix(in srgb, var(--ov-accent) 60%, transparent);
+        border-radius: 12px; padding: 12px 30px; }
+    .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .04em; color: var(--ov-text); }
+    .h2h-court { font-size: 15px; color: var(--ov-muted); letter-spacing: .1em; text-transform: uppercase; margin-top: 5px; }
 
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
@@ -394,17 +406,20 @@
         }
 
         const zoom = h.animate ? 'h2h-zoom' : '';
-        const player = (p, i) => {
-            const rating = [p.rating_type, p.rating_points].filter(Boolean).join(' · ');
-            const geo = [p.country, p.city].filter(Boolean).join(' · ');
-            const info = (rating || geo)
-                ? `<div class="h2h-pinfo">${rating ? `<div class="h2h-rating">${rating}</div>` : ''}${geo ? `<div class="h2h-geo">${geo}</div>` : ''}</div>`
-                : '';
-            return `<div class="h2h-player p${i}"><div class="h2h-imgwrap"><img class="${zoom}" src="${p.photo}" alt=""></div>`
-                + `<div class="h2h-cap"><div class="h2h-pname">${p.name}</div>${info}</div></div>`;
-        };
+        const player = (p, i) => `<div class="h2h-player p${i}"><div class="h2h-imgwrap"><img class="${zoom}" src="${p.photo}" alt=""></div></div>`;
         const side = (players, cls) => `<div class="h2h-side h2h-${cls}">${(players || []).map(player).join('')}</div>`;
-        const plate = (players, cls) => `<div class="h2h-plate ${cls}">${(players || []).map((p) => p.name).join(' / ')}</div>`;
+
+        const infoRow = (p) => {
+            const rating = [p.rating_type, p.rating_points].filter(Boolean).join(' ');
+            const flag = p.flag ? `<img class="h2h-flag" src="${p.flag}" alt="">` : '';
+            const sub = [
+                rating ? `<span class="h2h-rt">${rating}</span>` : '',
+                (p.country || flag) ? `<span class="h2h-rc">${flag}${p.country || ''}</span>` : '',
+                p.city ? `<span class="h2h-rcity">${p.city}</span>` : '',
+            ].filter(Boolean).join('');
+            return `<div class="h2h-row"><div class="h2h-rn">${p.name}</div>${sub ? `<div class="h2h-rsub">${sub}</div>` : ''}</div>`;
+        };
+        const teamInfo = (players, cls) => `<div class="h2h-team-info ${cls}">${(players || []).map(infoRow).join('')}</div>`;
 
         const c = h.center || {};
         const show = h.show || [];
@@ -420,9 +435,16 @@
             ? `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`
             : '';
 
-        host.innerHTML = `<div class="h2h-stage">`
-            + `<div class="h2h-top">${plate(h.team1, 'left')}<span class="h2h-cat">${h.category || ''}</span>${plate(h.team2, 'right')}</div>`
+        // Tournament logo + name (like the other overlays).
+        const tt = d.tournament_title || d.title || '';
+        const header = `<div class="h2h-header"><div class="hrow">${d.logo ? `<img src="${d.logo}" alt="">` : ''}${tt ? `<span class="tt">${tt}</span>` : ''}</div>${h.category ? `<span class="cat">${h.category}</span>` : ''}</div>`;
+
+        // SVG defringe filter (erodes the alpha edge → trims white cut-out fringe).
+        const defs = '<svg class="h2h-defs" width="0" height="0" style="position:absolute"><filter id="h2h-defringe" x="-5%" y="-5%" width="110%" height="110%"><feMorphology operator="erode" radius="1.4"/></filter></svg>';
+
+        host.innerHTML = `<div class="h2h-stage">${defs}${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
+            + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
             + `</div>`;
         return;

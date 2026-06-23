@@ -226,6 +226,51 @@ class OverlayData
         return trim(strtr(mb_strtolower($name), $map));
     }
 
+    /** Map a country name/code to an ISO-3166 alpha-2 code (for a flag), or null. */
+    private function countryCode(?string $country): ?string
+    {
+        $c = $this->personKey((string) ($country ?? ''));
+        if ($c === '') {
+            return null;
+        }
+        if (preg_match('/^[a-z]{2}$/', $c)) {
+            return $c;
+        }
+
+        $map = [
+            'lietuva' => 'lt', 'lithuania' => 'lt', 'ltu' => 'lt',
+            'latvija' => 'lv', 'latvia' => 'lv', 'lva' => 'lv',
+            'estija' => 'ee', 'estonia' => 'ee', 'est' => 'ee',
+            'lenkija' => 'pl', 'poland' => 'pl', 'polska' => 'pl', 'pol' => 'pl',
+            'ispanija' => 'es', 'spain' => 'es', 'espana' => 'es', 'esp' => 'es',
+            'italija' => 'it', 'italy' => 'it', 'ita' => 'it',
+            'prancuzija' => 'fr', 'france' => 'fr', 'fra' => 'fr',
+            'vokietija' => 'de', 'germany' => 'de', 'deu' => 'de',
+            'svedija' => 'se', 'sweden' => 'se', 'swe' => 'se',
+            'suomija' => 'fi', 'finland' => 'fi', 'fin' => 'fi',
+            'norvegija' => 'no', 'norway' => 'no', 'nor' => 'no',
+            'danija' => 'dk', 'denmark' => 'dk', 'dnk' => 'dk',
+            'jungtine karalyste' => 'gb', 'didzioji britanija' => 'gb', 'uk' => 'gb', 'gbr' => 'gb', 'england' => 'gb',
+            'airija' => 'ie', 'ireland' => 'ie', 'irl' => 'ie',
+            'portugalija' => 'pt', 'portugal' => 'pt', 'prt' => 'pt',
+            'ukraina' => 'ua', 'ukraine' => 'ua', 'ukr' => 'ua',
+            'olandija' => 'nl', 'nyderlandai' => 'nl', 'netherlands' => 'nl', 'nld' => 'nl',
+            'belgija' => 'be', 'belgium' => 'be', 'bel' => 'be',
+            'sveicarija' => 'ch', 'switzerland' => 'ch', 'che' => 'ch',
+            'austrija' => 'at', 'austria' => 'at', 'aut' => 'at',
+            'cekija' => 'cz', 'czech' => 'cz', 'cze' => 'cz',
+            'slovakija' => 'sk', 'slovakia' => 'sk', 'svk' => 'sk',
+            'vengrija' => 'hu', 'hungary' => 'hu', 'hun' => 'hu',
+            'rumunija' => 'ro', 'romania' => 'ro', 'rou' => 'ro',
+            'graikija' => 'gr', 'greece' => 'gr', 'grc' => 'gr',
+            'argentina' => 'ar', 'arg' => 'ar',
+            'brazilija' => 'br', 'brazil' => 'br', 'bra' => 'br',
+            'jav' => 'us', 'usa' => 'us',
+        ];
+
+        return $map[$c] ?? null;
+    }
+
     private function genderFromCategory(?string $cat): string
     {
         $c = mb_strtolower($cat ?? '');
@@ -258,11 +303,13 @@ class OverlayData
             ->where('person_key', $this->personKey($name))
             ->first();
 
+        $code = $this->countryCode($row->country ?? null);
         $info = [
             'rating_type'   => $row->rating_type ?? null,
             'rating_points' => $row->rating_points ?? null,
             'country'       => $row->country ?? null,
             'city'          => $row->city ?? null,
+            'flag'          => $code ? "https://flagcdn.com/32x24/{$code}.png" : null,
         ];
 
         if ($row && $row->photo) {

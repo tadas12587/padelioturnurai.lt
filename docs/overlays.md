@@ -296,11 +296,14 @@ iš tvarkaraščio (paieška pagal žaidėją) → Rodyti. Nustato `state['h2h_m
 įjungia langą. Centras automatiškai: prieš rungtynes — laikas; vykstant — live rezultatas.
 
 **Techniškai:** `OverlayData::resolveH2h` randa rungtynes pagal id, surenka abi komandas
-(nuotraukos arba stock + reitingas/šalis/miestas) + centro duomenis; renderis
-(`window.blade` h2h šaka) piešia į `<body>` host'ą `#ov-h2h`. Žaidėjai **vienodo
-dydžio**, rodomi iš arti (apačia gali nukirpti), truputį persidengia; balta apkarpymo
-„aureolė" prislopinama tamsiu kontūru (drop-shadow); spalvos — **pagal overlay temą**
-(šonai tinguojami akcentu per `color-mix`). GIF animuojasi savaime + `h2h-zoom` (~22 s).
+(nuotraukos arba stock + reitingas/šalis/miestas + **vėliavėlė** per `flagcdn.com`) +
+centro duomenis; renderis (`window.blade` h2h šaka) piešia į `<body>` host'ą `#ov-h2h`.
+Viršuje — **turnyro logo + pavadinimas** (kaip kituose languose) + kategorija. Žaidėjai
+**vienodo dydžio**, rodomi iš arti (apačia nukerpa), truputį persidengia; po jais —
+**komandos info kortelė** (vardas, reitingas, šalis su vėliavėle, miestas; gerai
+įskaitoma iš toli). Balta apkarpymo „aureolė" nukerpama **SVG `feMorphology` erozija**
+(`#h2h-defringe`) — taip daro profesionalūs sprendimai vietoj rankinio retušavimo.
+Spalvos — **pagal overlay temą** (`color-mix`). GIF animuojasi savaime + `h2h-zoom` (~22 s).
 
 #### Apribojimai (v1)
 

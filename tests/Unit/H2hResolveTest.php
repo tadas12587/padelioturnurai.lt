@@ -58,6 +58,7 @@ class H2hResolveTest extends TestCase
         $this->assertFalse($h['team1'][0]['is_stock']);
         $this->assertSame('1234', $h['team1'][0]['rating_points']);
         $this->assertSame('Vilnius', $h['team1'][0]['city']);
+        $this->assertStringContainsString('flagcdn.com/32x24/lt', $h['team1'][0]['flag']);
         // No photo for the partner → male stock (category "Vyrai A").
         $this->assertTrue($h['team1'][1]['is_stock']);
         $this->assertStringContainsString('player-male', $h['team1'][1]['photo']);
