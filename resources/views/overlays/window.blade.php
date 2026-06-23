@@ -232,14 +232,15 @@
     /* No side clipping — only the bottom may crop (via the stage's overflow). */
     .h2h-player { position: relative; display: flex; align-items: flex-end; }
     .h2h-imgwrap { display: flex; align-items: flex-end; }
-    .h2h-imgwrap img { height: 96vh; width: auto; object-fit: contain; display: block; margin-bottom: -8vh; image-rendering: auto;
+    /* Each player capped in width so a pair fits side-by-side on its own half
+       (keeps both teammates together, leaves a clear gap between the two teams). */
+    .h2h-imgwrap img { width: auto; height: auto; max-width: 24vw; max-height: 94vh; object-fit: contain; display: block; margin-bottom: -5vh; image-rendering: auto;
         /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
            white cut-out fringe (keeps full image quality + GIF animation). */
         filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
-    /* Teammates overlap a lot (stand close); this narrows each pair so the two
-       opposing teams end up further apart toward the screen edges. */
-    .h2h-left .p1 { margin-left: -16vw; }
-    .h2h-right .p1 { margin-right: -16vw; }
+    /* Teammates stand close (small overlap); pairs stay on their side. */
+    .h2h-left .p1 { margin-left: -5vw; }
+    .h2h-right .p1 { margin-right: -5vw; }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
     /* per-team info card (fixed size, readable from a distance) */
