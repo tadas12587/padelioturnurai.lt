@@ -36,6 +36,10 @@ class PlayerPhotoResource extends Resource
             Forms\Components\TextInput::make('name')->label('Vardas')->required(),
             Forms\Components\Select::make('gender')->label('Lytis')
                 ->options(['V' => 'Vyras', 'M' => 'Moteris'])->default('V')->required(),
+            Forms\Components\TextInput::make('rating_type')->label('Reitingo tipas')->maxLength(40),
+            Forms\Components\TextInput::make('rating_points')->label('Reitingo taškai')->maxLength(40),
+            Forms\Components\TextInput::make('country')->label('Šalis')->maxLength(60),
+            Forms\Components\TextInput::make('city')->label('Miestas')->maxLength(60),
             Forms\Components\FileUpload::make('photo')
                 ->label('Nuotrauka (GIF/PNG, apkarpytas žmogus, skaidrus fonas)')
                 ->acceptedFileTypes(['image/gif', 'image/png', 'image/webp'])

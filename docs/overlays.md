@@ -279,7 +279,10 @@ link žiūrovo. Padel = dvejetai, tad po 2 žaidėjus pusėje.
 **Nuotraukų biblioteka** — puslapis „Žaidėjų nuotraukos" (grupė „Transliacijos"):
 - **„Užkrauti dalyvius"** — iš snapshot užkrauna visus turnyro žmones (lytis spėjama iš
   kategorijos, redaguojama). Tada prie kiekvieno įkeli **GIF/PNG** (apkarpytas žmogus,
-  skaidrus fonas).
+  skaidrus fonas) ir, jei nori, **reitingo tipą, reitingo taškus, šalį, miestą** (rodoma
+  po žaidėju).
+- **„Stock nuotraukos"** (puslapio viršuje) — gali įkelti savo vyro/moters stock GIF/PNG;
+  jei neįkelta, naudojami įmontuoti siluetai.
 - Saugoma `player_photos` lentelėje, raktas — **normalizuotas vardas** (`person_key`).
 - Nuotraukos su rungtynių žaidėjais surišamos **pagal vardą** (vardai ateina iš to paties
   Tournated šaltinio ir sutampa). Jei žmogus be nuotraukos — **stock** pagal lytį
@@ -293,9 +296,11 @@ iš tvarkaraščio (paieška pagal žaidėją) → Rodyti. Nustato `state['h2h_m
 įjungia langą. Centras automatiškai: prieš rungtynes — laikas; vykstant — live rezultatas.
 
 **Techniškai:** `OverlayData::resolveH2h` randa rungtynes pagal id, surenka abi komandas
-(nuotraukos arba stock) + centro duomenis; renderis (`window.blade` h2h šaka) piešia į
-`<body>` host'ą `#ov-h2h` (kaip kiti fixed langai); priekinis žaidėjas didesnis (`.p0`),
-partneris truputį už (`.p1`); GIF animuojasi savaime + `h2h-zoom` (~22 s).
+(nuotraukos arba stock + reitingas/šalis/miestas) + centro duomenis; renderis
+(`window.blade` h2h šaka) piešia į `<body>` host'ą `#ov-h2h`. Žaidėjai **vienodo
+dydžio**, rodomi iš arti (apačia gali nukirpti), truputį persidengia; balta apkarpymo
+„aureolė" prislopinama tamsiu kontūru (drop-shadow); spalvos — **pagal overlay temą**
+(šonai tinguojami akcentu per `color-mix`). GIF animuojasi savaime + `h2h-zoom` (~22 s).
 
 #### Apribojimai (v1)
 

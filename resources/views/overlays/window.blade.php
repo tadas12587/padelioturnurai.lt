@@ -201,35 +201,45 @@
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 
     /* ── Akistata (Head to Head) ─────────────────────────────── */
-    .h2h-stage { position: fixed; inset: 0; overflow: hidden;
-        background: linear-gradient(90deg, #16213a 0%, #0c0e13 40%, #0c0e13 60%, #3a1620 100%); }
+    /* Colours follow the overlay theme: sides tinted with the accent. */
+    .h2h-stage { position: fixed; inset: 0; overflow: hidden; background: var(--ov-bg);
+        background: linear-gradient(90deg,
+            color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 0%, var(--ov-bg) 36%,
+            var(--ov-bg) 64%, color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 100%); }
     .h2h-empty { display: flex; align-items: center; justify-content: center;
         font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 30px; color: var(--ov-muted); }
     .h2h-top { position: absolute; top: 30px; left: 44px; right: 44px; display: flex; align-items: center; justify-content: space-between;
-        font-family: 'Oswald',sans-serif; }
+        font-family: 'Oswald',sans-serif; z-index: 3; }
     .h2h-plate { font-weight: 600; text-transform: uppercase; letter-spacing: .04em; font-size: 28px; color: var(--ov-text);
         text-shadow: 0 2px 10px rgba(0,0,0,.7); max-width: 40%; }
     .h2h-plate.right { text-align: right; }
     .h2h-cat { font-size: 15px; color: var(--ov-muted); letter-spacing: .12em; text-transform: uppercase; }
-    .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; }
-    .h2h-left { left: 3%; }
-    .h2h-right { right: 3%; flex-direction: row-reverse; }
-    .h2h-player { display: flex; flex-direction: column; align-items: center; }
-    .h2h-player img { height: 66vh; width: auto; max-width: 32vw; object-fit: contain; object-position: bottom;
-        filter: drop-shadow(0 12px 30px rgba(0,0,0,.55)); }
-    .h2h-player.p1 img { height: 55vh; }
-    .h2h-left .p1 { margin-left: -4vw; margin-bottom: 2vh; }
-    .h2h-right .p1 { margin-right: -4vw; margin-bottom: 2vh; }
-    .h2h-pname { margin-top: 6px; font-family: 'Oswald',sans-serif; font-weight: 500; text-transform: uppercase;
-        letter-spacing: .04em; font-size: 20px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.7); }
-    .h2h-player.p1 .h2h-pname { font-size: 17px; color: #c7ccd6; }
-    @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.06); } }
+    /* Players: equal size, shown close (bottom may crop), slightly overlapping. */
+    .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; }
+    .h2h-left { left: 1.5%; }
+    .h2h-right { right: 1.5%; flex-direction: row-reverse; }
+    .h2h-player { position: relative; width: 27vw; height: 100vh; overflow: hidden; }
+    .h2h-imgwrap { position: absolute; left: 50%; bottom: -7vh; transform: translateX(-50%); height: 107vh; }
+    .h2h-imgwrap img { height: 100%; width: auto; object-fit: contain;
+        /* Tight dark edge hugs the alpha silhouette to absorb white cut-out fringe. */
+        filter: drop-shadow(0 0 1.5px rgba(0,0,0,.85)) drop-shadow(0 0 1.5px rgba(0,0,0,.85))
+                drop-shadow(0 14px 28px rgba(0,0,0,.5)); }
+    .h2h-left .p1 { margin-left: -9vw; }
+    .h2h-right .p1 { margin-right: -9vw; }
+    @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
-    .h2h-center { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); text-align: center; }
+    .h2h-cap { position: absolute; left: 50%; bottom: 2.5vh; transform: translateX(-50%); z-index: 2; text-align: center; white-space: nowrap; }
+    .h2h-pname { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+        font-size: 24px; color: var(--ov-text); text-shadow: 0 2px 10px rgba(0,0,0,.9); }
+    .h2h-pinfo { margin-top: 3px; font-family: 'Barlow',sans-serif; line-height: 1.25; text-shadow: 0 2px 8px rgba(0,0,0,.9); }
+    .h2h-rating { font-size: 16px; color: var(--ov-accent); font-weight: 600; }
+    .h2h-geo { font-size: 14px; color: var(--ov-muted); }
+    .h2h-center { position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%); text-align: center; z-index: 3; }
     .h2h-vs { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 72px; line-height: 1; color: var(--ov-accent);
         text-shadow: 0 3px 16px rgba(0,0,0,.7); }
-    .h2h-cbox { margin-top: 14px; background: rgba(0,0,0,.5); border: 1px solid rgba(201,168,76,.5); border-radius: 10px; padding: 8px 22px; }
-    .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 32px; letter-spacing: .04em; }
+    .h2h-cbox { margin-top: 14px; background: rgba(0,0,0,.5); border: 1px solid color-mix(in srgb, var(--ov-accent) 55%, transparent);
+        border-radius: 10px; padding: 8px 22px; }
+    .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 32px; letter-spacing: .04em; color: var(--ov-text); }
     .h2h-court { font-size: 13px; color: var(--ov-muted); letter-spacing: .08em; text-transform: uppercase; margin-top: 3px; }
 
     /* ── Draw (burtai) ───────────────────────────────────────── */
@@ -383,8 +393,16 @@
             return;
         }
 
-        const zoom = h.animate ? ' h2h-zoom' : '';
-        const player = (p, i) => `<div class="h2h-player p${i}"><img class="${zoom.trim()}" src="${p.photo}" alt=""><div class="h2h-pname">${p.name}</div></div>`;
+        const zoom = h.animate ? 'h2h-zoom' : '';
+        const player = (p, i) => {
+            const rating = [p.rating_type, p.rating_points].filter(Boolean).join(' · ');
+            const geo = [p.country, p.city].filter(Boolean).join(' · ');
+            const info = (rating || geo)
+                ? `<div class="h2h-pinfo">${rating ? `<div class="h2h-rating">${rating}</div>` : ''}${geo ? `<div class="h2h-geo">${geo}</div>` : ''}</div>`
+                : '';
+            return `<div class="h2h-player p${i}"><div class="h2h-imgwrap"><img class="${zoom}" src="${p.photo}" alt=""></div>`
+                + `<div class="h2h-cap"><div class="h2h-pname">${p.name}</div>${info}</div></div>`;
+        };
         const side = (players, cls) => `<div class="h2h-side h2h-${cls}">${(players || []).map(player).join('')}</div>`;
         const plate = (players, cls) => `<div class="h2h-plate ${cls}">${(players || []).map((p) => p.name).join(' / ')}</div>`;
 
