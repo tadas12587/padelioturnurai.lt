@@ -363,6 +363,10 @@ class OverlayData
             'animate'     => (bool) ($window['h2h_animate'] ?? true),
             'sponsors'    => ! empty($window['h2h_show_sponsors']) ? $this->resolveSponsors($window) : [],
             'rotate_seconds' => (int) ($window['rotate_seconds'] ?? 5),
+            'sponsor'     => [
+                'logo' => ! empty($window['h2h_sponsor_logo']) ? Storage::url($window['h2h_sponsor_logo']) : null,
+                'text' => $window['h2h_sponsor_text'] ?? null,
+            ],
         ];
     }
 

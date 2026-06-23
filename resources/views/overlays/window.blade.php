@@ -272,6 +272,15 @@
     .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .04em; color: var(--ov-text); }
     .h2h-court { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 22px; color: var(--ov-text);
         letter-spacing: .08em; text-transform: uppercase; margin-top: 7px; }
+    /* centre sponsor (between the teams) — shows only when set */
+    .h2h-sponsor { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); z-index: 4; text-align: center;
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        background: rgba(0,0,0,.55); border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent);
+        border-radius: 12px; padding: 12px 24px; }
+    .h2h-sponsor img { height: 66px; width: auto; max-width: 26vw; object-fit: contain; }
+    .h2h-sponsor .txt { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+        font-size: 24px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+    .h2h-has-bar .h2h-sponsor { bottom: 18vh; }
     /* with the sponsor bar: cards rise above it and shrink slightly */
     .h2h-has-bar .spons.bar { z-index: 6; }
     .h2h-has-bar .h2h-team-info { bottom: 13vh; }
@@ -487,11 +496,17 @@
             barHtml = `<div class="spons bar"><div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div></div>`;
         }
 
+        // Optional centre sponsor (logo + text) in the gap between the teams.
+        const sp = h.sponsor || {};
+        const centerSponsor = (sp.logo || sp.text)
+            ? `<div class="h2h-sponsor">${sp.logo ? `<img src="${sp.logo}" alt="">` : ''}${sp.text ? `<div class="txt">${sp.text}</div>` : ''}</div>`
+            : '';
+
         host.innerHTML = `<div class="${stageCls}">${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
-            + barHtml
+            + centerSponsor + barHtml
             + `</div>`;
         return;
     }
