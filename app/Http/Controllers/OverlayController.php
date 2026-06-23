@@ -117,6 +117,12 @@ class OverlayController extends Controller
                 }
             }
             $payload['draw']['category'] = $catName;
+        } elseif ($type === 'h2h') {
+            $payload['h2h'] = $data->resolveH2h(
+                (string) $overlay->tournament_external_id,
+                $state['h2h_match_id'] ?? null,
+                $window,
+            );
         } elseif ($type === 'sponsors') {
             $payload['variant']         = $window['variant'] ?? 'corner';
             $payload['rotate_seconds']  = (int) ($window['rotate_seconds'] ?? 6);

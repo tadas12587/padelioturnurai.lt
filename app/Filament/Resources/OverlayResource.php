@@ -113,7 +113,7 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'h2h' => 'Akistata', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
                                 ->default('groups')
                                 ->live(),
 
@@ -319,6 +319,16 @@ class OverlayResource extends Resource
                                 ->numeric()->default(5)->minValue(2)
                                 ->helperText('Juosta slenka po vieną logo; kuo didesnis skaičius, tuo lėčiau.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+
+                            CheckboxList::make('h2h_center')
+                                ->label('Ką rodyti centre')
+                                ->options(['time' => 'Rungtynių laikas', 'score' => 'Live rezultatas', 'court' => 'Kortas / etapas', 'vs' => 'VS / tekstas'])
+                                ->default(['time', 'score', 'court', 'vs'])->columns(2)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_text')->label('Centro tekstas (kai „VS / tekstas")')->default('VS')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Toggle::make('h2h_animate')->label('Lėta animacija (zoom link žiūrovo)')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
 
                             Select::make('variant')
                                 ->label('Variantas')
