@@ -49,7 +49,7 @@
                     $pt = function($t) use ($s, $labels) {
                         if (!empty($s['tiebreak'])) return $s['tb'][$t] ?? 0;
                         if (($s['star_stage'] ?? 0) === 'star') return '★';
-                        if (($s['adv'] ?? null) === $t) return 'AD';
+                        if (($s['adv'] ?? null) === $t) return ($s['star_stage'] ?? 0) === 'adv1' ? '1AD' : ((($s['star_stage'] ?? 0) === 'adv2') ? '2AD' : 'AD');
                         return $labels[min((int)($s['points'][$t] ?? 0), 3)];
                     };
                 @endphp

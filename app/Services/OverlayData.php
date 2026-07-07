@@ -264,7 +264,9 @@ class OverlayData
                 return '★';
             }
             if (($state['adv'] ?? null) === $t) {
-                return 'AD';
+                $stage = $state['star_stage'] ?? 0;
+
+                return $stage === 'adv1' ? '1AD' : ($stage === 'adv2' ? '2AD' : 'AD');
             }
             if (($state['adv'] ?? null) === (1 - $t)) {
                 return '40';

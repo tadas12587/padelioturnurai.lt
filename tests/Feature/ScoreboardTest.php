@@ -41,6 +41,21 @@ class ScoreboardTest extends TestCase
         $this->assertSame('Vyrai Master', $card['level']);
     }
 
+    public function test_star_advantages_show_1ad_2ad(): void
+    {
+        $d = app(OverlayData::class);
+        $window = ['score_deuce_mode' => 'star'];
+        $cfg = $d->scoreConfig($window);
+        $base = ['teams' => [['A'], ['B']], 'sets' => [], 'games' => [0, 0], 'points' => [3, 3],
+            'tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0, 'status' => 'playing', 'winner' => null];
+
+        $s1 = array_merge($base, ['adv' => 0, 'star_stage' => 'adv1']);
+        $this->assertSame('1AD', $d->resolveScore($window, $s1, [], $cfg)['teams'][0]['point']);
+
+        $s2 = array_merge($base, ['adv' => 1, 'star_stage' => 'adv2']);
+        $this->assertSame('2AD', $d->resolveScore($window, $s2, [], $cfg)['teams'][1]['point']);
+    }
+
     public function test_data_returns_score_card(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
