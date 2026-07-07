@@ -105,8 +105,61 @@ class ScoreEngine
             return $this->awardGame($config, $state, $team);
         }
 
-        // both at 40 — Task 2 replaces this with advantage/golden/star. For now: golden.
-        return $this->awardGame($config, $state, $team);
+        // both at 40 — deuce logic per mode
+        $mode = $config['deuce_mode'];
+
+        if ($mode === 'golden') {
+            return $this->awardGame($config, $state, $team);
+        }
+
+        if ($mode === 'advantage') {
+            if ($state['adv'] === null) {
+                $state['adv'] = $team;
+
+                return $state;
+            }
+            if ($state['adv'] === $team) {
+                return $this->awardGame($config, $state, $team);
+            }
+            $state['adv'] = null; // lost advantage → back to deuce
+
+            return $state;
+        }
+
+        // star: first advantage → deuce → second advantage → star point
+        $stage = $state['star_stage'];
+        if ($stage === 0) {
+            $state['adv'] = $team;
+            $state['star_stage'] = 'adv1';
+
+            return $state;
+        }
+        if ($stage === 'adv1') {
+            if ($state['adv'] === $team) {
+                return $this->awardGame($config, $state, $team);
+            }
+            $state['adv'] = null;
+            $state['star_stage'] = 1;
+
+            return $state;
+        }
+        if ($stage === 1) {
+            $state['adv'] = $team;
+            $state['star_stage'] = 'adv2';
+
+            return $state;
+        }
+        if ($stage === 'adv2') {
+            if ($state['adv'] === $team) {
+                return $this->awardGame($config, $state, $team);
+            }
+            $state['adv'] = null;
+            $state['star_stage'] = 'star';
+
+            return $state;
+        }
+
+        return $this->awardGame($config, $state, $team); // star point
     }
 
     private function awardGame(array $config, array $state, int $team): array
