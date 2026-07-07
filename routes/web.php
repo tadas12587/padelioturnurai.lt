@@ -25,6 +25,10 @@ Route::get('/overlay/wanted', [OverlayController::class, 'wanted'])->name('overl
 Route::get('/overlay/{overlay}/control',  [OverlayController::class, 'control'])->name('overlay.control');
 Route::post('/overlay/{overlay}/control', [OverlayController::class, 'controlAction'])->name('overlay.control.action');
 
+// Standalone mobile scoreboard control (token-authorised, CSRF-exempt).
+Route::get('/overlay/{overlay}/score',  [OverlayController::class, 'scoreControl'])->name('overlay.score');
+Route::post('/overlay/{overlay}/score', [OverlayController::class, 'scoreAction'])->name('overlay.score.action');
+
 // Broadcast overlays (public, polled by OBS browser sources)
 Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
 Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');

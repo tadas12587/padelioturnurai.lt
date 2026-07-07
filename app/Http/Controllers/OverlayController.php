@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Overlay;
 use App\Models\OverlaySnapshot;
 use App\Services\OverlayData;
+use App\Services\ScoreEngine;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,104 @@ class OverlayController extends Controller
     public function control(Overlay $overlay)
     {
         return view('overlays.control', ['overlay' => $overlay]);
+    }
+
+    /** Standalone, login-free mobile scoreboard control (token-authorised). */
+    public function scoreControl(Overlay $overlay)
+    {
+        return view('overlays.score-control', ['overlay' => $overlay]);
+    }
+
+    /** Scoreboard actions from the mobile control (token-authorised, CSRF-exempt). */
+    public function scoreAction(Overlay $overlay, Request $request, OverlayData $data, ScoreEngine $engine): JsonResponse
+    {
+        $windows = $overlay->windows ?? [];
+        $wi = null;
+        foreach ($windows as $i => $w) {
+            if (($w['type'] ?? null) === 'score') {
+                $wi = $i;
+                break;
+            }
+        }
+        if ($wi === null) {
+            return response()->json(['error' => 'no_score_window'], 404);
+        }
+        $window = $windows[$wi];
+
+        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
+        $score = $state['score'] ?? [];
+        $config = $engine->config($window);
+        $tid = (string) $overlay->tournament_external_id;
+        $findMatch = fn ($id) => collect($data->matches($tid))->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $id);
+
+        switch ($request->input('action', 'state')) {
+            case 'point':
+                if (! empty($score)) {
+                    $score = $engine->point($config, $score, (int) $request->input('team'));
+                }
+                break;
+            case 'undo':
+                if (! empty($score)) {
+                    $score = $engine->undo($config, $score);
+                }
+                break;
+            case 'serve':
+                if (! empty($score)) {
+                    $score = $engine->setServer($score, (int) $request->input('team'));
+                }
+                break;
+            case 'reset':
+                if (! empty($score)) {
+                    $score = $engine->reset($config, $score);
+                }
+                break;
+            case 'select':
+                $m = $findMatch($request->input('match_id'));
+                if ($m) {
+                    $score = $engine->init($config, [$m['team1'] ?? [], $m['team2'] ?? []]);
+                    $state['score_match_id'] = $request->input('match_id');
+                    $state['active_window_id'] = $window['id'];
+                }
+                break;
+            case 'rules':
+                foreach (['score_games_per_set', 'score_tiebreak_at', 'score_sets_to_win', 'score_tiebreak', 'score_tiebreak_to', 'score_super_tb', 'score_super_tb_to', 'score_deuce_mode'] as $k) {
+                    if ($request->has($k)) {
+                        $window[$k] = $request->input($k);
+                    }
+                }
+                $windows[$wi] = $window;
+                $overlay->windows = $windows;
+                $config = $engine->config($window);
+                break;
+            case 'stop':
+                $state['active_window_id'] = null;
+                break;
+        }
+
+        $state['score'] = $score;
+        $overlay->state = $state;
+        $overlay->save();
+
+        $m = $findMatch($state['score_match_id'] ?? null) ?? [];
+
+        return response()->json([
+            'ok'       => true,
+            'card'     => $data->resolveScore($window, $score, $m, $config),
+            'status'   => $score['status'] ?? 'playing',
+            'tiebreak' => ! empty($score['tiebreak']),
+            'super_tiebreak' => ! empty($score['super_tiebreak']),
+            'match_id' => $state['score_match_id'] ?? null,
+            'active'   => ($state['active_window_id'] ?? null) === $window['id'],
+            'rules'    => [
+                'games_per_set' => $config['games_per_set'], 'tiebreak_at' => $config['tiebreak_at'],
+                'sets_to_win' => $config['sets_to_win'], 'tiebreak' => $config['tiebreak'], 'tiebreak_to' => $config['tiebreak_to'],
+                'super_tb' => $config['super_tb'], 'super_tb_to' => $config['super_tb_to'], 'deuce_mode' => $config['deuce_mode'],
+            ],
+            'fixtures' => array_map(fn ($x) => [
+                'id' => $x['id'] ?? null, 't1' => implode(' / ', $x['team1'] ?? []), 't2' => implode(' / ', $x['team2'] ?? []),
+                'time' => $x['time'] ?? null, 'court' => $x['court'] ?? null,
+            ], $data->matches($tid)),
+        ]);
     }
 
     /** Play/stop a window from the control panel (token-authorised, CSRF-exempt). */
