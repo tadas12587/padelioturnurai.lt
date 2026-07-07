@@ -19,7 +19,9 @@ temą. Padel = dvejetai (po 2 žaidėjus komandoje).
   - **STAR**: prie 40–40 → 1-as pranašumas; jį pralaimėjus → 40–40 → 2-as pranašumas;
     jį pralaimėjus → **Star taškas** (vienas lemiamas). T.y. daugiausiai 2 pranašumai,
     tada lemiamas taškas.
-- Geimai sete: iki `games_per_set` (numatyta 6), 2 skirtumu; prie 6–6 → tiebreak.
+- Geimai sete: setas laimimas prie `games_per_set` (numatyta 6) 2 geimų skirtumu; kai abi
+  komandos pasiekia `tiebreak_at` geimų (numatyta = `games_per_set`) → **tiebreak**.
+  („iki 6" → tiebreak 6–6; „iki 9" → `tiebreak_at`=8 → tiebreak 8–8, laimėtojas 9–8.)
 - Tiebreak (mažasis): iki `tiebreak_to` (numatyta 7), 2 skirtumu.
 - Setai: iki `sets_to_win` laimėtų (numatyta 2 → best of 3).
 - Lemiamas setas: jei `super_tb` įjungtas — vietoj pilno seto **super tiebreak** iki
@@ -59,9 +61,10 @@ adv2, star}. Pralaimėjus pranašumą — grįžta į deuce; po 2-o pranašumo �
 
 ### 2. Nustatymai (lango konfigūracija, admine)
 
-Formatas: `score_games_per_set` (6/9…), `score_sets_to_win` (1/2/3),
-`score_tiebreak` (bool) + `score_tiebreak_to` (7), `score_super_tb` (bool) +
-`score_super_tb_to` (10), `score_deuce_mode` (advantage/golden/star).
+Formatas: `score_games_per_set` (6/9…), `score_tiebreak_at` (kada TB; numatyta =
+games_per_set), `score_sets_to_win` (1/2/3), `score_tiebreak` (bool) +
+`score_tiebreak_to` (7), `score_super_tb` (bool) + `score_super_tb_to` (10),
+`score_deuce_mode` (advantage/golden/star).
 Išvaizda: `score_position` (viršus-kairė / viršus-centras / viršus-dešinė; galima ir
 apačia), `score_width` (px, viskas proporcingai — responsive), `show_level` (rodyti lygį).
 
@@ -81,7 +84,8 @@ Formatai „1 setas iki 6 / iki 9 / 2 setai iki 6" išreiškiami per `games_per_
 
 Kompaktiška kortelė (ne per visą apačią), piešiama į `<body>` host'ą `#ov-score`.
 - **Antraštė**: lygis/kategorija + kortas·etapas.
-- **Dvi komandų eilutės**: vardas, baigti setai (skaičiai), einami geimai, einami taškai
+- **Dvi komandų eilutės**: komandos vardas (**kiekvienas žaidėjas — „V. Pavardė", pvz.
+  „T. Šeškauskas / J. Petraitis"**), baigti setai (skaičiai), einami geimai, einami taškai
   (0/15/30/40/AD/★), servo taškelis prie servuojančios komandos. Tiebreak'e taškai —
   skaičiais.
 - **Pozicija** pagal `score_position`; **plotis** `score_width` — visi dydžiai
