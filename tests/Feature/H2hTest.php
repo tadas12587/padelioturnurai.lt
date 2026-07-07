@@ -74,6 +74,34 @@ class H2hTest extends TestCase
             ->assertJsonPath('h2h.live_score.t1.point', '40');
     }
 
+    public function test_toggle_score_auto_loads_scorer_with_h2h_pair(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 99, 'team1' => ['A B'], 'team2' => ['C D'], 'category' => 'X']],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'H', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [
+                ['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata'],
+                ['id' => 'w2', 'type' => 'score', 'name' => 'Rez'],
+            ],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99],
+        ]);
+
+        \Livewire\Livewire::test(\App\Filament\Pages\H2hControlPage::class)
+            ->set('overlayId', $overlay->id)->set('windowId', 'w1')
+            ->call('toggleScore');
+
+        $overlay->refresh();
+        $this->assertTrue($overlay->state['h2h_show_score']);
+        $this->assertSame(99, $overlay->state['score_match_id']);
+        $this->assertSame([['A B'], ['C D']], $overlay->state['score']['teams']);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('h2h.live_score.t1.games', 0);
+    }
+
     public function test_load_people_upserts_rows_with_gender(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [

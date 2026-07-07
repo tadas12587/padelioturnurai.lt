@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Overlay;
 use App\Services\OverlayData;
+use App\Services\ScoreEngine;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 
@@ -118,8 +119,36 @@ class H2hControlPage extends Page
     {
         $overlay = Overlay::findOrFail($this->overlayId);
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['h2h_show_score'] = ! ($state['h2h_show_score'] ?? false);
+        $on = ! ($state['h2h_show_score'] ?? false);
+        $state['h2h_show_score'] = $on;
+
+        if ($on) {
+            $matchId = $state['h2h_match_id'] ?? null;
+            if (! $matchId) {
+                Notification::make()->title('Pirma pasirink akistatą (rungtynes).')->warning()->send();
+
+                return;
+            }
+            // Auto-load the scorer with the same pair, unless it is already on this match.
+            $sameMatch = (string) ($state['score_match_id'] ?? '') === (string) $matchId;
+            if (! $sameMatch || empty($state['score']['teams'])) {
+                $m = collect(app(OverlayData::class)->matches((string) $overlay->tournament_external_id))
+                    ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId);
+                if ($m) {
+                    $engine = app(ScoreEngine::class);
+                    $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
+                    $state['score'] = $engine->init($engine->config($scoreWindow), [$m['team1'] ?? [], $m['team2'] ?? []]);
+                    $state['score_match_id'] = $matchId;
+                }
+            }
+        }
+
         $overlay->state = $state;
         $overlay->save();
+
+        Notification::make()
+            ->title($on ? '✔ Centre: rezultatas (0:0). Taškus vesk „Rezultatas" valdyme.' : 'Centre: laikas / kortas')
+            ->success()
+            ->send();
     }
 }
