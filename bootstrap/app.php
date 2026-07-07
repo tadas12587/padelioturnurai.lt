@@ -23,6 +23,7 @@ return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR
         $middleware->validateCsrfTokens(except: [
             'overlay/ingest',
             'overlay/*/control',
+            'overlay/*/score',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

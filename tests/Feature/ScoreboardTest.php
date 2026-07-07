@@ -79,6 +79,25 @@ class ScoreboardTest extends TestCase
             ->assertJsonPath('score.level', 'Vyrai Master');
     }
 
+    public function test_standalone_score_control_select_and_point(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 7, 'team1' => ['A B'], 'team2' => ['C D'], 'category' => 'X']],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'S', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'score', 'name' => 'Rez', 'score_deuce_mode' => 'star']],
+            'state' => ['active_window_id' => null, 'next_match' => ''],
+        ]);
+
+        $this->postJson("/overlay/{$overlay->token}/score", ['action' => 'select', 'match_id' => 7])
+            ->assertOk()->assertJsonPath('card.found', true)->assertJsonPath('active', true);
+        $this->postJson("/overlay/{$overlay->token}/score", ['action' => 'point', 'team' => 0])->assertOk();
+        $this->assertSame([1, 0], $overlay->fresh()->state['score']['points']);
+
+        $this->get("/overlay/{$overlay->token}/score")->assertOk()->assertSee('Rezultatas');
+    }
+
     public function test_point_and_undo_via_control(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
