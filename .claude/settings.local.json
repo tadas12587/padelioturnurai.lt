@@ -97,7 +97,23 @@
       "Bash(php -l app/Filament/Resources/PlayerPhotoResource/Pages/ListPlayerPhotos.php)",
       "Bash(php artisan *)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'feat\\(h2h\\): adjustable photo size, edge distance, teammate overlap, team gap *)"
+      "Bash(git commit -q -m 'feat\\(h2h\\): adjustable photo size, edge distance, teammate overlap, team gap *)",
+      "Bash(git commit -q -m 'docs: live scoreboard \\(REZULTATAS\\) overlay design spec *)",
+      "Bash(git commit -q -m 'docs: scoreboard spec — tiebreak_at + abbreviated player names *)",
+      "Bash(git commit -q -m 'docs: live scoreboard overlay implementation plan *)",
+      "Bash(git commit -q -m 'feat\\(score\\): ScoreEngine core — points, game, set, match, serve, undo *)",
+      "Bash(git commit -q -m 'feat\\(score\\): advantage / golden / STAR deuce modes *)",
+      "Bash(git commit -q -m 'feat\\(score\\): tiebreak with configurable trigger and target *)",
+      "Bash(git commit -q -m 'feat\\(score\\): super-tiebreak deciding set *)",
+      "Bash(git commit -q -m 'feat\\(score\\): resolveScore payload + abbreviated names *)",
+      "Bash(git commit -q -m 'feat\\(score\\): data endpoint branch + window config fields *)",
+      "Bash(php -l app/Filament/Pages/ScoreControlPage.php)",
+      "Bash(git commit -q -m 'feat\\(score\\): Rezultatas control page \\(+/- scoring, serve, undo, reset\\) *)",
+      "Bash(git commit -q -m 'feat\\(score\\): compact themed scoreboard card renderer *)",
+      "Bash(git commit -q -m 'docs: live scoreboard overlay usage *)",
+      "Bash(git commit -q -m 'feat\\(score\\): show 1AD/2AD for STAR first/second advantage *)",
+      "Bash(git commit -q -m 'feat\\(score\\): standalone mobile score control \\(token, 2 tabs: result + settings\\) *)",
+      "Bash(git commit -q -m 'feat\\(h2h\\): centre can show the live score \\(toggle in Akistata control\\) *)"
     ]
   }
 }

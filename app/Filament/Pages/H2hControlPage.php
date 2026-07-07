@@ -107,4 +107,19 @@ class H2hControlPage extends Page
 
         Notification::make()->title('■ Sustabdyta')->send();
     }
+
+    public function showScore(): bool
+    {
+        return (bool) ($this->selectedOverlay()?->state['h2h_show_score'] ?? false);
+    }
+
+    /** Toggle H2H centre between match info (time/court) and the live score. */
+    public function toggleScore(): void
+    {
+        $overlay = Overlay::findOrFail($this->overlayId);
+        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
+        $state['h2h_show_score'] = ! ($state['h2h_show_score'] ?? false);
+        $overlay->state = $state;
+        $overlay->save();
+    }
 }

@@ -31,7 +31,14 @@
                     OBS URL:
                     <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{{ url('/overlay/' . $overlay->token) }}</code>
                 </div>
-                <x-filament::button wire:click="stop" color="gray" size="sm" icon="heroicon-o-stop">Sustabdyti</x-filament::button>
+                <div class="flex gap-2">
+                    <x-filament::button wire:click="toggleScore" size="sm"
+                        :color="$this->showScore() ? 'primary' : 'gray'"
+                        :icon="$this->showScore() ? 'heroicon-o-calculator' : 'heroicon-o-clock'">
+                        Centras: {{ $this->showScore() ? 'Rezultatas' : 'Laikas/Kortas' }}
+                    </x-filament::button>
+                    <x-filament::button wire:click="stop" color="gray" size="sm" icon="heroicon-o-stop">Sustabdyti</x-filament::button>
+                </div>
             </div>
 
             <input type="text" wire:model.live="search" placeholder="Ieškoti pagal žaidėją…"

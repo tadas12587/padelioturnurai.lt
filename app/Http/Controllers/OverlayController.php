@@ -228,6 +228,17 @@ class OverlayController extends Controller
                 $state['h2h_match_id'] ?? null,
                 $window,
             );
+            // Optional: show the live score (from the scorer) in the centre.
+            if (! empty($state['h2h_show_score']) && ! empty($state['score']['teams'])) {
+                $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
+                $sc = $data->resolveScore([], $state['score'], [], $data->scoreConfig($scoreWindow));
+                if (! empty($sc['found'])) {
+                    $payload['h2h']['live_score'] = [
+                        't1' => ['games' => $sc['teams'][0]['games'], 'point' => $sc['teams'][0]['point'], 'sets' => $sc['teams'][0]['sets']],
+                        't2' => ['games' => $sc['teams'][1]['games'], 'point' => $sc['teams'][1]['point'], 'sets' => $sc['teams'][1]['sets']],
+                    ];
+                }
+            }
         } elseif ($type === 'sponsors') {
             $payload['variant']         = $window['variant'] ?? 'corner';
             $payload['rotate_seconds']  = (int) ($window['rotate_seconds'] ?? 6);
