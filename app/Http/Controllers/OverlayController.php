@@ -115,7 +115,7 @@ class OverlayController extends Controller
             ],
             'fixtures' => array_map(fn ($x) => [
                 'id' => $x['id'] ?? null, 't1' => implode(' / ', $x['team1'] ?? []), 't2' => implode(' / ', $x['team2'] ?? []),
-                'time' => $x['time'] ?? null, 'court' => $x['court'] ?? null,
+                'time' => $x['time'] ?? null, 'court' => $x['court'] ?? null, 'cat' => $x['category'] ?? null,
             ], $data->matches($tid)),
         ]);
     }
