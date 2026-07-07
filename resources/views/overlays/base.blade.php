@@ -107,9 +107,13 @@
                 applyScrim(d);
                 root.className = 'pos-' + (d.position || 'bottom-left');
 
+                // Exclude the H2H live score from the board signature: the centre
+                // is patched separately (below) so points update without re-rendering
+                // — and re-zooming — the whole Head-to-Head board.
+                const h2sig = d.h2h ? Object.assign({}, d.h2h, { live_score: null }) : d.h2h;
                 const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
                     it: d.items, sc: d.schedule, sv: d.schedule_variant, nm: d.next_match,
-                    dr: d.draw, h2: d.h2h, sc2: d.score, v: d.variant, cp: d.corner_position, csz: d.corner_size,
+                    dr: d.draw, h2: h2sig, sc2: d.score, v: d.variant, cp: d.corner_position, csz: d.corner_size,
                     tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
 
                 if (!shown) {
@@ -120,6 +124,7 @@
                 } else if (sig !== lastSig) {
                     lastSig = sig; render(d);
                 }
+                if (d.window_type === 'h2h' && window.__updH2hCenter) window.__updH2hCenter(d.h2h || {});
                 return d;
             } catch (e) { /* keep last good frame */ return null; }
         }
