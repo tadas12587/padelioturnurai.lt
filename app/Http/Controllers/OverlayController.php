@@ -117,6 +117,12 @@ class OverlayController extends Controller
                 }
             }
             $payload['draw']['category'] = $catName;
+        } elseif ($type === 'score') {
+            $scoreState = $state['score'] ?? [];
+            $matchId = $state['score_match_id'] ?? null;
+            $m = collect($data->matches((string) $overlay->tournament_external_id))
+                ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId) ?? [];
+            $payload['score'] = $data->resolveScore($window, $scoreState, $m, $data->scoreConfig($window));
         } elseif ($type === 'h2h') {
             $payload['h2h'] = $data->resolveH2h(
                 (string) $overlay->tournament_external_id,

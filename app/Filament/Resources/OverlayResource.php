@@ -113,7 +113,7 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'h2h' => 'Akistata', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'h2h' => 'Akistata', 'score' => 'Rezultatas', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
                                 ->default('groups')
                                 ->live(),
 
@@ -353,6 +353,34 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
                             TextInput::make('h2h_sponsor_text')->label('Centrinis rėmėjas — tekstas')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+
+                            TextInput::make('score_games_per_set')->label('Geimų sete')->numeric()->default(6)->minValue(1)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_tiebreak_at')->label('Tiebreak prie (geimų)')->numeric()->default(6)
+                                ->helperText('Kai abi komandos pasiekia tiek geimų — tiebreak. „iki 6"→6, „iki 9"→8.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_sets_to_win')->label('Laimėtų setų (mačui)')->numeric()->default(2)->minValue(1)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Toggle::make('score_tiebreak')->label('Tiebreak sete')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_tiebreak_to')->label('Tiebreak iki')->numeric()->default(7)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Toggle::make('score_super_tb')->label('Lemiamas setas – super tiebreak')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_super_tb_to')->label('Super tiebreak iki')->numeric()->default(10)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Select::make('score_deuce_mode')->label('Lygiosios (40–40)')
+                                ->options(['advantage' => 'Pranašumas', 'golden' => 'Auksinis taškas', 'star' => 'STAR'])->default('star')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Select::make('score_position')->label('Pozicija')
+                                ->options(['top-left' => 'Viršus — kairė', 'top-center' => 'Viršus — centras', 'top-right' => 'Viršus — dešinė',
+                                    'bottom-left' => 'Apačia — kairė', 'bottom-center' => 'Apačia — centras', 'bottom-right' => 'Apačia — dešinė'])
+                                ->default('top-left')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_width')->label('Plotis (px)')->numeric()->default(520)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Toggle::make('show_level')->label('Rodyti lygį / kategoriją')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
 
                             Select::make('variant')
                                 ->label('Variantas')
