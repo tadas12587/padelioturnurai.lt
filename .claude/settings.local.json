@@ -117,7 +117,9 @@
       "Bash(git commit -q -m 'ui\\(admin\\): show mobile score control URL in the overlay list *)",
       "Bash(git commit -q -m 'feat\\(score\\): mobile control fixture filters \\(court, level, player search\\) *)",
       "Bash(git commit -q -m 'feat\\(h2h\\): auto-load scorer with H2H pair when centre score enabled *)",
-      "Bash(git commit -q -m 'feat\\(h2h\\): centre shows the real Rezultatas card with fade on time↔score switch *)"
+      "Bash(git commit -q -m 'feat\\(h2h\\): centre shows the real Rezultatas card with fade on time↔score switch *)",
+      "Bash(php -l app/Services/ScoreEngine.php)",
+      "Bash(git commit -q -m 'feat\\(score\\): add '\\\\''+ whole game'\\\\'' action alongside '\\\\''+ point'\\\\'' *)"
     ]
   }
 }

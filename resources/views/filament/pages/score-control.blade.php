@@ -76,9 +76,10 @@
                                 @if(!empty($s['sets'])) · Setai: {{ implode(' ', array_map(fn($x)=>$x[$t], $s['sets'])) }} @endif
                             </div>
                             <div class="flex justify-center gap-2">
-                                <x-filament::button wire:click="point({{ $t }})" size="lg" color="success">+</x-filament::button>
+                                <x-filament::button wire:click="point({{ $t }})" size="lg" color="success">+ taškas</x-filament::button>
                                 <x-filament::button wire:click="undo" size="lg" color="gray">−</x-filament::button>
                             </div>
+                            <x-filament::button wire:click="game({{ $t }})" size="sm" color="success" outlined icon="heroicon-o-forward">+ geimas</x-filament::button>
                             <x-filament::button wire:click="setServer({{ $t }})" size="sm" color="gray" icon="heroicon-o-play">Servas šiai</x-filament::button>
                         </div>
                     @endforeach

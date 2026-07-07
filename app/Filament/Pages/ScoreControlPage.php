@@ -148,6 +148,18 @@ class ScoreControlPage extends Page
         });
     }
 
+    public function game(int $team): void
+    {
+        if (! $this->overlayId || ! $this->hasScore()) {
+            return;
+        }
+        $this->saveState(function ($state) use ($team) {
+            $state['score'] = $this->engine()->game($this->config(), $state['score'] ?? [], $team);
+
+            return $state;
+        });
+    }
+
     public function undo(): void
     {
         $this->saveState(function ($state) {
