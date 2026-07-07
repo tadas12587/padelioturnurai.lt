@@ -272,6 +272,15 @@
     .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .04em; color: var(--ov-text); }
     .h2h-court { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 22px; color: var(--ov-text);
         letter-spacing: .08em; text-transform: uppercase; margin-top: 7px; }
+    /* centre slot: swaps between the live score card and the scheduled time,
+       with a fade+lift whenever the mode changes */
+    .h2h-cslot { display: inline-block; }
+    .h2h-cfade { animation: h2hCFade .45s ease both; }
+    @keyframes h2hCFade { from { opacity: 0; transform: translateY(10px) scale(.95); } to { opacity: 1; transform: none; } }
+    /* the standalone score card, embedded (centred) inside the H2H centre */
+    .sco-card.sco-inline { position: static; width: min(40vw, 640px); font-size: clamp(15px, 1.5vw, 26px);
+        margin: 16px auto 0; display: inline-block; text-align: left;
+        box-shadow: 0 .6em 1.6em -.4em rgba(0,0,0,.85); }
     /* centre sponsor (between the teams) — shows only when set */
     .h2h-sponsor { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); z-index: 4; text-align: center;
         display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -390,6 +399,54 @@
     // containers) so it can pin to the real screen bottom. Clear it each render;
     // the results branch re-creates it.
     { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
+
+    // Shared scoreboard card markup, used by both the standalone "Rezultatas"
+    // window and the Head-to-Head centre (same look, format and data).
+    window.__scoreCardHtml = function (sc, inline) {
+        if (!sc || !sc.found) return '';
+        const nSets = Math.max((sc.teams[0].sets || []).length, (sc.teams[1].sets || []).length);
+        const row = (tm) => {
+            let cells = '';
+            for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
+            cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
+            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${tm.name}</span>${cells}</div>`;
+        };
+        const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
+        const head = (sc.level || meta)
+            ? `<div class="sco-head">${sc.level ? `<span class="sco-level">${sc.level}</span>` : '<span></span>'}${meta ? `<span class="sco-meta">${meta}</span>` : ''}</div>`
+            : '';
+        const width = sc.width || 520;
+        const cls = inline ? 'sco-inline' : ('sco-' + (sc.position || 'top-left'));
+        const style = inline ? '' : ` style="width:${width}px;font-size:${Math.round(width / 26)}px"`;
+        return `<div class="sco-card ${cls}${sc.tiebreak ? ' tb' : ''}"${style}>${head}${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
+    };
+
+    // Patch only the H2H centre (score card ⇄ scheduled time/court) so the score
+    // updates live without re-rendering the whole board, and fades on mode switch.
+    window.__updH2hCenter = function (h) {
+        const slot = document.querySelector('#ov-h2h .h2h-cslot');
+        if (!slot) return;
+        h = h || {};
+        const show = h.show || [];
+        const c = h.center || {};
+        let mode = 'none', inner = '';
+        if (h.live_score && h.live_score.found) {
+            mode = 'score';
+            inner = window.__scoreCardHtml(h.live_score, true);
+        } else {
+            let main = '';
+            if (show.includes('time') && (c.time || c.date)) main = `<div class="h2h-time">${[c.date, c.time].filter(Boolean).join(' ')}</div>`;
+            const courtLine = show.includes('court') ? [c.court, c.round].filter(Boolean).join(' · ') : '';
+            if (main || courtLine) { mode = 'time'; inner = `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`; }
+        }
+        if (slot.__html === inner) return;
+        const modeChanged = slot.dataset.mode !== mode;
+        slot.dataset.mode = mode;
+        slot.__html = inner;
+        slot.innerHTML = inner;
+        if (modeChanged) { slot.classList.remove('h2h-cfade'); void slot.offsetWidth; slot.classList.add('h2h-cfade'); }
+    };
+
     if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
     if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
     if ((d.window_type || 'groups') !== 'score') { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); }
@@ -491,25 +548,8 @@
             return `<div class="h2h-team-info ${cls}">${head}${(players || []).map(infoRow).join('')}</div>`;
         };
 
-        const c = h.center || {};
         const show = h.show || [];
-        let main = '';
-        if (show.includes('score') && c.in_progress && c.score) {
-            main = `<div class="h2h-score">${c.score}</div>`;
-        } else if (show.includes('time') && (c.time || c.date)) {
-            main = `<div class="h2h-time">${[c.date, c.time].filter(Boolean).join(' ')}</div>`;
-        }
-        const courtLine = show.includes('court') ? [c.court, c.round].filter(Boolean).join(' · ') : '';
         const vs = show.includes('vs') ? (h.custom_text || 'VS') : 'VS';
-        let cbox;
-        if (h.live_score) {
-            const ls = h.live_score;
-            cbox = `<div class="h2h-cbox"><div class="h2h-score">${ls.t1.games} : ${ls.t2.games}</div><div class="h2h-court">${ls.t1.point} : ${ls.t2.point}</div></div>`;
-        } else {
-            cbox = (main || courtLine)
-                ? `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`
-                : '';
-        }
 
         // Tournament logo + name (like the other overlays).
         const tt = d.tournament_title || d.title || '';
@@ -541,9 +581,10 @@
         host.innerHTML = `<div class="${stageCls}" style="${styleVars}">${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
-            + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
+            + `<div class="h2h-center"><div class="h2h-vs">${vs}</div><div class="h2h-cslot"></div></div>`
             + centerSponsor + barHtml
             + `</div>`;
+        window.__updH2hCenter(h);
         return;
     }
 
@@ -555,20 +596,7 @@
         })();
         stage.innerHTML = '';
         if (!sc.found) { host.innerHTML = ''; return; }
-
-        const nSets = Math.max((sc.teams[0].sets || []).length, (sc.teams[1].sets || []).length);
-        const row = (tm) => {
-            let cells = '';
-            for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
-            cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
-            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${tm.name}</span>${cells}</div>`;
-        };
-        const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
-        const head = (sc.level || meta)
-            ? `<div class="sco-head">${sc.level ? `<span class="sco-level">${sc.level}</span>` : '<span></span>'}${meta ? `<span class="sco-meta">${meta}</span>` : ''}</div>`
-            : '';
-        const width = sc.width || 520;
-        host.innerHTML = `<div class="sco-card sco-${sc.position || 'top-left'}${sc.tiebreak ? ' tb' : ''}" style="width:${width}px;font-size:${Math.round(width / 26)}px">${head}${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
+        host.innerHTML = window.__scoreCardHtml(sc, false);
         return;
     }
 

@@ -70,8 +70,9 @@ class H2hTest extends TestCase
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
-            ->assertJsonPath('h2h.live_score.t1.games', 3)
-            ->assertJsonPath('h2h.live_score.t1.point', '40');
+            ->assertJsonPath('h2h.live_score.found', true)
+            ->assertJsonPath('h2h.live_score.teams.0.games', 3)
+            ->assertJsonPath('h2h.live_score.teams.0.point', '40');
     }
 
     public function test_toggle_score_auto_loads_scorer_with_h2h_pair(): void
@@ -99,7 +100,8 @@ class H2hTest extends TestCase
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
-            ->assertJsonPath('h2h.live_score.t1.games', 0);
+            ->assertJsonPath('h2h.live_score.found', true)
+            ->assertJsonPath('h2h.live_score.teams.0.games', 0);
     }
 
     public function test_load_people_upserts_rows_with_gender(): void

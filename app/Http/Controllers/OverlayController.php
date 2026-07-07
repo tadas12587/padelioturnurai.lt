@@ -228,15 +228,15 @@ class OverlayController extends Controller
                 $state['h2h_match_id'] ?? null,
                 $window,
             );
-            // Optional: show the live score (from the scorer) in the centre.
+            // Optional: show the live score (from the scorer) in the centre —
+            // the exact same card the standalone "Rezultatas" overlay renders.
             if (! empty($state['h2h_show_score']) && ! empty($state['score']['teams'])) {
                 $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
-                $sc = $data->resolveScore([], $state['score'], [], $data->scoreConfig($scoreWindow));
+                $hm = collect($data->matches((string) $overlay->tournament_external_id))
+                    ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) ($state['h2h_match_id'] ?? '')) ?? [];
+                $sc = $data->resolveScore($scoreWindow, $state['score'], $hm, $data->scoreConfig($scoreWindow));
                 if (! empty($sc['found'])) {
-                    $payload['h2h']['live_score'] = [
-                        't1' => ['games' => $sc['teams'][0]['games'], 'point' => $sc['teams'][0]['point'], 'sets' => $sc['teams'][0]['sets']],
-                        't2' => ['games' => $sc['teams'][1]['games'], 'point' => $sc['teams'][1]['point'], 'sets' => $sc['teams'][1]['sets']],
-                    ];
+                    $payload['h2h']['live_score'] = $sc;
                 }
             }
         } elseif ($type === 'sponsors') {
