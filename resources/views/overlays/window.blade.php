@@ -287,6 +287,32 @@
     .h2h-has-bar .h2h-team-info.left { transform: scale(.9); transform-origin: bottom left; }
     .h2h-has-bar .h2h-team-info.right { transform: scale(.9); transform-origin: bottom right; }
 
+    /* ── Rezultatas (live scoreboard) ────────────────────────── */
+    .sco-card { position: fixed; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.3);
+        border-top: 3px solid var(--ov-accent); border-radius: .5em; overflow: hidden;
+        box-shadow: 0 .6em 1.4em -.5em rgba(0,0,0,.8); font-family: 'Barlow',sans-serif; }
+    .sco-top-left { top: 40px; left: 40px; }
+    .sco-top-center { top: 40px; left: 50%; transform: translateX(-50%); }
+    .sco-top-right { top: 40px; right: 40px; }
+    .sco-bottom-left { bottom: 40px; left: 40px; }
+    .sco-bottom-center { bottom: 40px; left: 50%; transform: translateX(-50%); }
+    .sco-bottom-right { bottom: 40px; right: 40px; }
+    .sco-head { display: flex; align-items: center; justify-content: space-between; gap: 1em;
+        padding: .45em .9em; background: rgba(127,127,127,.14); font-family: 'Oswald',sans-serif; }
+    .sco-level { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: .95em; color: var(--ov-accent); }
+    .sco-meta { font-size: .72em; letter-spacing: .05em; text-transform: uppercase; color: var(--ov-muted); white-space: nowrap; }
+    .sco-row { display: flex; align-items: center; gap: .6em; padding: .5em .9em; }
+    .sco-row + .sco-row { border-top: 1px solid rgba(127,127,127,.16); }
+    .sco-row.win { background: rgba(127,127,127,.1); }
+    .sco-dot { width: .5em; height: .5em; border-radius: 50%; background: transparent; flex: none; }
+    .sco-row.serve .sco-dot { background: var(--ov-accent); box-shadow: 0 0 .5em var(--ov-accent); }
+    .sco-name { flex: 1; min-width: 0; font-size: 1em; font-weight: 500; color: var(--ov-text);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sco-set { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; color: var(--ov-muted); font-size: 1em; }
+    .sco-games { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; color: var(--ov-text); font-size: 1.05em; }
+    .sco-point { width: 2em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 1.15em; color: var(--ov-accent); }
+    .sco-card.tb .sco-games { color: var(--ov-accent); }
+
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
        body names ~28px (TV min 24–28), big group title ~46px, ~5% safe margin. */
@@ -366,6 +392,7 @@
     { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
     if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
     if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
+    if ((d.window_type || 'groups') !== 'score') { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); }
     if ((d.window_type || 'groups') !== 'draw') {
         const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
         const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
@@ -511,6 +538,31 @@
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
             + centerSponsor + barHtml
             + `</div>`;
+        return;
+    }
+
+    // ── Rezultatas (live scoreboard) ────────────────────────────
+    if ((d.window_type || 'groups') === 'score') {
+        const sc = d.score || {};
+        const host = document.getElementById('ov-score') || (() => {
+            const el = document.createElement('div'); el.id = 'ov-score'; document.body.appendChild(el); return el;
+        })();
+        stage.innerHTML = '';
+        if (!sc.found) { host.innerHTML = ''; return; }
+
+        const nSets = Math.max((sc.teams[0].sets || []).length, (sc.teams[1].sets || []).length);
+        const row = (tm) => {
+            let cells = '';
+            for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
+            cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
+            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${tm.name}</span>${cells}</div>`;
+        };
+        const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
+        const head = (sc.level || meta)
+            ? `<div class="sco-head">${sc.level ? `<span class="sco-level">${sc.level}</span>` : '<span></span>'}${meta ? `<span class="sco-meta">${meta}</span>` : ''}</div>`
+            : '';
+        const width = sc.width || 520;
+        host.innerHTML = `<div class="sco-card sco-${sc.position || 'top-left'}${sc.tiebreak ? ' tb' : ''}" style="width:${width}px;font-size:${Math.round(width / 26)}px">${head}${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
         return;
     }
 
