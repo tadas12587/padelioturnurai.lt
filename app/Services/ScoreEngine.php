@@ -52,6 +52,20 @@ class ScoreEngine
             : $this->gamePoint($config, $state, $team);
     }
 
+    /** Award a whole game at once (or the current tiebreak) — for when scoring
+     *  point-by-point isn't possible. Undoable like a normal point. */
+    public function game(array $config, array $state, int $team): array
+    {
+        if ($state['status'] === 'finished') {
+            return $state;
+        }
+        $state = $this->pushHistory($state);
+
+        return $state['tiebreak']
+            ? $this->awardTiebreak($config, $state, $team)
+            : $this->awardGame($config, $state, $team);
+    }
+
     public function undo(array $config, array $state): array
     {
         if (empty($state['history'])) {

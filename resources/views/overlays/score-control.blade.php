@@ -19,8 +19,10 @@
         .tname { font-weight:600; font-size:15px; min-height:2.6em; display:flex; align-items:center; justify-content:center; }
         .pt { font-size:52px; font-weight:800; font-family:'Segoe UI',sans-serif; line-height:1; margin:6px 0; }
         .sub { font-size:13px; color:var(--muted); margin-bottom:10px; }
-        .plus { width:100%; padding:20px; font-size:30px; font-weight:800; border:none; border-radius:12px; background:#1f6b3a; color:#fff; }
+        .plus { width:100%; padding:20px; font-size:26px; font-weight:800; border:none; border-radius:12px; background:#1f6b3a; color:#fff; }
         .plus:active { transform:scale(.98); }
+        .plusg { width:100%; margin-top:8px; padding:12px; font-size:16px; font-weight:700; border:1px solid #2f7a48; border-radius:10px; background:rgba(31,107,58,.18); color:#7fd6a0; }
+        .plusg:active { transform:scale(.98); }
         .serveb { width:100%; margin-top:8px; padding:10px; font-size:13px; border:1px solid var(--line); border-radius:10px; background:transparent; color:var(--muted); }
         .rowbtns { display:flex; gap:8px; margin-top:14px; }
         .rowbtns button { flex:1; padding:14px; font-size:15px; font-weight:600; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt); }
@@ -112,7 +114,8 @@
                     <div class="tname">${tm.name}</div>
                     <div class="pt">${tm.point}</div>
                     <div class="sub">Geimai ${tm.games}${sets ? ' · Setai ' + sets : ''}</div>
-                    <button class="plus" onclick="act({action:'point',team:${i}})">+</button>
+                    <button class="plus" onclick="act({action:'point',team:${i}})">+ taškas</button>
+                    <button class="plusg" onclick="act({action:'game',team:${i}})">+ geimas</button>
                     <button class="serveb" onclick="act({action:'serve',team:${i}})">Servas šiai</button>
                 </div>`;
             };

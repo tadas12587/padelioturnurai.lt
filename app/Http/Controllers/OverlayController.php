@@ -56,6 +56,11 @@ class OverlayController extends Controller
                     $score = $engine->point($config, $score, (int) $request->input('team'));
                 }
                 break;
+            case 'game':
+                if (! empty($score)) {
+                    $score = $engine->game($config, $score, (int) $request->input('team'));
+                }
+                break;
             case 'undo':
                 if (! empty($score)) {
                     $score = $engine->undo($config, $score);

@@ -37,6 +37,33 @@ class ScoreEngineTest extends TestCase
         $this->assertSame([0, 0], $s['points']);
     }
 
+    public function test_game_awards_a_whole_game_at_once(): void
+    {
+        $s = $this->e->init($this->cfg, [['A B'], ['C D']]);
+        $s = $this->play($s, [0, 1]); // 15-15
+        $s = $this->e->game($this->cfg, $s, 0);
+        $this->assertSame([1, 0], $s['games']);
+        $this->assertSame([0, 0], $s['points']); // resets like any game
+        // undoable back to the mid-game score
+        $s = $this->e->undo($this->cfg, $s);
+        $this->assertSame([0, 0], $s['games']);
+        $this->assertSame([1, 1], $s['points']);
+    }
+
+    public function test_game_during_tiebreak_awards_the_set(): void
+    {
+        $cfg = $this->e->config(['score_deuce_mode' => 'golden', 'score_sets_to_win' => 1, 'score_tiebreak' => true, 'score_games_per_set' => 6, 'score_tiebreak_at' => 6]);
+        $s = $this->e->init($cfg, [['A B'], ['C D']]);
+        for ($g = 0; $g < 6; $g++) {           // 6-6 → tiebreak
+            $s = $this->play($s, [0, 0, 0, 0], $cfg);
+            $s = $this->play($s, [1, 1, 1, 1], $cfg);
+        }
+        $this->assertTrue($s['tiebreak']);
+        $s = $this->e->game($cfg, $s, 0);      // "+ game" during the tiebreak
+        $this->assertSame('finished', $s['status']);
+        $this->assertSame(0, $s['winner']);
+    }
+
     public function test_win_a_set_by_two_and_finish_single_set_match(): void
     {
         $s = $this->e->init($this->cfg, [['A B'], ['C D']]);
