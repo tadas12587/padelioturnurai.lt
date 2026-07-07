@@ -215,6 +215,86 @@ class OverlayData
         return $this->payload($tournamentId)['matches'] ?? [];
     }
 
+    /** "Jevgenij Grigorenko" → "J. Grigorenko" (first-name initial + surname). */
+    public function abbrevName(string $full): string
+    {
+        $full = trim(preg_replace('/\s+/', ' ', $full));
+        if ($full === '') {
+            return '';
+        }
+        $parts = explode(' ', $full);
+        if (count($parts) === 1) {
+            return $parts[0];
+        }
+        $first = array_shift($parts);
+
+        return mb_strtoupper(mb_substr($first, 0, 1)) . '. ' . implode(' ', $parts);
+    }
+
+    /** @return array<string,mixed> */
+    public function scoreConfig(array $window): array
+    {
+        return app(\App\Services\ScoreEngine::class)->config($window);
+    }
+
+    /**
+     * Build the scoreboard card payload from the live score state + match context.
+     *
+     * @param  array<string,mixed>  $window
+     * @param  array<string,mixed>  $state
+     * @param  array<string,mixed>  $match   category/court/round context
+     * @param  array<string,mixed>  $config
+     * @return array<string,mixed>
+     */
+    public function resolveScore(array $window, array $state, array $match, array $config): array
+    {
+        if (empty($state['teams'])) {
+            return ['found' => false];
+        }
+
+        $labels = ['0', '15', '30', '40'];
+        $mode = $config['deuce_mode'] ?? 'star';
+        $bothAt40 = ($state['points'][0] ?? 0) >= 3 && ($state['points'][1] ?? 0) >= 3;
+
+        $pointFor = function (int $t) use ($state, $labels, $mode, $bothAt40) {
+            if (! empty($state['tiebreak'])) {
+                return (string) ($state['tb'][$t] ?? 0);
+            }
+            if (($state['star_stage'] ?? 0) === 'star' || ($mode === 'golden' && $bothAt40 && ($state['adv'] ?? null) === null)) {
+                return '★';
+            }
+            if (($state['adv'] ?? null) === $t) {
+                return 'AD';
+            }
+            if (($state['adv'] ?? null) === (1 - $t)) {
+                return '40';
+            }
+
+            return $labels[min((int) ($state['points'][$t] ?? 0), 3)];
+        };
+
+        $team = fn (int $t) => [
+            'name'    => implode(' / ', array_map(fn ($n) => $this->abbrevName((string) $n), $state['teams'][$t] ?? [])),
+            'sets'    => array_map(fn ($s) => $s[$t], $state['sets'] ?? []),
+            'games'   => (int) ($state['games'][$t] ?? 0),
+            'point'   => $pointFor($t),
+            'serving' => (int) ($state['server_team'] ?? 0) === $t,
+            'winner'  => ($state['winner'] ?? null) === $t,
+        ];
+
+        return [
+            'found'    => true,
+            'teams'    => [$team(0), $team(1)],
+            'level'    => ($window['show_level'] ?? true) ? ($match['category'] ?? null) : null,
+            'court'    => $match['court'] ?? null,
+            'round'    => $match['round'] ?? null,
+            'tiebreak' => ! empty($state['tiebreak']),
+            'status'   => $state['status'] ?? 'playing',
+            'position' => $window['score_position'] ?? 'top-left',
+            'width'    => (int) ($window['score_width'] ?? 520),
+        ];
+    }
+
     /** Lowercase + strip Lithuanian/Polish diacritics (stable person key). */
     public function personKey(string $name): string
     {
