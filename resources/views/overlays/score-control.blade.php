@@ -56,6 +56,11 @@
 
     <div id="pane-settings" class="hide">
         <div class="muted" style="margin-bottom:6px;">Kas žaidžia (pasirink rungtynes)</div>
+        <div class="field"><input type="text" id="fx-search" placeholder="Ieškoti žaidėjo…" oninput="renderFixtures()"></div>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <select id="fx-court" onchange="renderFixtures()" style="flex:1; padding:10px; border:1px solid var(--line); border-radius:8px; background:#141821; color:var(--txt);"><option value="">Visi kortai</option></select>
+            <select id="fx-level" onchange="renderFixtures()" style="flex:1; padding:10px; border:1px solid var(--line); border-radius:8px; background:#141821; color:var(--txt);"><option value="">Visi lygiai</option></select>
+        </div>
         <div class="fx" id="fixtures"></div>
         <div class="muted" style="margin:10px 0 6px;">Taisyklės</div>
         <div class="field"><label>Geimų sete</label><input type="number" id="r_gps" min="1"></div>
@@ -119,11 +124,8 @@
         else if (data.tiebreak) st = 'Tiebreak';
         document.getElementById('status').textContent = st;
 
-        // fixtures
-        const fx = document.getElementById('fixtures');
-        fx.innerHTML = (data.fixtures || []).map((m) =>
-            `<button class="${String(data.match_id) === String(m.id) ? 'on' : ''}" onclick="act({action:'select',match_id:${JSON.stringify(m.id)}})">${m.t1 || 'TBD'} <span class="muted">vs</span> ${m.t2 || 'TBD'} <span class="muted">${[m.time, m.court].filter(Boolean).join(' · ')}</span></button>`
-        ).join('') || '<div class="muted">Nėra rungtynių.</div>';
+        populateFilters();
+        renderFixtures();
 
         // rules (only fill when not focused, to avoid clobbering typing)
         if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
@@ -134,6 +136,35 @@
         }
     }
     const g = (id) => document.getElementById(id);
+
+    function fillSelect(sel, values, allLabel) {
+        const cur = sel.value;
+        const opts = ['<option value="">' + allLabel + '</option>']
+            .concat(values.map((v) => `<option value="${v}">${v}</option>`));
+        sel.innerHTML = opts.join('');
+        if (values.includes(cur)) sel.value = cur;
+    }
+    function populateFilters() {
+        const fx = data.fixtures || [];
+        const courts = [...new Set(fx.map((m) => m.court).filter(Boolean))].sort();
+        const levels = [...new Set(fx.map((m) => m.cat).filter(Boolean))].sort();
+        fillSelect(g('fx-court'), courts, 'Visi kortai');
+        fillSelect(g('fx-level'), levels, 'Visi lygiai');
+    }
+    function renderFixtures() {
+        const fx = document.getElementById('fixtures');
+        const q = (g('fx-search').value || '').toLowerCase().trim();
+        const court = g('fx-court').value, level = g('fx-level').value;
+        const list = (data.fixtures || []).filter((m) => {
+            if (court && m.court !== court) return false;
+            if (level && m.cat !== level) return false;
+            if (q && !((m.t1 + ' ' + m.t2).toLowerCase().includes(q))) return false;
+            return true;
+        });
+        fx.innerHTML = list.map((m) =>
+            `<button class="${String(data.match_id) === String(m.id) ? 'on' : ''}" onclick="act({action:'select',match_id:${JSON.stringify(m.id)}})">${m.t1 || 'TBD'} <span class="muted">vs</span> ${m.t2 || 'TBD'} <span class="muted">${[m.time, m.court, m.cat].filter(Boolean).join(' · ')}</span></button>`
+        ).join('') || '<div class="muted">Nėra atitinkančių rungtynių.</div>';
+    }
 
     function saveRules() {
         act({
