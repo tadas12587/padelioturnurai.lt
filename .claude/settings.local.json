@@ -94,7 +94,10 @@
       "Bash(node --check tools/overlay-push/build.mjs)",
       "Bash(php -l app/Filament/Resources/PlayerPhotoResource.php)",
       "Bash(php -l app/Filament/Pages/H2hControlPage.php)",
-      "Bash(php -l app/Filament/Resources/PlayerPhotoResource/Pages/ListPlayerPhotos.php)"
+      "Bash(php -l app/Filament/Resources/PlayerPhotoResource/Pages/ListPlayerPhotos.php)",
+      "Bash(php artisan *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'feat\\(h2h\\): adjustable photo size, edge distance, teammate overlap, team gap *)"
     ]
   }
 }

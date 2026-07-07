@@ -227,20 +227,20 @@
         background: rgba(0,0,0,.4); padding: 3px 14px; border-radius: 8px; }
     /* Players: equal size, shown close (bottom crops), slightly overlapping. */
     .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; z-index: 1; }
-    .h2h-left { left: 0; }
-    .h2h-right { right: 0; flex-direction: row-reverse; }
+    .h2h-left { left: var(--h2h-edge, 0vw); transform: translateX(calc(-1 * var(--h2h-gap, 0vw))); }
+    .h2h-right { right: var(--h2h-edge, 0vw); flex-direction: row-reverse; transform: translateX(var(--h2h-gap, 0vw)); }
     /* No side clipping — only the bottom may crop (via the stage's overflow). */
     .h2h-player { position: relative; display: flex; align-items: flex-end; }
     .h2h-imgwrap { display: flex; align-items: flex-end; }
     /* Each player capped in width so a pair fits side-by-side on its own half
        (keeps both teammates together, leaves a clear gap between the two teams). */
-    .h2h-imgwrap img { height: 96vh; width: auto; max-width: 44vw; display: block; margin-bottom: -6vh; image-rendering: auto;
+    .h2h-imgwrap img { height: var(--h2h-size, 96vh); width: auto; max-width: 44vw; display: block; margin-bottom: -6vh; image-rendering: auto;
         /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
            white cut-out fringe (keeps full image quality + GIF animation). */
         filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
     /* Teammates overlap heavily so the bigger photos still fit on their side. */
-    .h2h-left .p1 { margin-left: -24vw; }
-    .h2h-right .p1 { margin-right: -24vw; }
+    .h2h-left .p1 { margin-left: calc(-1 * var(--h2h-overlap, 24vw)); }
+    .h2h-right .p1 { margin-right: calc(-1 * var(--h2h-overlap, 24vw)); }
     @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
     .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
     /* per-team info card (fixed size, readable from a distance) */
@@ -502,7 +502,10 @@
             ? `<div class="h2h-sponsor">${sp.logo ? `<img src="${sp.logo}" alt="">` : ''}${sp.text ? `<div class="txt">${sp.text}</div>` : ''}</div>`
             : '';
 
-        host.innerHTML = `<div class="${stageCls}">${header}`
+        const L = h.layout || {};
+        const styleVars = `--h2h-size:${L.size ?? 96}vh;--h2h-edge:${L.edge ?? 0}vw;--h2h-gap:${L.gap ?? 0}vw;--h2h-overlap:${L.overlap ?? 24}vw`;
+
+        host.innerHTML = `<div class="${stageCls}" style="${styleVars}">${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div>${cbox}</div>`
