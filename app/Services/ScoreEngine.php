@@ -185,6 +185,12 @@ class ScoreEngine
             return $this->awardSet($config, $state, 1, [$g[0], $g[1]]);
         }
 
+        if ($config['tiebreak'] && $g[0] >= $config['tiebreak_at'] && $g[1] >= $config['tiebreak_at']) {
+            $state['tiebreak'] = true;
+            $state['tb'] = [0, 0];
+            $state['tb_start_server'] = $state['server_team'];
+        }
+
         return $state;
     }
 
@@ -220,9 +226,37 @@ class ScoreEngine
         return $state;
     }
 
-    // Tiebreak added in Task 3.
     private function tbPoint(array $config, array $state, int $team): array
     {
+        $state['tb'][$team]++;
+        $target = $state['super_tiebreak'] ? $config['super_tb_to'] : $config['tiebreak_to'];
+
+        // Serve indicator: A serves point 1, then serve switches every 2 points.
+        $k = $state['tb'][0] + $state['tb'][1] + 1; // next point number
+        $state['server_team'] = ($state['tb_start_server'] + intdiv($k, 2)) % 2;
+
+        $t = $state['tb'];
+        if ($t[$team] >= $target && $t[$team] - $t[1 - $team] >= 2) {
+            return $this->awardTiebreak($config, $state, $team);
+        }
+
         return $state;
+    }
+
+    private function awardTiebreak(array $config, array $state, int $team): array
+    {
+        if ($state['super_tiebreak']) {
+            $state['sets'][] = [$state['tb'][0], $state['tb'][1]];
+            $state['sets_won'][$team]++;
+            $state['status'] = 'finished';
+            $state['winner'] = $team;
+
+            return $state;
+        }
+
+        $wa = $config['tiebreak_at'];
+        $score = $team === 0 ? [$wa + 1, $wa] : [$wa, $wa + 1];
+
+        return $this->awardSet($config, $state, $team, $score);
     }
 }
