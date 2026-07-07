@@ -310,6 +310,34 @@ Spalvos — **pagal overlay temą** (`color-mix`). GIF animuojasi savaime + `h2h
 Vienas operatorius. Rišimas pagal vardą (sutampantys vardai gali reikalauti rankinio
 patikslinimo). Be veido auto-apkarpymo (stock = 2 paveiksliukai). Be pilnos statistikos.
 
+### 4.7 Rezultatas / Live score (`score`)
+
+Kompaktiška gyvo rezultato kortelė. Rezultatą operatorius veda **rankiniu būdu (+ / −)**,
+o sistema pati skaičiuoja taškus, geimus, setus, tiebreak'ą ir sukioja servą.
+
+**Skaičiavimas** (`App\Services\ScoreEngine`, pilnai unit-testuota):
+- Taškai 0/15/30/40; **lygiosios (40–40)** — pasirenkama: **Pranašumas** / **Auksinis
+  taškas** / **STAR** (STAR: 1-as pranašumas → deuce → 2-as pranašumas → Star taškas).
+- Geimai iki `score_games_per_set` (2 skirt.); tiebreak kai abi pasiekia
+  `score_tiebreak_at` (numatyta = games_per_set; „iki 9" → 8 → 8–8), iki `score_tiebreak_to` (7).
+- Setai iki `score_sets_to_win` (numatyta 2). Lemiamas setas — **super tiebreak** iki
+  `score_super_tb_to` (10), jei įjungta.
+- Servas sukasi automatiškai (galima perjungti). **Undo** (`−`) — pilna istorija.
+
+**Lango nustatymai:** formatas (geimai / tiebreak_at / setai / tiebreak / super-tb /
+lygiosios), **pozicija** (viršus/apačia × kairė/centras/dešinė), **plotis** (px, viskas
+responsive per `em`), **rodyti lygį**.
+
+**Valdymas — „Rezultatas" puslapis:** pasirenki overlay → score langą → rungtynes iš
+tvarkaraščio (komandų vardai, kortas, lygis) → **+ / −** kiekvienai komandai, servo
+perjungimas, **Iš naujo**, **Sustabdyti**. Vardai rodomi kaip **„T. Šeškauskas"**
+(vardo pirma raidė + pavardė). Spalvos — iš temos.
+
+#### Apribojimai (v1)
+
+Rezultatas rankinis (ne auto iš Tournated). Vienas operatorius. Servo indikacija —
+komandos lygiu. Be websocket'ų (polling ~1s).
+
 ---
 
 ## 5. push.js (tavo PC)
