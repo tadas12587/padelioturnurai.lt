@@ -461,6 +461,12 @@ class OverlayResource extends Resource
                     ->state(fn ($record) => url('/overlay/' . $record->token . '/control'))
                     ->copyable()->copyMessage('Nukopijuota!')->wrap()
                     ->description('Įklijuok į OBS → Docks → Custom Browser Docks'),
+
+                TextColumn::make('score_url')
+                    ->label('Rezultato valdymas (mob.)')
+                    ->state(fn ($record) => url('/overlay/' . $record->token . '/score'))
+                    ->copyable()->copyMessage('Nukopijuota!')->wrap()
+                    ->description('Atidaryk telefone/planšetėje (reikia „Rezultatas" lango)'),
             ])
             ->actions([
                 EditAction::make(),
