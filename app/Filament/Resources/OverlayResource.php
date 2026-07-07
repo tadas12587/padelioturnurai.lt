@@ -329,6 +329,20 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
                             Toggle::make('h2h_animate')->label('Lėta animacija (zoom link žiūrovo)')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_size')->label('Nuotraukų aukštis (% ekrano)')
+                                ->numeric()->default(96)->minValue(40)->maxValue(120)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_edge')->label('Atstumas nuo kraštų (vw)')
+                                ->numeric()->default(0)->minValue(0)->maxValue(30)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_overlap')->label('Persidengimas: komandos draugai (vw)')
+                                ->numeric()->default(24)->minValue(0)->maxValue(45)
+                                ->helperText('Kuo didesnis — tuo labiau persidengia tos pačios komandos žaidėjai.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_gap')->label('Tarpas tarp komandų (vw)')
+                                ->numeric()->default(0)->minValue(0)->maxValue(30)
+                                ->helperText('Pastumia komandas tolyn viena nuo kitos link kraštų.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
                             Toggle::make('h2h_show_sponsors')->label('Rodyti rėmėjų juostą apačioje')->default(false)->live()
                                 ->helperText('Komandų lentelės pakyla ir truputį sumažėja. Rėmėjus pasirink žemiau.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),

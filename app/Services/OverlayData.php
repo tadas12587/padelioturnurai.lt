@@ -367,6 +367,12 @@ class OverlayData
                 'logo' => ! empty($window['h2h_sponsor_logo']) ? Storage::url($window['h2h_sponsor_logo']) : null,
                 'text' => $window['h2h_sponsor_text'] ?? null,
             ],
+            'layout'      => [
+                'size'    => $window['h2h_size'] ?? 96,      // photo height (vh)
+                'edge'    => $window['h2h_edge'] ?? 0,       // distance from screen edges (vw)
+                'gap'     => $window['h2h_gap'] ?? 0,        // gap between the two teams (vw)
+                'overlap' => $window['h2h_overlap'] ?? 24,   // teammate overlap (vw)
+            ],
         ];
     }
 
