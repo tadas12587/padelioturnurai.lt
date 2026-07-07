@@ -501,9 +501,15 @@
         }
         const courtLine = show.includes('court') ? [c.court, c.round].filter(Boolean).join(' · ') : '';
         const vs = show.includes('vs') ? (h.custom_text || 'VS') : 'VS';
-        const cbox = (main || courtLine)
-            ? `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`
-            : '';
+        let cbox;
+        if (h.live_score) {
+            const ls = h.live_score;
+            cbox = `<div class="h2h-cbox"><div class="h2h-score">${ls.t1.games} : ${ls.t2.games}</div><div class="h2h-court">${ls.t1.point} : ${ls.t2.point}</div></div>`;
+        } else {
+            cbox = (main || courtLine)
+                ? `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`
+                : '';
+        }
 
         // Tournament logo + name (like the other overlays).
         const tt = d.tournament_title || d.title || '';

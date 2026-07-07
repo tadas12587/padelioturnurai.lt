@@ -52,6 +52,28 @@ class H2hTest extends TestCase
             ->assertJsonPath('h2h.center.court', 'Kortas 2');
     }
 
+    public function test_h2h_shows_live_score_when_enabled(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 99, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'H', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [
+                ['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata', 'category_id' => 0],
+                ['id' => 'w2', 'type' => 'score', 'name' => 'Rez', 'score_deuce_mode' => 'star'],
+            ],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99, 'h2h_show_score' => true,
+                'score' => ['teams' => [['A B'], ['C D']], 'sets' => [], 'games' => [3, 2], 'points' => [3, 1], 'adv' => null, 'star_stage' => 0,
+                    'tiebreak' => false, 'super_tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0, 'status' => 'playing', 'winner' => null]],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('h2h.live_score.t1.games', 3)
+            ->assertJsonPath('h2h.live_score.t1.point', '40');
+    }
+
     public function test_load_people_upserts_rows_with_gender(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
