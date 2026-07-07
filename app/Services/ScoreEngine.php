@@ -212,6 +212,19 @@ class ScoreEngine
             return $state;
         }
 
+        return $this->maybeStartSuperTb($config, $state);
+    }
+
+    private function maybeStartSuperTb(array $config, array $state): array
+    {
+        $need = $config['sets_to_win'] - 1;
+        if ($config['super_tb'] && $state['sets_won'][0] === $need && $state['sets_won'][1] === $need) {
+            $state['super_tiebreak'] = true;
+            $state['tiebreak'] = true;
+            $state['tb'] = [0, 0];
+            $state['tb_start_server'] = $state['server_team'];
+        }
+
         return $state;
     }
 
