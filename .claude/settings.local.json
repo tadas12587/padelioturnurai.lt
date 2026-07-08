@@ -121,7 +121,8 @@
       "Bash(php -l app/Services/ScoreEngine.php)",
       "Bash(git commit -q -m 'feat\\(score\\): add '\\\\''+ whole game'\\\\'' action alongside '\\\\''+ point'\\\\'' *)",
       "Bash(php -l app/Models/TournamentScore.php)",
-      "Bash(git commit -q -m 'feat\\(score\\): share the live scoreboard across all overlays of a tournament *)"
+      "Bash(git commit -q -m 'feat\\(score\\): share the live scoreboard across all overlays of a tournament *)",
+      "Bash(git commit -q -m 'feat\\(score\\): full play/stop of the overlay from the mobile control *)"
     ]
   }
 }

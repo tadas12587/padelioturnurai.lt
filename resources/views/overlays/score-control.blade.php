@@ -13,6 +13,13 @@
         .tab { flex:1; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt);
             font-size:16px; font-weight:600; text-align:center; }
         .tab.on { border-color:var(--accent); background:rgba(201,168,76,.14); color:var(--accent); }
+        .livebar { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:12px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+        .livebar.on { border-color:#3ea76a; background:rgba(62,167,106,.12); }
+        .livestate { flex:1; font-weight:700; font-size:15px; color:var(--muted); }
+        .livebar.on .livestate { color:#7fd6a0; }
+        .livebtn { padding:12px 18px; font-size:15px; font-weight:700; border:none; border-radius:10px; background:var(--accent); color:#0A0A0F; white-space:nowrap; }
+        .livebar.on .livebtn { background:#8a1f2c; color:#fff; }
+        .livebtn:active { transform:scale(.98); }
         .teams { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
         .tcard { padding:14px; border:1px solid var(--line); border-radius:14px; background:var(--card); text-align:center; }
         .tcard.serve { border-color:var(--accent); }
@@ -42,6 +49,11 @@
 </head>
 <body>
 <div class="wrap">
+    <div class="livebar" id="livebar">
+        <div class="livestate" id="livestate">—</div>
+        <button class="livebtn" id="livebtn" onclick="toggleLive()">▶ Paleisti</button>
+    </div>
+
     <div class="tabs">
         <div class="tab on" id="tab-score" onclick="showTab('score')">Rezultatas</div>
         <div class="tab" id="tab-settings" onclick="showTab('settings')">Nustatymai</div>
@@ -76,7 +88,6 @@
             <select id="r_deuce"><option value="advantage">Pranašumas</option><option value="golden">Auksinis taškas</option><option value="star">STAR</option></select>
         </div>
         <button class="save" onclick="saveRules()">Išsaugoti taisykles</button>
-        <button class="save" style="background:#211519;color:#f3b0b0;margin-top:8px;" onclick="act({action:'stop'})">Sustabdyti (OBS)</button>
     </div>
 </div>
 
@@ -100,8 +111,22 @@
         } catch (e) { /* keep */ }
     }
 
+    function toggleLive() {
+        if (!data) return;
+        act({ action: data.active ? 'stop' : 'play' });
+    }
+
     function render() {
         if (!data) return;
+        // live status bar (play/stop the OBS overlay from the phone)
+        const lb = document.getElementById('livebar');
+        const active = !!data.active;
+        lb.classList.toggle('on', active);
+        document.getElementById('livestate').textContent = active
+            ? '● TIESIOGIAI — rodoma OBS'
+            : (data.match_id ? 'Paruošta — nerodoma' : 'Pasirink rungtynes „Nustatymai"');
+        document.getElementById('livebtn').textContent = active ? '■ Sustabdyti' : '▶ Paleisti';
+
         const c = data.card || {};
         const body = document.getElementById('score-body');
         if (!c.found) {
@@ -165,7 +190,7 @@
             return true;
         });
         fx.innerHTML = list.map((m) =>
-            `<button class="${String(data.match_id) === String(m.id) ? 'on' : ''}" onclick="act({action:'select',match_id:${JSON.stringify(m.id)}})">${m.t1 || 'TBD'} <span class="muted">vs</span> ${m.t2 || 'TBD'} <span class="muted">${[m.time, m.court, m.cat].filter(Boolean).join(' · ')}</span></button>`
+            `<button class="${String(data.match_id) === String(m.id) ? 'on' : ''}" onclick="act({action:'select',match_id:${JSON.stringify(m.id)}}).then(()=>showTab('score'))">${m.t1 || 'TBD'} <span class="muted">vs</span> ${m.t2 || 'TBD'} <span class="muted">${[m.time, m.court, m.cat].filter(Boolean).join(' · ')}</span></button>`
         ).join('') || '<div class="muted">Nėra atitinkančių rungtynių.</div>';
     }
 
