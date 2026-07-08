@@ -99,6 +99,28 @@ class ScoreboardTest extends TestCase
         $this->get("/overlay/{$overlay->token}/score")->assertOk()->assertSee('Rezultatas');
     }
 
+    public function test_mobile_control_play_and_stop_the_overlay(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 7, 'team1' => ['A B'], 'team2' => ['C D'], 'category' => 'X']],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'S', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'score', 'name' => 'Rez', 'score_deuce_mode' => 'star']],
+            'state' => ['active_window_id' => null, 'next_match' => ''],
+        ]);
+        $url = "/overlay/{$overlay->token}/score";
+
+        // selecting a match launches it
+        $this->postJson($url, ['action' => 'select', 'match_id' => 7])->assertOk()->assertJsonPath('active', true);
+        // stop from the phone
+        $this->postJson($url, ['action' => 'stop'])->assertOk()->assertJsonPath('active', false);
+        $this->assertNull($overlay->fresh()->state['active_window_id']);
+        // play again from the phone
+        $this->postJson($url, ['action' => 'play'])->assertOk()->assertJsonPath('active', true);
+        $this->assertSame('w1', $overlay->fresh()->state['active_window_id']);
+    }
+
     public function test_point_and_undo_via_control(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [

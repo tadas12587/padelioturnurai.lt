@@ -96,6 +96,9 @@ class OverlayController extends Controller
                 $overlay->windows = $windows;
                 $config = $engine->config($window);
                 break;
+            case 'play':
+                $state['active_window_id'] = $window['id'];
+                break;
             case 'stop':
                 $state['active_window_id'] = null;
                 break;
