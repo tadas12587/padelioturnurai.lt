@@ -34,6 +34,11 @@
         .rowbtns { display:flex; gap:8px; margin-top:14px; }
         .rowbtns button { flex:1; padding:14px; font-size:15px; font-weight:600; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt); }
         .st { text-align:center; margin-top:12px; color:var(--accent); font-weight:600; min-height:1.2em; }
+        .wins { display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+        .winbtn { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:14px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt); font-size:15px; font-weight:600; }
+        .winbtn.on { border-color:#3ea76a; background:rgba(62,167,106,.12); }
+        .winbtn .tag { font-size:12px; color:var(--muted); font-weight:700; white-space:nowrap; }
+        .winbtn.on .tag { color:#7fd6a0; }
         .fx { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; max-height:40vh; overflow:auto; }
         .fx button { text-align:left; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt); font-size:14px; }
         .fx button.on { border-color:var(--accent); background:rgba(201,168,76,.12); }
@@ -70,6 +75,9 @@
     </div>
 
     <div id="pane-settings" class="hide">
+        <div class="muted" style="margin-bottom:6px;">Langai — rodyti / slėpti OBS (kelis galima vienu metu)</div>
+        <div class="wins" id="wins"></div>
+
         <div class="muted" style="margin-bottom:6px;">Kas žaidžia (pasirink rungtynes)</div>
         <div class="field"><input type="text" id="fx-search" placeholder="Ieškoti žaidėjo…" oninput="renderFixtures()"></div>
         <div style="display:flex; gap:8px; margin-bottom:10px;">
@@ -153,6 +161,7 @@
         else if (data.tiebreak) st = 'Tiebreak';
         document.getElementById('status').textContent = st;
 
+        renderWindows();
         populateFilters();
         renderFixtures();
 
@@ -165,6 +174,16 @@
         }
     }
     const g = (id) => document.getElementById(id);
+
+    function renderWindows() {
+        const host = document.getElementById('wins');
+        const list = data.windows_list || [];
+        host.innerHTML = list.map((w) => {
+            const action = w.shown ? 'hide_window' : 'show_window';
+            return `<button class="winbtn ${w.shown ? 'on' : ''}" onclick="act({action:'${action}',window_id:${JSON.stringify(w.id)}})">`
+                + `<span>${w.name}</span><span class="tag">${w.shown ? '● RODOMA — slėpti' : 'Rodyti'}</span></button>`;
+        }).join('') || '<div class="muted">Šis overlay neturi langų.</div>';
+    }
 
     function fillSelect(sel, values, allLabel) {
         const cur = sel.value;

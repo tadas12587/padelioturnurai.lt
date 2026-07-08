@@ -148,6 +148,33 @@ class ScoreboardTest extends TestCase
         $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
     }
 
+    public function test_mobile_control_toggles_any_window(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 7, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'M', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [
+                ['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata'],
+                ['id' => 'w2', 'type' => 'score', 'name' => 'Rez'],
+            ],
+            'state' => ['active_window_ids' => [], 'next_match' => ''],
+        ]);
+        $url = "/overlay/{$overlay->token}/score";
+
+        // the phone can see every window and toggle any of them
+        $this->postJson($url, ['action' => 'state'])->assertOk()
+            ->assertJsonCount(2, 'windows_list')
+            ->assertJsonPath('windows_list.0.shown', false);
+
+        $this->postJson($url, ['action' => 'show_window', 'window_id' => 'w1'])->assertOk();
+        $this->assertSame(['w1'], Overlay::activeIds($overlay->fresh()->state));
+
+        $this->postJson($url, ['action' => 'hide_window', 'window_id' => 'w1'])->assertOk();
+        $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
+    }
+
     public function test_point_and_undo_via_control(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
