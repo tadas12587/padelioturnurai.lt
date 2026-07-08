@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Overlay;
 use App\Models\OverlaySnapshot;
+use App\Models\TournamentScore;
 use App\Services\OverlayData;
 use App\Services\ScoreEngine;
 use Illuminate\Http\JsonResponse;
@@ -45,9 +46,10 @@ class OverlayController extends Controller
         $window = $windows[$wi];
 
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $score = $state['score'] ?? [];
-        $config = $engine->config($window);
         $tid = (string) $overlay->tournament_external_id;
+        $score = TournamentScore::stateFor($tid);       // shared across the tournament's overlays
+        $matchId = TournamentScore::matchFor($tid);
+        $config = $engine->config($window);
         $findMatch = fn ($id) => collect($data->matches($tid))->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $id);
 
         switch ($request->input('action', 'state')) {
@@ -80,7 +82,7 @@ class OverlayController extends Controller
                 $m = $findMatch($request->input('match_id'));
                 if ($m) {
                     $score = $engine->init($config, [$m['team1'] ?? [], $m['team2'] ?? []]);
-                    $state['score_match_id'] = $request->input('match_id');
+                    $matchId = $request->input('match_id');
                     $state['active_window_id'] = $window['id'];
                 }
                 break;
@@ -99,11 +101,12 @@ class OverlayController extends Controller
                 break;
         }
 
-        $state['score'] = $score;
+        TournamentScore::put($tid, $score, $matchId);   // shared: visible in every overlay of this tournament
+        unset($state['score'], $state['score_match_id']); // score is now tournament-scoped, not per-overlay
         $overlay->state = $state;
         $overlay->save();
 
-        $m = $findMatch($state['score_match_id'] ?? null) ?? [];
+        $m = $findMatch($matchId) ?? [];
 
         return response()->json([
             'ok'       => true,
@@ -111,7 +114,7 @@ class OverlayController extends Controller
             'status'   => $score['status'] ?? 'playing',
             'tiebreak' => ! empty($score['tiebreak']),
             'super_tiebreak' => ! empty($score['super_tiebreak']),
-            'match_id' => $state['score_match_id'] ?? null,
+            'match_id' => $matchId,
             'active'   => ($state['active_window_id'] ?? null) === $window['id'],
             'rules'    => [
                 'games_per_set' => $config['games_per_set'], 'tiebreak_at' => $config['tiebreak_at'],
@@ -222,24 +225,26 @@ class OverlayController extends Controller
             }
             $payload['draw']['category'] = $catName;
         } elseif ($type === 'score') {
-            $scoreState = $state['score'] ?? [];
-            $matchId = $state['score_match_id'] ?? null;
-            $m = collect($data->matches((string) $overlay->tournament_external_id))
+            $scoreState = TournamentScore::stateFor($tid);   // shared per tournament
+            $matchId = TournamentScore::matchFor($tid);
+            $m = collect($data->matches($tid))
                 ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId) ?? [];
             $payload['score'] = $data->resolveScore($window, $scoreState, $m, $data->scoreConfig($window));
         } elseif ($type === 'h2h') {
             $payload['h2h'] = $data->resolveH2h(
-                (string) $overlay->tournament_external_id,
+                $tid,
                 $state['h2h_match_id'] ?? null,
                 $window,
             );
             // Optional: show the live score (from the scorer) in the centre —
             // the exact same card the standalone "Rezultatas" overlay renders.
-            if (! empty($state['h2h_show_score']) && ! empty($state['score']['teams'])) {
+            // The score is tournament-scoped, so it may be driven from any overlay.
+            $sharedScore = TournamentScore::stateFor($tid);
+            if (! empty($state['h2h_show_score']) && ! empty($sharedScore['teams'])) {
                 $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
-                $hm = collect($data->matches((string) $overlay->tournament_external_id))
+                $hm = collect($data->matches($tid))
                     ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) ($state['h2h_match_id'] ?? '')) ?? [];
-                $sc = $data->resolveScore($scoreWindow, $state['score'], $hm, $data->scoreConfig($scoreWindow));
+                $sc = $data->resolveScore($scoreWindow, $sharedScore, $hm, $data->scoreConfig($scoreWindow));
                 if (! empty($sc['found'])) {
                     $payload['h2h']['live_score'] = $sc;
                 }

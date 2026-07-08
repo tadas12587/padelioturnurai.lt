@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Overlay;
+use App\Models\TournamentScore;
 use App\Services\OverlayData;
 use App\Services\ScoreEngine;
 use Filament\Notifications\Notification;
@@ -129,16 +130,19 @@ class H2hControlPage extends Page
 
                 return;
             }
-            // Auto-load the scorer with the same pair, unless it is already on this match.
-            $sameMatch = (string) ($state['score_match_id'] ?? '') === (string) $matchId;
-            if (! $sameMatch || empty($state['score']['teams'])) {
-                $m = collect(app(OverlayData::class)->matches((string) $overlay->tournament_external_id))
+            // Auto-load the shared (tournament-scoped) scorer with the same pair,
+            // unless it is already on this match.
+            $tid = (string) $overlay->tournament_external_id;
+            $sharedScore = TournamentScore::stateFor($tid);
+            $sameMatch = (string) (TournamentScore::matchFor($tid) ?? '') === (string) $matchId;
+            if (! $sameMatch || empty($sharedScore['teams'])) {
+                $m = collect(app(OverlayData::class)->matches($tid))
                     ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId);
                 if ($m) {
                     $engine = app(ScoreEngine::class);
                     $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
-                    $state['score'] = $engine->init($engine->config($scoreWindow), [$m['team1'] ?? [], $m['team2'] ?? []]);
-                    $state['score_match_id'] = $matchId;
+                    $newScore = $engine->init($engine->config($scoreWindow), [$m['team1'] ?? [], $m['team2'] ?? []]);
+                    TournamentScore::put($tid, $newScore, $matchId);
                 }
             }
         }
