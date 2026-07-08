@@ -145,13 +145,30 @@ class ScoreControlPage extends Page
             return;
         }
         $teams = [$m['team1'] ?? [], $m['team2'] ?? []];
+        // Load the (shared) score only — showing it is a separate step (play()
+        // for the standalone window, or the Akistata centre toggle).
         $this->saveScore(fn () => $this->engine()->init($this->config(), $teams), (string) $matchId);
+        Notification::make()->title('Rezultatas paruoštas')->success()->send();
+    }
+
+    public function play(): void
+    {
+        if (! $this->windowId) {
+            Notification::make()->title('Pirma pasirink Rezultato langą.')->warning()->send();
+
+            return;
+        }
         $this->saveState(function ($state) {
             $state['active_window_id'] = $this->windowId;
 
             return $state;
         });
-        Notification::make()->title('▶ Rodoma')->success()->send();
+        Notification::make()->title('▶ Rodomas rezultato langas')->success()->send();
+    }
+
+    public function isLive(): bool
+    {
+        return ($this->selectedOverlay()?->state['active_window_id'] ?? null) === $this->windowId;
     }
 
     public function point(int $team): void

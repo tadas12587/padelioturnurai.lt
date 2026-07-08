@@ -51,8 +51,9 @@
 <div class="wrap">
     <div class="livebar" id="livebar">
         <div class="livestate" id="livestate">—</div>
-        <button class="livebtn" id="livebtn" onclick="toggleLive()">▶ Paleisti</button>
+        <button class="livebtn" id="livebtn" onclick="toggleLive()">▶ Rodyti langą</button>
     </div>
+    <div class="muted" style="margin:-6px 2px 12px; font-size:12px;">„Rodyti langą" – atskiras rezultato langas. Norint rezultatą matyti Akistatoje, jo įjungti čia nereikia – naudok Akistatos valdymo „Centras: Rezultatas".</div>
 
     <div class="tabs">
         <div class="tab on" id="tab-score" onclick="showTab('score')">Rezultatas</div>
@@ -123,9 +124,9 @@
         const active = !!data.active;
         lb.classList.toggle('on', active);
         document.getElementById('livestate').textContent = active
-            ? '● TIESIOGIAI — rodoma OBS'
-            : (data.match_id ? 'Paruošta — nerodoma' : 'Pasirink rungtynes „Nustatymai"');
-        document.getElementById('livebtn').textContent = active ? '■ Sustabdyti' : '▶ Paleisti';
+            ? '● Rezultato langas rodomas (OBS)'
+            : (data.match_id ? 'Rezultatas paruoštas · langas nerodomas' : 'Pasirink rungtynes „Nustatymai"');
+        document.getElementById('livebtn').textContent = active ? '■ Slėpti langą' : '▶ Rodyti langą';
 
         const c = data.card || {};
         const body = document.getElementById('score-body');
