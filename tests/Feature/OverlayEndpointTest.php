@@ -250,12 +250,12 @@ class OverlayEndpointTest extends TestCase
         ]);
 
         $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w1'])
-            ->assertOk()->assertJson(['active_window_id' => 'w1']);
-        $this->assertSame('w1', $overlay->fresh()->state['active_window_id']);
+            ->assertOk()->assertJson(['active_window_ids' => ['w1']]);
+        $this->assertSame(['w1'], Overlay::activeIds($overlay->fresh()->state));
 
         $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'stop'])
-            ->assertOk()->assertJson(['active_window_id' => null]);
-        $this->assertNull($overlay->fresh()->state['active_window_id']);
+            ->assertOk()->assertJson(['active_window_ids' => []]);
+        $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
     }
 
     public function test_control_page_renders_windows(): void

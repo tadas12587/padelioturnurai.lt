@@ -158,17 +158,13 @@ class ScoreControlPage extends Page
 
             return;
         }
-        $this->saveState(function ($state) {
-            $state['active_window_id'] = $this->windowId;
-
-            return $state;
-        });
+        $this->saveState(fn ($state) => Overlay::showWindow($state, $this->windowId));
         Notification::make()->title('▶ Rodomas rezultato langas')->success()->send();
     }
 
     public function isLive(): bool
     {
-        return ($this->selectedOverlay()?->state['active_window_id'] ?? null) === $this->windowId;
+        return Overlay::isShown($this->selectedOverlay()?->state ?? [], (string) $this->windowId);
     }
 
     public function point(int $team): void
@@ -204,11 +200,7 @@ class ScoreControlPage extends Page
 
     public function stop(): void
     {
-        $this->saveState(function ($state) {
-            $state['active_window_id'] = null;
-
-            return $state;
-        });
+        $this->saveState(fn ($state) => $this->windowId ? Overlay::hideWindow($state, $this->windowId) : Overlay::hideAll($state));
         Notification::make()->title('■ Sustabdyta')->send();
     }
 }

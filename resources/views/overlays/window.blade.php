@@ -398,7 +398,7 @@
     // The results ticker lives on <body> (outside the positioned/transformed
     // containers) so it can pin to the real screen bottom. Clear it each render;
     // the results branch re-creates it.
-    { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
+    if (!keep) { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
 
     // Shared scoreboard card markup, used by both the standalone "Rezultatas"
     // window and the Head-to-Head centre (same look, format and data).
@@ -447,16 +447,19 @@
         if (modeChanged) { slot.classList.remove('h2h-cfade'); void slot.offsetWidth; slot.classList.add('h2h-cfade'); }
     };
 
-    if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
-    if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
-    if ((d.window_type || 'groups') !== 'score') { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); }
-    if ((d.window_type || 'groups') !== 'draw') {
-        const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
-        const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
-        clearInterval(window.__drawSpons);
-        window.__drawLastSlot = undefined;
-        window.__drawPoolRects = undefined;
-        window.__drawHandledKey = undefined;
+    // When compositing (keep), the caller reconciles sibling hosts; skip here.
+    if (!keep) {
+        if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
+        if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
+        if ((d.window_type || 'groups') !== 'score') { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); }
+        if ((d.window_type || 'groups') !== 'draw') {
+            const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
+            const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
+            clearInterval(window.__drawSpons);
+            window.__drawLastSlot = undefined;
+            window.__drawPoolRects = undefined;
+            window.__drawHandledKey = undefined;
+        }
     }
 
     if ((d.window_type || 'groups') === 'sponsors') {
@@ -467,9 +470,9 @@
         const host = document.getElementById('ov-spons') || (() => {
             const h = document.createElement('div'); h.id = 'ov-spons'; document.body.appendChild(h); return h;
         })();
-        if (!items.length) { stage.innerHTML = ''; host.remove(); return; }
+        if (!items.length) { if (!keep) stage.innerHTML = ''; host.remove(); return; }
         const variant = d.variant || 'corner';
-        stage.innerHTML = '';
+        if (!keep) stage.innerHTML = '';
 
         // Bottom bar — continuous marquee sliding to the side (like the draw strip).
         if (variant === 'bar') {
@@ -515,7 +518,7 @@
         const host = document.getElementById('ov-h2h') || (() => {
             const el = document.createElement('div'); el.id = 'ov-h2h'; document.body.appendChild(el); return el;
         })();
-        stage.innerHTML = '';
+        if (!keep) stage.innerHTML = '';
 
         if (!h.found) {
             host.innerHTML = '<div class="h2h-stage h2h-empty">Pasirink rungtynes</div>';
@@ -594,7 +597,7 @@
         const host = document.getElementById('ov-score') || (() => {
             const el = document.createElement('div'); el.id = 'ov-score'; document.body.appendChild(el); return el;
         })();
-        stage.innerHTML = '';
+        if (!keep) stage.innerHTML = '';
         if (!sc.found) { host.innerHTML = ''; return; }
         host.innerHTML = window.__scoreCardHtml(sc, false);
         return;
@@ -833,7 +836,7 @@
         // The board is position:fixed, so it must live on <body> (outside #stage,
         // whose will-change:transform would otherwise become its containing block
         // and collapse it to a tiny box). Same trick as the results ticker.
-        stage.innerHTML = '';
+        if (!keep) stage.innerHTML = '';
         const drawHost = document.getElementById('ov-draw') || (() => {
             const h = document.createElement('div'); h.id = 'ov-draw'; document.body.appendChild(h); return h;
         })();
