@@ -140,6 +140,6 @@ class DrawControlTest extends TestCase
             ->set('windowId', 'w1')
             ->call('play');
 
-        $this->assertSame('w1', $overlay->fresh()->state['active_window_id']);
+        $this->assertContains('w1', \App\Models\Overlay::activeIds($overlay->fresh()->state));
     }
 }

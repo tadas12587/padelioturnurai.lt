@@ -220,8 +220,7 @@ class DrawControlPage extends Page
     public function play(): void
     {
         $overlay = Overlay::findOrFail($this->overlayId);
-        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = $this->windowId;
+        $state = Overlay::showWindow(array_merge(Overlay::defaultState(), $overlay->state ?? []), $this->windowId);
         $overlay->state = $state;
         $overlay->save();
         Notification::make()->title('▶ Rodoma')->success()->send();
@@ -231,7 +230,7 @@ class DrawControlPage extends Page
     {
         $overlay = Overlay::findOrFail($this->overlayId);
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = null;
+        $state = $this->windowId ? Overlay::hideWindow($state, $this->windowId) : Overlay::hideAll($state);
         $overlay->state = $state;
         $overlay->save();
         Notification::make()->title('■ Sustabdyta')->send();

@@ -92,7 +92,7 @@ class H2hControlPage extends Page
         $overlay = Overlay::findOrFail($this->overlayId);
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
         $state['h2h_match_id'] = $matchId;
-        $state['active_window_id'] = $this->windowId;
+        $state = Overlay::showWindow($state, $this->windowId);
         $overlay->state = $state;
         $overlay->save();
 
@@ -103,7 +103,7 @@ class H2hControlPage extends Page
     {
         $overlay = Overlay::findOrFail($this->overlayId);
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = null;
+        $state = $this->windowId ? Overlay::hideWindow($state, $this->windowId) : Overlay::hideAll($state);
         $overlay->state = $state;
         $overlay->save();
 

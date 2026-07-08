@@ -99,6 +99,32 @@ class ScoreboardTest extends TestCase
         $this->get("/overlay/{$overlay->token}/score")->assertOk()->assertSee('Rezultatas');
     }
 
+    public function test_data_returns_multiple_active_windows_at_once(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 7, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'M', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [
+                ['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata'],
+                ['id' => 'w2', 'type' => 'score', 'name' => 'Rez', 'score_deuce_mode' => 'star'],
+            ],
+            'state' => ['active_window_ids' => ['w1', 'w2'], 'next_match' => '', 'h2h_match_id' => 7],
+        ]);
+        TournamentScore::put('10424', ['teams' => [['A B'], ['C D']], 'sets' => [], 'sets_won' => [0, 0], 'games' => [1, 0],
+            'points' => [0, 0], 'adv' => null, 'star_stage' => 0, 'tiebreak' => false, 'super_tiebreak' => false,
+            'tb' => [0, 0], 'server_team' => 0, 'status' => 'playing', 'winner' => null], 7);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('visible', true)
+            ->assertJsonCount(2, 'windows')
+            ->assertJsonPath('windows.0.window_type', 'h2h')
+            ->assertJsonPath('windows.1.window_type', 'score')
+            ->assertJsonPath('windows.1.score.found', true);
+    }
+
     public function test_mobile_control_play_and_stop_the_overlay(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
@@ -113,13 +139,13 @@ class ScoreboardTest extends TestCase
 
         // selecting a match only prepares the score; it does NOT change the window
         $this->postJson($url, ['action' => 'select', 'match_id' => 7])->assertOk()->assertJsonPath('active', false);
-        $this->assertNull($overlay->fresh()->state['active_window_id']);
+        $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
         // play shows the standalone score window
         $this->postJson($url, ['action' => 'play'])->assertOk()->assertJsonPath('active', true);
-        $this->assertSame('w1', $overlay->fresh()->state['active_window_id']);
+        $this->assertSame(['w1'], Overlay::activeIds($overlay->fresh()->state));
         // stop hides it again
         $this->postJson($url, ['action' => 'stop'])->assertOk()->assertJsonPath('active', false);
-        $this->assertNull($overlay->fresh()->state['active_window_id']);
+        $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
     }
 
     public function test_point_and_undo_via_control(): void

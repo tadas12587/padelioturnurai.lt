@@ -135,6 +135,6 @@ class H2hTest extends TestCase
 
         $overlay->refresh();
         $this->assertSame(99, $overlay->state['h2h_match_id']);
-        $this->assertSame('w1', $overlay->state['active_window_id']);
+        $this->assertContains('w1', \App\Models\Overlay::activeIds($overlay->state));
     }
 }

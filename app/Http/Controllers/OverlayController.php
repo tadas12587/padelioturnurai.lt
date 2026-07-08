@@ -99,10 +99,10 @@ class OverlayController extends Controller
                 $config = $engine->config($window);
                 break;
             case 'play':
-                $state['active_window_id'] = $window['id'];
+                $state = Overlay::showWindow($state, $window['id']);
                 break;
             case 'stop':
-                $state['active_window_id'] = null;
+                $state = Overlay::hideWindow($state, $window['id']);
                 break;
         }
 
@@ -120,7 +120,7 @@ class OverlayController extends Controller
             'tiebreak' => ! empty($score['tiebreak']),
             'super_tiebreak' => ! empty($score['super_tiebreak']),
             'match_id' => $matchId,
-            'active'   => ($state['active_window_id'] ?? null) === $window['id'],
+            'active'   => Overlay::isShown($state, (string) $window['id']),
             'rules'    => [
                 'games_per_set' => $config['games_per_set'], 'tiebreak_at' => $config['tiebreak_at'],
                 'sets_to_win' => $config['sets_to_win'], 'tiebreak' => $config['tiebreak'], 'tiebreak_to' => $config['tiebreak_to'],
@@ -142,13 +142,16 @@ class OverlayController extends Controller
         ]);
 
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = $validated['action'] === 'play'
-            ? ($validated['window_id'] ?? null)
-            : null;
+        $wid = $validated['window_id'] ?? null;
+        if ($validated['action'] === 'play') {
+            $state = $wid ? Overlay::showWindow($state, $wid) : $state;
+        } else {
+            $state = $wid ? Overlay::hideWindow($state, $wid) : Overlay::hideAll($state);
+        }
         $overlay->state = $state;
         $overlay->save();
 
-        return response()->json(['active_window_id' => $state['active_window_id']]);
+        return response()->json(['active_window_ids' => Overlay::activeIds($state)]);
     }
 
     public function data(Overlay $overlay, OverlayData $data): JsonResponse
@@ -161,7 +164,7 @@ class OverlayController extends Controller
         $tid = (string) $overlay->tournament_external_id;
         $tournamentTitle = $tid !== '' ? ($data->tournament($tid)['title'] ?? null) : null;
 
-        $payload = [
+        $base = [
             'title'            => $config['title'],
             'tournament_title' => $tournamentTitle,
             'colors'      => $config['colors'],
@@ -170,41 +173,62 @@ class OverlayController extends Controller
             'position'    => $config['position'],
             'columns'     => $config['visible_columns'],
             'next_match'  => $state['next_match'],
-            'visible'     => false,
+        ];
+
+        // Resolve every active window — several can be shown at once.
+        $windows = [];
+        foreach (Overlay::activeIds($state) as $activeId) {
+            $window = collect($overlay->windows ?? [])->firstWhere('id', $activeId);
+            if (! $window) {
+                continue;
+            }
+            $windows[] = $this->resolveWindowPayload($overlay, $window, $state, $data, $tid, $base);
+        }
+
+        $payload = array_merge($base, [
+            'visible'     => count($windows) > 0,
             'window_id'   => null,
             'window_type' => null,
             'stale'       => false,
-        ];
+            'windows'     => $windows,
+        ]);
 
-        $activeId = $state['active_window_id'];
-        if (! $activeId) {
-            return response()->json($payload);
+        // Backward-compat: also expose the first window at the top level so
+        // anything reading the old flat shape keeps working.
+        if (! empty($windows)) {
+            $payload = array_merge($payload, $windows[0]);
+            $payload['windows'] = $windows;
+            $payload['visible'] = true;
         }
 
-        $window = collect($overlay->windows ?? [])->firstWhere('id', $activeId);
-        if (! $window) {
-            return response()->json($payload);
-        }
+        return response()->json($payload);
+    }
 
-        $payload['visible']     = true;
-        $payload['window_id']   = $activeId;
-        $payload['window_type'] = $window['type'] ?? 'groups';
-
-        $payload['scrim'] = [
-            'enabled' => (bool) ($window['scrim_enabled'] ?? false),
-            'opacity' => (int) ($window['scrim_opacity'] ?? 55),
-        ];
-
+    /**
+     * Resolve a single active window into a self-contained payload (base fields
+     * + window_type + its type-specific data). @return array<string,mixed>
+     */
+    private function resolveWindowPayload(Overlay $overlay, array $window, array $state, OverlayData $data, string $tid, array $base): array
+    {
+        $activeId = $window['id'] ?? null;
         $type = $window['type'] ?? 'groups';
+
+        $payload = array_merge($base, [
+            'visible'     => true,
+            'window_id'   => $activeId,
+            'window_type' => $type,
+            'stale'       => false,
+            'scrim'       => [
+                'enabled' => (bool) ($window['scrim_enabled'] ?? false),
+                'opacity' => (int) ($window['scrim_opacity'] ?? 55),
+            ],
+        ]);
 
         if ($type === 'schedule') {
             $payload['schedule_variant'] = $window['schedule_variant'] ?? 'by_court';
-            $payload['schedule'] = $data->resolveSchedule((string) $overlay->tournament_external_id, $window);
+            $payload['schedule'] = $data->resolveSchedule($tid, $window);
         } elseif ($type === 'bracket') {
-            $segments = $data->bracketSegmentsForCategory(
-                (string) $overlay->tournament_external_id,
-                (int) ($window['category_id'] ?? 0),
-            );
+            $segments = $data->bracketSegmentsForCategory($tid, (int) ($window['category_id'] ?? 0));
 
             $selected = array_map('strval', $window['segments'] ?? []);
             if (! empty($selected)) {
@@ -221,9 +245,8 @@ class OverlayController extends Controller
                 $drawState = app(\App\Services\DrawEngine::class)->init($window, []);
             }
             $payload['draw'] = $data->resolveDraw($window, $drawState);
-            // Which category/group is being drawn (always shown on the board).
             $catName = null;
-            foreach ($data->categories((string) $overlay->tournament_external_id) as $c) {
+            foreach ($data->categories($tid) as $c) {
                 if ((string) ($c['id'] ?? '') === (string) ($window['category_id'] ?? '')) {
                     $catName = $c['category']['name'] ?? null;
                 }
@@ -236,14 +259,8 @@ class OverlayController extends Controller
                 ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId) ?? [];
             $payload['score'] = $data->resolveScore($window, $scoreState, $m, $data->scoreConfig($window));
         } elseif ($type === 'h2h') {
-            $payload['h2h'] = $data->resolveH2h(
-                $tid,
-                $state['h2h_match_id'] ?? null,
-                $window,
-            );
-            // Optional: show the live score (from the scorer) in the centre —
-            // the exact same card the standalone "Rezultatas" overlay renders.
-            // The score is tournament-scoped, so it may be driven from any overlay.
+            $payload['h2h'] = $data->resolveH2h($tid, $state['h2h_match_id'] ?? null, $window);
+            // Optional: show the live (tournament-shared) score in the centre.
             $sharedScore = TournamentScore::stateFor($tid);
             if (! empty($state['h2h_show_score']) && ! empty($sharedScore['teams'])) {
                 $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
@@ -261,14 +278,14 @@ class OverlayController extends Controller
             $payload['corner_size']     = $window['corner_size'] ?? 'm';
             $payload['items']           = $data->resolveSponsors($window);
         } else {
-            $resolved = $data->resolveWindow((string) $overlay->tournament_external_id, $window);
+            $resolved = $data->resolveWindow($tid, $window);
             if (empty($resolved['groups'])) {
                 $resolved['stale'] = true;
             }
             $payload = array_merge($payload, $resolved);
         }
 
-        return response()->json($payload);
+        return $payload;
     }
 
     /**
