@@ -155,18 +155,27 @@ class OverlayController extends Controller
         ]);
     }
 
-    /** Play/stop a window from the control panel (token-authorised, CSRF-exempt). */
+    /**
+     * Play/stop a window from the OBS dock (token-authorised, CSRF-exempt).
+     * This dock is an exclusive switch: playing a window makes it the only one
+     * shown (old off, new on). Pass add=1 to instead add without replacing.
+     */
     public function controlAction(Overlay $overlay, Request $request): JsonResponse
     {
         $validated = $request->validate([
             'action'    => 'required|in:play,stop',
             'window_id' => 'nullable|string',
+            'add'       => 'nullable|boolean',
         ]);
 
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
         $wid = $validated['window_id'] ?? null;
         if ($validated['action'] === 'play') {
-            $state = $wid ? Overlay::showWindow($state, $wid) : $state;
+            if ($wid) {
+                $state = ! empty($validated['add'])
+                    ? Overlay::showWindow($state, $wid)      // add to the current set
+                    : Overlay::withActive($state, [$wid]);   // exclusive switch (default)
+            }
         } else {
             $state = $wid ? Overlay::hideWindow($state, $wid) : Overlay::hideAll($state);
         }
