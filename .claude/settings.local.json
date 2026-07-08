@@ -119,7 +119,9 @@
       "Bash(git commit -q -m 'feat\\(h2h\\): auto-load scorer with H2H pair when centre score enabled *)",
       "Bash(git commit -q -m 'feat\\(h2h\\): centre shows the real Rezultatas card with fade on time↔score switch *)",
       "Bash(php -l app/Services/ScoreEngine.php)",
-      "Bash(git commit -q -m 'feat\\(score\\): add '\\\\''+ whole game'\\\\'' action alongside '\\\\''+ point'\\\\'' *)"
+      "Bash(git commit -q -m 'feat\\(score\\): add '\\\\''+ whole game'\\\\'' action alongside '\\\\''+ point'\\\\'' *)",
+      "Bash(php -l app/Models/TournamentScore.php)",
+      "Bash(git commit -q -m 'feat\\(score\\): share the live scoreboard across all overlays of a tournament *)"
     ]
   }
 }

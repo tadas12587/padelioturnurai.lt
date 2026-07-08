@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Models\Overlay;
+use App\Models\TournamentScore;
 use App\Services\OverlayData;
 use App\Services\ScoreEngine;
 use Filament\Notifications\Notification;
@@ -56,15 +57,21 @@ class ScoreControlPage extends Page
         return null;
     }
 
-    /** @return array<string,mixed> */
+    /** The tournament whose (shared) scoreboard we drive. */
+    private function tid(): string
+    {
+        return (string) ($this->selectedOverlay()?->tournament_external_id ?? '');
+    }
+
+    /** @return array<string,mixed> shared score for the whole tournament */
     public function scoreState(): array
     {
-        return $this->selectedOverlay()?->state['score'] ?? [];
+        return TournamentScore::stateFor($this->tid());
     }
 
     public function activeMatchId()
     {
-        return $this->selectedOverlay()?->state['score_match_id'] ?? null;
+        return TournamentScore::matchFor($this->tid());
     }
 
     /** Fixtures for the overlay's tournament. @return list<array<string,mixed>> */
@@ -97,9 +104,21 @@ class ScoreControlPage extends Page
         $overlay->save();
     }
 
+    /** Mutate the tournament's shared score. Pass $matchId to also set it. */
+    private function saveScore(callable $fn, string $matchId = '__keep__'): void
+    {
+        $tid = $this->tid();
+        if ($tid === '') {
+            return;
+        }
+        $score = $fn(TournamentScore::stateFor($tid));
+        $mid = $matchId === '__keep__' ? TournamentScore::matchFor($tid) : $matchId;
+        TournamentScore::put($tid, $score, $mid);
+    }
+
     private function hasScore(): bool
     {
-        return ! empty($this->selectedOverlay()?->state['score'] ?? []);
+        return ! empty(TournamentScore::stateFor($this->tid()));
     }
 
     private function engine(): ScoreEngine
@@ -126,9 +145,8 @@ class ScoreControlPage extends Page
             return;
         }
         $teams = [$m['team1'] ?? [], $m['team2'] ?? []];
-        $this->saveState(function ($state) use ($teams, $matchId) {
-            $state['score'] = $this->engine()->init($this->config(), $teams);
-            $state['score_match_id'] = $matchId;
+        $this->saveScore(fn () => $this->engine()->init($this->config(), $teams), (string) $matchId);
+        $this->saveState(function ($state) {
             $state['active_window_id'] = $this->windowId;
 
             return $state;
@@ -141,11 +159,7 @@ class ScoreControlPage extends Page
         if (! $this->overlayId || ! $this->hasScore()) {
             return;
         }
-        $this->saveState(function ($state) use ($team) {
-            $state['score'] = $this->engine()->point($this->config(), $state['score'] ?? [], $team);
-
-            return $state;
-        });
+        $this->saveScore(fn ($score) => $this->engine()->point($this->config(), $score ?: [], $team));
     }
 
     public function game(int $team): void
@@ -153,38 +167,22 @@ class ScoreControlPage extends Page
         if (! $this->overlayId || ! $this->hasScore()) {
             return;
         }
-        $this->saveState(function ($state) use ($team) {
-            $state['score'] = $this->engine()->game($this->config(), $state['score'] ?? [], $team);
-
-            return $state;
-        });
+        $this->saveScore(fn ($score) => $this->engine()->game($this->config(), $score ?: [], $team));
     }
 
     public function undo(): void
     {
-        $this->saveState(function ($state) {
-            $state['score'] = $this->engine()->undo($this->config(), $state['score'] ?? []);
-
-            return $state;
-        });
+        $this->saveScore(fn ($score) => $this->engine()->undo($this->config(), $score ?: []));
     }
 
     public function resetScore(): void
     {
-        $this->saveState(function ($state) {
-            $state['score'] = $this->engine()->reset($this->config(), $state['score'] ?? []);
-
-            return $state;
-        });
+        $this->saveScore(fn ($score) => $this->engine()->reset($this->config(), $score ?: []));
     }
 
     public function setServer(int $team): void
     {
-        $this->saveState(function ($state) use ($team) {
-            $state['score'] = $this->engine()->setServer($state['score'] ?? [], $team);
-
-            return $state;
-        });
+        $this->saveScore(fn ($score) => $this->engine()->setServer($score ?: [], $team));
     }
 
     public function stop(): void

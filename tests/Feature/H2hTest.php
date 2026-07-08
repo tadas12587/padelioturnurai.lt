@@ -63,10 +63,11 @@ class H2hTest extends TestCase
                 ['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata', 'category_id' => 0],
                 ['id' => 'w2', 'type' => 'score', 'name' => 'Rez', 'score_deuce_mode' => 'star'],
             ],
-            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99, 'h2h_show_score' => true,
-                'score' => ['teams' => [['A B'], ['C D']], 'sets' => [], 'games' => [3, 2], 'points' => [3, 1], 'adv' => null, 'star_stage' => 0,
-                    'tiebreak' => false, 'super_tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0, 'status' => 'playing', 'winner' => null]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99, 'h2h_show_score' => true],
         ]);
+        \App\Models\TournamentScore::put('10424', ['teams' => [['A B'], ['C D']], 'sets' => [], 'games' => [3, 2], 'points' => [3, 1],
+            'adv' => null, 'star_stage' => 0, 'tiebreak' => false, 'super_tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0,
+            'status' => 'playing', 'winner' => null], 99);
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
@@ -95,8 +96,8 @@ class H2hTest extends TestCase
 
         $overlay->refresh();
         $this->assertTrue($overlay->state['h2h_show_score']);
-        $this->assertSame(99, $overlay->state['score_match_id']);
-        $this->assertSame([['A B'], ['C D']], $overlay->state['score']['teams']);
+        $this->assertSame('99', \App\Models\TournamentScore::matchFor('10424'));
+        $this->assertSame([['A B'], ['C D']], \App\Models\TournamentScore::stateFor('10424')['teams']);
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()

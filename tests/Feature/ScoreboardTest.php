@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Overlay;
 use App\Models\OverlaySnapshot;
+use App\Models\TournamentScore;
 use App\Services\OverlayData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -65,11 +66,11 @@ class ScoreboardTest extends TestCase
         $overlay = Overlay::create([
             'name' => 'S', 'type' => 'group_standings', 'tournament_external_id' => '10424',
             'windows' => [['id' => 'w1', 'type' => 'score', 'name' => 'Rezultatas', 'score_deuce_mode' => 'star']],
-            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'score_match_id' => 7,
-                'score' => ['teams' => [['Tadas Šeškauskas', 'Jonas Petraitis'], ['Adam Kowalski', 'Marius Šernius']],
-                    'sets' => [], 'sets_won' => [0, 0], 'games' => [1, 0], 'points' => [2, 0], 'adv' => null, 'star_stage' => 0,
-                    'tiebreak' => false, 'super_tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0, 'status' => 'playing', 'winner' => null]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
         ]);
+        TournamentScore::put('10424', ['teams' => [['Tadas Šeškauskas', 'Jonas Petraitis'], ['Adam Kowalski', 'Marius Šernius']],
+            'sets' => [], 'sets_won' => [0, 0], 'games' => [1, 0], 'points' => [2, 0], 'adv' => null, 'star_stage' => 0,
+            'tiebreak' => false, 'super_tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0, 'status' => 'playing', 'winner' => null], 7);
 
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
@@ -93,7 +94,7 @@ class ScoreboardTest extends TestCase
         $this->postJson("/overlay/{$overlay->token}/score", ['action' => 'select', 'match_id' => 7])
             ->assertOk()->assertJsonPath('card.found', true)->assertJsonPath('active', true);
         $this->postJson("/overlay/{$overlay->token}/score", ['action' => 'point', 'team' => 0])->assertOk();
-        $this->assertSame([1, 0], $overlay->fresh()->state['score']['points']);
+        $this->assertSame([1, 0], TournamentScore::stateFor('10424')['points']);
 
         $this->get("/overlay/{$overlay->token}/score")->assertOk()->assertSee('Rezultatas');
     }
@@ -114,9 +115,9 @@ class ScoreboardTest extends TestCase
             ->call('selectMatch', 7)
             ->call('point', 0);
 
-        $this->assertSame([1, 0], $overlay->fresh()->state['score']['points']);
+        $this->assertSame([1, 0], TournamentScore::stateFor('10424')['points']);
 
         $c->call('undo');
-        $this->assertSame([0, 0], $overlay->fresh()->state['score']['points']);
+        $this->assertSame([0, 0], TournamentScore::stateFor('10424')['points']);
     }
 }
