@@ -175,6 +175,32 @@ class ScoreboardTest extends TestCase
         $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
     }
 
+    public function test_mobile_control_toggles_center_score(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 7, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'M', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [
+                ['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata'],
+                ['id' => 'w2', 'type' => 'score', 'name' => 'Rez'],
+            ],
+            'state' => ['active_window_ids' => ['w1'], 'next_match' => '', 'h2h_match_id' => 7],
+        ]);
+        $url = "/overlay/{$overlay->token}/score";
+
+        $this->postJson($url, ['action' => 'state'])->assertOk()
+            ->assertJsonPath('has_h2h', true)
+            ->assertJsonPath('center_score', false);
+
+        $this->postJson($url, ['action' => 'center_score'])->assertOk()->assertJsonPath('center_score', true);
+        $this->assertTrue($overlay->fresh()->state['h2h_show_score']);
+
+        $this->postJson($url, ['action' => 'center_score'])->assertOk()->assertJsonPath('center_score', false);
+        $this->assertFalse($overlay->fresh()->state['h2h_show_score']);
+    }
+
     public function test_point_and_undo_via_control(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
