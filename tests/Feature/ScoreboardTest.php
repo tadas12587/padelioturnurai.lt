@@ -92,7 +92,7 @@ class ScoreboardTest extends TestCase
         ]);
 
         $this->postJson("/overlay/{$overlay->token}/score", ['action' => 'select', 'match_id' => 7])
-            ->assertOk()->assertJsonPath('card.found', true)->assertJsonPath('active', true);
+            ->assertOk()->assertJsonPath('card.found', true)->assertJsonPath('active', false);
         $this->postJson("/overlay/{$overlay->token}/score", ['action' => 'point', 'team' => 0])->assertOk();
         $this->assertSame([1, 0], TournamentScore::stateFor('10424')['points']);
 
@@ -111,14 +111,15 @@ class ScoreboardTest extends TestCase
         ]);
         $url = "/overlay/{$overlay->token}/score";
 
-        // selecting a match launches it
-        $this->postJson($url, ['action' => 'select', 'match_id' => 7])->assertOk()->assertJsonPath('active', true);
-        // stop from the phone
-        $this->postJson($url, ['action' => 'stop'])->assertOk()->assertJsonPath('active', false);
+        // selecting a match only prepares the score; it does NOT change the window
+        $this->postJson($url, ['action' => 'select', 'match_id' => 7])->assertOk()->assertJsonPath('active', false);
         $this->assertNull($overlay->fresh()->state['active_window_id']);
-        // play again from the phone
+        // play shows the standalone score window
         $this->postJson($url, ['action' => 'play'])->assertOk()->assertJsonPath('active', true);
         $this->assertSame('w1', $overlay->fresh()->state['active_window_id']);
+        // stop hides it again
+        $this->postJson($url, ['action' => 'stop'])->assertOk()->assertJsonPath('active', false);
+        $this->assertNull($overlay->fresh()->state['active_window_id']);
     }
 
     public function test_point_and_undo_via_control(): void

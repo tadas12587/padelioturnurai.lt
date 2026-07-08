@@ -79,11 +79,13 @@ class OverlayController extends Controller
                 }
                 break;
             case 'select':
+                // Only load the (shared) score for the chosen match. Do NOT change
+                // which window is shown — use 'play' for the standalone score window,
+                // or the Akistata centre toggle to show it inside Head-to-Head.
                 $m = $findMatch($request->input('match_id'));
                 if ($m) {
                     $score = $engine->init($config, [$m['team1'] ?? [], $m['team2'] ?? []]);
                     $matchId = $request->input('match_id');
-                    $state['active_window_id'] = $window['id'];
                 }
                 break;
             case 'rules':

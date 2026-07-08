@@ -58,8 +58,12 @@
                         <code class="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">{{ url('/overlay/' . $overlay->token) }}</code>
                     </div>
                     <div class="flex gap-2">
+                        @if($this->isLive())
+                            <x-filament::button wire:click="stop" color="gray" size="sm" icon="heroicon-o-stop">Slėpti langą</x-filament::button>
+                        @else
+                            <x-filament::button wire:click="play" color="success" size="sm" icon="heroicon-o-play">Rodyti langą</x-filament::button>
+                        @endif
                         <x-filament::button wire:click="resetScore" color="danger" size="sm" icon="heroicon-o-trash">Iš naujo</x-filament::button>
-                        <x-filament::button wire:click="stop" color="gray" size="sm" icon="heroicon-o-stop">Sustabdyti</x-filament::button>
                     </div>
                 </div>
 
