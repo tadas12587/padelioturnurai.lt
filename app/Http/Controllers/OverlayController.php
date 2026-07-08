@@ -114,6 +114,10 @@ class OverlayController extends Controller
                     $state = Overlay::hideWindow($state, (string) $wid);
                 }
                 break;
+            case 'center_score':
+                // Show/hide the live score inside the Head-to-Head centre.
+                $state['h2h_show_score'] = ! ($state['h2h_show_score'] ?? false);
+                break;
         }
 
         TournamentScore::put($tid, $score, $matchId);   // shared: visible in every overlay of this tournament
@@ -137,6 +141,8 @@ class OverlayController extends Controller
                 'type'  => $w['type'] ?? 'groups',
                 'shown' => Overlay::isShown($state, (string) ($w['id'] ?? '')),
             ], $windows),
+            'has_h2h'      => collect($windows)->contains(fn ($w) => ($w['type'] ?? null) === 'h2h'),
+            'center_score' => (bool) ($state['h2h_show_score'] ?? false),
             'rules'    => [
                 'games_per_set' => $config['games_per_set'], 'tiebreak_at' => $config['tiebreak_at'],
                 'sets_to_win' => $config['sets_to_win'], 'tiebreak' => $config['tiebreak'], 'tiebreak_to' => $config['tiebreak_to'],

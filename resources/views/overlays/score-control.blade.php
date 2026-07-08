@@ -179,11 +179,18 @@
     function renderWindows() {
         const host = document.getElementById('wins');
         const list = data.windows_list || [];
-        host.innerHTML = list.map((w) => {
+        let html = list.map((w) => {
             const action = w.shown ? 'hide_window' : 'show_window';
             return `<button class="winbtn ${w.shown ? 'on' : ''}" onclick="act({action:'${action}',window_id:${JSON.stringify(w.id)}})">`
                 + `<span>${w.name}</span><span class="tag">${w.shown ? '● RODOMA — slėpti' : 'Rodyti'}</span></button>`;
-        }).join('') || '<div class="muted">Šis overlay neturi langų.</div>';
+        }).join('');
+        // When an Akistata window exists, its centre can show the live score too.
+        if (data.has_h2h) {
+            const on = !!data.center_score;
+            html += `<button class="winbtn ${on ? 'on' : ''}" onclick="act({action:'center_score'})">`
+                + `<span>Rezultatas Akistatos centre</span><span class="tag">${on ? '● ĮJUNGTA — išjungti' : 'Įjungti'}</span></button>`;
+        }
+        host.innerHTML = html || '<div class="muted">Šis overlay neturi langų.</div>';
     }
 
     function fillSelect(sel, values, allLabel) {
