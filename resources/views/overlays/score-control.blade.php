@@ -13,7 +13,8 @@
         .tab { flex:1; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--txt);
             font-size:16px; font-weight:600; text-align:center; }
         .tab.on { border-color:var(--accent); background:rgba(201,168,76,.14); color:var(--accent); }
-        .livebar { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:12px; border:1px solid var(--line); border-radius:12px; background:var(--card); }
+        .livebar { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:12px; border:1px solid var(--line); border-radius:12px; background:var(--card); cursor:pointer; }
+        .livebar:active { transform:scale(.99); }
         .livebar.on { border-color:#3ea76a; background:rgba(62,167,106,.12); }
         .livestate { flex:1; font-weight:700; font-size:15px; color:var(--muted); }
         .livebar.on .livestate { color:#7fd6a0; }
@@ -54,9 +55,9 @@
 </head>
 <body>
 <div class="wrap">
-    <div class="livebar" id="livebar">
+    <div class="livebar" id="livebar" onclick="toggleLive()">
         <div class="livestate" id="livestate">—</div>
-        <button class="livebtn" id="livebtn" onclick="toggleLive()">▶ Rodyti langą</button>
+        <button class="livebtn" id="livebtn" type="button">▶ Rodyti langą</button>
     </div>
     <div class="muted" style="margin:-6px 2px 12px; font-size:12px;">„Rodyti langą" – atskiras rezultato langas. Norint rezultatą matyti Akistatoje, jo įjungti čia nereikia – naudok Akistatos valdymo „Centras: Rezultatas".</div>
 
