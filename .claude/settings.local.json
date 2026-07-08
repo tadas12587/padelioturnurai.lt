@@ -124,7 +124,8 @@
       "Bash(git commit -q -m 'feat\\(score\\): share the live scoreboard across all overlays of a tournament *)",
       "Bash(git commit -q -m 'feat\\(score\\): full play/stop of the overlay from the mobile control *)",
       "Bash(git commit -q -m 'fix\\(score\\): decouple picking the score from which window is shown *)",
-      "Bash(git commit -q -m 'feat\\(overlay\\): show multiple windows at once \\(per-window play/stop\\) *)"
+      "Bash(git commit -q -m 'feat\\(overlay\\): show multiple windows at once \\(per-window play/stop\\) *)",
+      "Bash(git commit -q -m 'feat\\(score\\): mobile remote can show/hide any window \\(not just the score\\) *)"
     ]
   }
 }

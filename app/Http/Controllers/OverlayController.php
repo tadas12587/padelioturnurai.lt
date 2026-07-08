@@ -104,6 +104,16 @@ class OverlayController extends Controller
             case 'stop':
                 $state = Overlay::hideWindow($state, $window['id']);
                 break;
+            case 'show_window':
+                if ($wid = $request->input('window_id')) {
+                    $state = Overlay::showWindow($state, (string) $wid);
+                }
+                break;
+            case 'hide_window':
+                if ($wid = $request->input('window_id')) {
+                    $state = Overlay::hideWindow($state, (string) $wid);
+                }
+                break;
         }
 
         TournamentScore::put($tid, $score, $matchId);   // shared: visible in every overlay of this tournament
@@ -121,6 +131,12 @@ class OverlayController extends Controller
             'super_tiebreak' => ! empty($score['super_tiebreak']),
             'match_id' => $matchId,
             'active'   => Overlay::isShown($state, (string) $window['id']),
+            'windows_list' => array_map(fn ($w) => [
+                'id'    => $w['id'] ?? null,
+                'name'  => $w['name'] ?? ($w['type'] ?? 'Langas'),
+                'type'  => $w['type'] ?? 'groups',
+                'shown' => Overlay::isShown($state, (string) ($w['id'] ?? '')),
+            ], $windows),
             'rules'    => [
                 'games_per_set' => $config['games_per_set'], 'tiebreak_at' => $config['tiebreak_at'],
                 'sets_to_win' => $config['sets_to_win'], 'tiebreak' => $config['tiebreak'], 'tiebreak_to' => $config['tiebreak_to'],
