@@ -127,7 +127,8 @@
       "Bash(git commit -q -m 'feat\\(overlay\\): show multiple windows at once \\(per-window play/stop\\) *)",
       "Bash(git commit -q -m 'feat\\(score\\): mobile remote can show/hide any window \\(not just the score\\) *)",
       "Bash(git commit -q -m 'fix\\(score\\): make the whole live status bar tappable, not just the button *)",
-      "Bash(git commit -q -m 'feat\\(score\\): mobile toggle for the score shown inside the Akistata centre *)"
+      "Bash(git commit -q -m 'feat\\(score\\): mobile toggle for the score shown inside the Akistata centre *)",
+      "Bash(git commit -q -m 'fix\\(control\\): OBS dock is an exclusive switch again \\(old off, new on\\) *)"
     ]
   }
 }

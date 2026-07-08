@@ -258,6 +258,27 @@ class OverlayEndpointTest extends TestCase
         $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
     }
 
+    public function test_control_dock_play_is_an_exclusive_switch(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'C', 'type' => 'group_standings',
+            'windows' => [['id' => 'w1', 'type' => 'groups', 'name' => 'W1'], ['id' => 'w2', 'type' => 'bracket', 'name' => 'W2']],
+            'state' => ['active_window_ids' => ['w1'], 'next_match' => ''],
+        ]);
+
+        // playing another window switches: old off, new on
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w2'])
+            ->assertOk()->assertJson(['active_window_ids' => ['w2']]);
+        $this->assertSame(['w2'], Overlay::activeIds($overlay->fresh()->state));
+
+        // add=1 keeps the current set and adds
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w1', 'add' => 1])
+            ->assertOk();
+        $ids = Overlay::activeIds($overlay->fresh()->state);
+        sort($ids);
+        $this->assertSame(['w1', 'w2'], $ids);
+    }
+
     public function test_control_page_renders_windows(): void
     {
         $overlay = Overlay::create([
