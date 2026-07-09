@@ -354,6 +354,29 @@ class OverlayResource extends Resource
                             TextInput::make('h2h_sponsor_text')->label('Centrinis rėmėjas — tekstas')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
 
+                            Select::make('h2h_bg_mode')->label('Fonas (animuotas)')
+                                ->options([
+                                    'none'     => 'Nėra (permatomas)',
+                                    'gradient' => 'Spalvų maišymas (temos spalvos)',
+                                    'image'    => 'Fonas + nuotrauka (daugybinama, skraido)',
+                                ])->default('none')->live()
+                                ->helperText('„Spalvų maišymas" — lėtai plaukiantys spalvų debesys. „Fonas + nuotrauka" — įkelta nuotrauka padauginama ir skraido.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Select::make('h2h_bg_intensity')->label('Fono intensyvumas')
+                                ->options(['subtle' => 'Subtilus', 'medium' => 'Vidutinis', 'bold' => 'Ryškus'])->default('subtle')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') !== 'none'),
+                            FileUpload::make('h2h_bg_image')->label('Fono nuotrauka (PNG su permatomu fonu — geriausia)')
+                                ->acceptedFileTypes(['image/png', 'image/webp', 'image/gif', 'image/jpeg'])
+                                ->disk('public')->directory('overlay-h2h-bg')
+                                ->helperText('Pvz. apkirptas kamuoliukas ar logotipas. Sistema pati padaugins ir paskraidys.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') === 'image'),
+                            TextInput::make('h2h_bg_count')->label('Nuotraukų kiekis (nebūtina)')->numeric()->minValue(2)->maxValue(40)
+                                ->placeholder('Auto pagal intensyvumą')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') === 'image'),
+                            TextInput::make('h2h_bg_speed')->label('Greitis (0.5 lėtai … 2 greitai, nebūtina)')->numeric()->minValue(0.3)->maxValue(3)->step(0.1)
+                                ->placeholder('Auto')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') !== 'none'),
+
                             TextInput::make('score_games_per_set')->label('Geimų sete')->numeric()->default(6)->minValue(1)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
                             TextInput::make('score_tiebreak_at')->label('Tiebreak prie (geimų)')->numeric()->default(6)

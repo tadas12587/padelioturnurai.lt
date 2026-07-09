@@ -213,6 +213,19 @@
     .h2h-stage::after  { animation: h2hGlowB 34s ease-in-out infinite alternate; }
     @keyframes h2hGlowA { from { transform: translate(-16%,-10%) scale(1); } to { transform: translate(10%,8%) scale(1.25); } }
     @keyframes h2hGlowB { from { transform: translate(18%,12%) scale(1.1); } to { transform: translate(-12%,-6%) scale(1.3); } }
+    /* animated background: colour-mixing blobs + multiplied floating image */
+    .h2h-bg { position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+    .h2h-blob { position: absolute; border-radius: 50%; filter: blur(46px); mix-blend-mode: screen;
+        animation: h2hDrift var(--d,18s) ease-in-out infinite; animation-delay: var(--dl,0s); }
+    @keyframes h2hDrift { 0% { transform: translate(0,0) scale(1); }
+        33% { transform: translate(var(--dx,40px),var(--dy,-30px)) scale(1.15); }
+        66% { transform: translate(calc(var(--dx,40px) * -.6),calc(var(--dy,-30px) * .7)) scale(.9); }
+        100% { transform: translate(0,0) scale(1); } }
+    .h2h-particle { position: absolute; will-change: transform; object-fit: contain;
+        animation: h2hFloat var(--d,14s) ease-in-out infinite; animation-delay: var(--dl,0s); }
+    @keyframes h2hFloat { 0% { transform: translate(0,0) rotate(0); }
+        50% { transform: translate(var(--dx,30px),var(--dy,-40px)) rotate(var(--rot,40deg)); }
+        100% { transform: translate(0,0) rotate(0); } }
     .h2h-empty { display: flex; align-items: center; justify-content: center;
         font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 30px; color: var(--ov-muted); }
     /* tournament header (logo + name + category) — like other overlays */
@@ -421,6 +434,36 @@
         return `<div class="sco-card ${cls}${sc.tiebreak ? ' tb' : ''}"${style}>${head}${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
     };
 
+    // Animated H2H background: colour-mixing blobs (gradient) and/or a
+    // multiplied, slowly floating image. Built once per board render.
+    window.__h2hBgHtml = function (bg) {
+        if (!bg || !bg.mode || bg.mode === 'none') return '';
+        const R = (a, b) => a + Math.random() * (b - a);
+        const cols = ['var(--ov-accent)', '#2f6f8f', '#c0533a', '#8b5cf6'];
+        const k = bg.intensity === 'bold' ? 1.35 : bg.intensity === 'medium' ? 1 : 0.7; // opacity factor
+        const spd = bg.speed && bg.speed > 0 ? bg.speed : (bg.intensity === 'bold' ? 1.2 : bg.intensity === 'medium' ? 1 : 0.8);
+        let inner = '';
+        if (bg.mode === 'gradient' || bg.mode === 'image') {
+            for (let i = 0; i < 5; i++) {
+                const s = R(34, 60);
+                inner += `<div class="h2h-blob" style="width:${s}%;height:${s}%;left:${R(-12, 70)}%;top:${R(-12, 60)}%;`
+                    + `background:${cols[i % cols.length]};opacity:${(0.75 * k).toFixed(2)};`
+                    + `--dx:${R(-90, 90)}px;--dy:${R(-70, 70)}px;--d:${(R(16, 26) / spd).toFixed(1)}s;--dl:${(-R(0, 8)).toFixed(1)}s"></div>`;
+            }
+        }
+        if (bg.mode === 'image' && bg.image) {
+            const n = bg.count && bg.count > 0 ? bg.count
+                : (bg.intensity === 'bold' ? 22 : bg.intensity === 'medium' ? 15 : 10);
+            for (let i = 0; i < n; i++) {
+                const sz = R(3, 9);
+                inner += `<img class="h2h-particle" src="${bg.image}" alt="" style="width:${sz.toFixed(1)}vw;left:${R(-2, 96)}%;top:${R(-2, 92)}%;`
+                    + `opacity:${(R(0.35, 0.85) * k).toFixed(2)};filter:blur(${sz < 4 ? R(0, 1.4).toFixed(1) : 0}px);`
+                    + `--dx:${R(-70, 70)}px;--dy:${R(-90, 90)}px;--rot:${R(-120, 120)}deg;--d:${(R(11, 21) / spd).toFixed(1)}s;--dl:${(-R(0, 10)).toFixed(1)}s">`;
+            }
+        }
+        return `<div class="h2h-bg">${inner}</div>`;
+    };
+
     // Patch only the H2H centre (score card ⇄ scheduled time/court) so the score
     // updates live without re-rendering the whole board, and fades on mode switch.
     window.__updH2hCenter = function (h) {
@@ -581,7 +624,7 @@
         const L = h.layout || {};
         const styleVars = `--h2h-size:${L.size ?? 96}vh;--h2h-edge:${L.edge ?? 0}vw;--h2h-gap:${L.gap ?? 0}vw;--h2h-overlap:${L.overlap ?? 24}vw`;
 
-        host.innerHTML = `<div class="${stageCls}" style="${styleVars}">${header}`
+        host.innerHTML = `<div class="${stageCls}" style="${styleVars}">${window.__h2hBgHtml(h.bg)}${header}`
             + side(h.team1, 'left') + side(h.team2, 'right')
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div><div class="h2h-cslot"></div></div>`

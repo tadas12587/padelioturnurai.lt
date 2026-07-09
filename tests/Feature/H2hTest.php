@@ -76,6 +76,25 @@ class H2hTest extends TestCase
             ->assertJsonPath('h2h.live_score.teams.0.point', '40');
     }
 
+    public function test_h2h_returns_animated_background_config(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 99, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'H', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata',
+                'h2h_bg_mode' => 'image', 'h2h_bg_intensity' => 'medium', 'h2h_bg_count' => 12]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('h2h.bg.mode', 'image')
+            ->assertJsonPath('h2h.bg.intensity', 'medium')
+            ->assertJsonPath('h2h.bg.count', 12);
+    }
+
     public function test_toggle_score_auto_loads_scorer_with_h2h_pair(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [

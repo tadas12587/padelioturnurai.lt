@@ -455,6 +455,28 @@ class OverlayData
                 'gap'     => $window['h2h_gap'] ?? 0,        // gap between the two teams (vw)
                 'overlap' => $window['h2h_overlap'] ?? 24,   // teammate overlap (vw)
             ],
+            'bg'          => $this->h2hBackground($window),
+        ];
+    }
+
+    /**
+     * Animated background config for the H2H window: none / gradient (colour
+     * mixing) / image (gradient + a multiplied, floating image).
+     *
+     * @param  array<string,mixed>  $window
+     * @return array<string,mixed>
+     */
+    private function h2hBackground(array $window): array
+    {
+        $mode = $window['h2h_bg_mode'] ?? 'none';
+        $intensity = $window['h2h_bg_intensity'] ?? 'subtle';
+
+        return [
+            'mode'      => in_array($mode, ['none', 'gradient', 'image'], true) ? $mode : 'none',
+            'intensity' => in_array($intensity, ['subtle', 'medium', 'bold'], true) ? $intensity : 'subtle',
+            'image'     => ! empty($window['h2h_bg_image']) ? Storage::url($window['h2h_bg_image']) : null,
+            'count'     => isset($window['h2h_bg_count']) && $window['h2h_bg_count'] !== '' ? (int) $window['h2h_bg_count'] : null,
+            'speed'     => isset($window['h2h_bg_speed']) && $window['h2h_bg_speed'] !== '' ? (float) $window['h2h_bg_speed'] : null,
         ];
     }
 
