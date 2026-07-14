@@ -308,6 +308,15 @@ class OverlayController extends Controller
             $payload['corner_position'] = $window['corner_position'] ?? 'bottom-right';
             $payload['corner_size']     = $window['corner_size'] ?? 'm';
             $payload['items']           = $data->resolveSponsors($window);
+        } elseif ($type === 'photowall') {
+            $payload['items']         = $data->resolveSponsors($window);
+            $payload['main_logo']     = ! empty($window['pw_main_logo'])
+                ? \Illuminate\Support\Facades\Storage::url($window['pw_main_logo'])
+                : ($base['logo'] ?? null);
+            $payload['main_position'] = $window['pw_main_position'] ?? 'center';
+            $payload['main_size']     = $window['pw_main_size'] ?? 'l';
+            $payload['tile_size']     = $window['pw_tile_size'] ?? 'm';
+            $payload['gap']           = $window['pw_gap'] ?? 'normal';
         } else {
             $resolved = $data->resolveWindow($tid, $window);
             if (empty($resolved['groups'])) {

@@ -273,6 +273,25 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonCount(2, 'items');
     }
 
+    public function test_photowall_window_returns_wall_config(): void
+    {
+        $gallery = \App\Models\Gallery::create(['name' => 'Rėmėjai', 'images' => ['galleries/a.png', 'galleries/b.png']]);
+        $overlay = Overlay::create([
+            'name' => 'PW', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'photowall', 'name' => 'Foto sienelė',
+                'gallery_ids' => [$gallery->id], 'pw_main_position' => 'top-left', 'pw_main_size' => 'xl',
+                'pw_tile_size' => 'l', 'pw_gap' => 'wide']],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('window_type', 'photowall')
+            ->assertJsonCount(2, 'items')
+            ->assertJsonPath('main_position', 'top-left')
+            ->assertJsonPath('tile_size', 'l');
+    }
+
     public function test_control_dock_play_is_an_exclusive_switch(): void
     {
         $overlay = Overlay::create([

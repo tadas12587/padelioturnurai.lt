@@ -135,7 +135,8 @@
       "Bash(php -r '$l=json_decode\\(file_get_contents\\(\"composer.lock\"\\),true\\); foreach\\($l[\"packages\"] as $p\\){ if\\($p[\"name\"]===\"filament/filament\"\\){echo \"installed: \".$p[\"version\"].\"\\\\n\";}}')",
       "Bash(php -l app/Models/Gallery.php)",
       "Bash(php -l app/Filament/Resources/GalleryResource.php)",
-      "Bash(git commit -q -m 'feat\\(gallery\\): delete image files from disk on removal and gallery delete *)"
+      "Bash(git commit -q -m 'feat\\(gallery\\): delete image files from disk on removal and gallery delete *)",
+      "Bash(git commit -q -m 'feat\\(overlay\\): Foto sienelė — step-and-repeat sponsor wall window *)"
     ]
   }
 }

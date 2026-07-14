@@ -113,7 +113,7 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'h2h' => 'Akistata', 'score' => 'Rezultatas', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'h2h' => 'Akistata', 'score' => 'Rezultatas', 'sponsors' => 'Rėmėjai', 'photowall' => 'Foto sienelė', 'schedule' => 'Tvarkaraštis'])
                                 ->default('groups')
                                 ->live(),
 
@@ -452,7 +452,27 @@ class OverlayResource extends Resource
                             TextInput::make('rotate_seconds')
                                 ->label('Keitimo intervalas (s)')
                                 ->numeric()->default(6)->minValue(2)
-                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors' || ($get('type') === 'h2h' && $get('h2h_show_sponsors'))),
+
+                            // ── Foto sienelė (step-and-repeat) ──
+                            Select::make('pw_tile_size')->label('Logotipų dydis sienoje')
+                                ->options(['s' => 'Maži', 'm' => 'Vidutiniai', 'l' => 'Dideli', 'xl' => 'Labai dideli'])->default('m')
+                                ->helperText('Rėmėjų logotipai kartojami per visą foną. Iš „Galerija" / „Rėmėjai iš sąrašo" / įkeltų nuotraukų.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_gap')->label('Tarpai tarp logotipų')
+                                ->options(['tight' => 'Maži', 'normal' => 'Vidutiniai', 'wide' => 'Dideli'])->default('normal')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            FileUpload::make('pw_main_logo')->label('Turnyro logo (centrinis)')
+                                ->image()->disk('public')->directory('overlay-photowall')
+                                ->helperText('Įkėlus — rodomas virš sienos pasirinktoje vietoje. Neįkėlus — imamas overlay turnyro logo.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_main_position')->label('Turnyro logo vieta')
+                                ->options(['center' => 'Centre', 'top-center' => 'Centre viršuje', 'top-left' => 'Kairėje viršuje', 'top-right' => 'Dešinėje viršuje'])
+                                ->default('center')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_main_size')->label('Turnyro logo dydis')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('l')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                         ])
                         ->collapsible()
                         ->itemLabel(fn (array $state) => $state['name'] ?? 'Langas')
@@ -462,12 +482,12 @@ class OverlayResource extends Resource
         ]);
     }
 
-    /** Sponsor source fields show for a sponsors window, or an h2h window with the bar on. */
+    /** Sponsor source fields show for a sponsors/photowall window, or an h2h window with the bar on. */
     private static function sponsorFieldsVisible(Forms\Get $get): bool
     {
         $type = $get('type') ?? 'groups';
 
-        return $type === 'sponsors' || ($type === 'h2h' && $get('h2h_show_sponsors'));
+        return in_array($type, ['sponsors', 'photowall'], true) || ($type === 'h2h' && $get('h2h_show_sponsors'));
     }
 
     public static function table(Table $table): Table

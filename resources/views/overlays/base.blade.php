@@ -93,7 +93,7 @@
         function hideEverything() {
             if (stageShown) { stage.classList.remove('in'); stageShown = false; }
             scrim.style.opacity = 0;
-            ['ov-ticker', 'draw-reveal-host', 'ov-draw', 'ov-spons', 'ov-h2h', 'ov-score'].forEach(removeHost);
+            ['ov-ticker', 'draw-reveal-host', 'ov-draw', 'ov-spons', 'ov-h2h', 'ov-score', 'ov-pw'].forEach(removeHost);
             clearInterval(window.__drawSpons); clearInterval(window.__spTimer);
             window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
             stage.innerHTML = '';
@@ -106,6 +106,7 @@
             return JSON.stringify({ t: w.window_type, g: w.groups, b: w.bracket, it: w.items,
                 sc: w.schedule, sv: w.schedule_variant, nm: w.next_match, dr: w.draw, h2: h2,
                 sc2: w.score, v: w.variant, cp: w.corner_position, csz: w.corner_size,
+                pw: [w.main_logo, w.main_position, w.main_size, w.tile_size, w.gap],
                 tt: w.tournament_title, ti: w.title, lg: w.logo, c: w.columns });
         }
 
@@ -130,6 +131,7 @@
                 if (!types.has('sponsors')) { removeHost('ov-spons'); clearInterval(window.__spTimer); }
                 if (!types.has('h2h')) removeHost('ov-h2h');
                 if (!types.has('score')) removeHost('ov-score');
+                if (!types.has('photowall')) removeHost('ov-pw');
                 if (!types.has('draw')) {
                     removeHost('ov-draw'); removeHost('draw-reveal-host');
                     clearInterval(window.__drawSpons);
