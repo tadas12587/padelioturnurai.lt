@@ -258,6 +258,21 @@ class OverlayEndpointTest extends TestCase
         $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
     }
 
+    public function test_sponsor_window_pulls_images_from_a_gallery(): void
+    {
+        $gallery = \App\Models\Gallery::create(['name' => 'Turnyro rėmėjai', 'images' => ['galleries/a.png', 'galleries/b.png']]);
+        $overlay = Overlay::create([
+            'name' => 'S', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'sponsors', 'name' => 'Rėmėjai', 'variant' => 'bar', 'gallery_ids' => [$gallery->id]]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('window_type', 'sponsors')
+            ->assertJsonCount(2, 'items');
+    }
+
     public function test_control_dock_play_is_an_exclusive_switch(): void
     {
         $overlay = Overlay::create([

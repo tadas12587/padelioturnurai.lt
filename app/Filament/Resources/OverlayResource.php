@@ -312,6 +312,10 @@ class OverlayResource extends Resource
                             Select::make('sponsor_ids')->label('Rėmėjai iš sąrašo')->multiple()
                                 ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('gallery_ids')->label('Galerija (rėmėjai)')->multiple()
+                                ->options(fn () => \App\Models\Gallery::orderBy('name')->pluck('name', 'id'))
+                                ->helperText('Pasirink galeriją — jos nuotraukos rodomos automatiškai.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
                             FileUpload::make('images')->label('Arba įkelk rėmėjų logotipus')
                                 ->image()->multiple()->reorderable()->disk('public')->directory('overlay-sponsors')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
@@ -433,6 +437,12 @@ class OverlayResource extends Resource
                                 ->label('Rėmėjai iš sąrašo')
                                 ->multiple()
                                 ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
+                            Select::make('gallery_ids')
+                                ->label('Galerija')
+                                ->multiple()
+                                ->options(fn () => \App\Models\Gallery::orderBy('name')->pluck('name', 'id'))
+                                ->helperText('Pasirink vieną ar kelias galerijas — jų nuotraukos rodomos automatiškai.')
                                 ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
                             FileUpload::make('images')
                                 ->label('Arba įkelk nuotraukas (masiškai)')

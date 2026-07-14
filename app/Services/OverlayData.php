@@ -711,6 +711,20 @@ class OverlayData
             }
         }
 
+        // Reusable named galleries — pull their images in the chosen order.
+        $galleryIds = $window['gallery_ids'] ?? [];
+        if (! empty($galleryIds)) {
+            $galleries = \App\Models\Gallery::whereIn('id', $galleryIds)->get()->keyBy('id');
+            foreach ($galleryIds as $gid) {
+                $g = $galleries->get($gid);
+                if ($g) {
+                    foreach ($g->imagePaths() as $path) {
+                        $items[] = ['logo' => Storage::url($path), 'name' => null, 'url' => null];
+                    }
+                }
+            }
+        }
+
         foreach ($window['images'] ?? [] as $path) {
             $items[] = ['logo' => Storage::url($path), 'name' => null, 'url' => null];
         }
