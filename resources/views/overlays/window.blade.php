@@ -335,6 +335,21 @@
     .sco-point { width: 2em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 1.15em; color: var(--ov-accent); }
     .sco-card.tb .sco-games { color: var(--ov-accent); }
 
+    /* ── Foto sienelė (step-and-repeat) ─────────────────────────── */
+    .pw-stage { position: fixed; inset: 0; overflow: hidden; background: var(--ov-bg); }
+    .pw-wall { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center; }
+    .pw-row { display: flex; justify-content: center; align-items: center; flex: none; }
+    .pw-tile { display: flex; align-items: center; justify-content: center; flex: none; }
+    .pw-tile img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: .92;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+    .pw-main { position: absolute; z-index: 3; display: flex; align-items: center; justify-content: center; }
+    .pw-main img { max-width: 62vw; height: auto; filter: drop-shadow(0 8px 26px rgba(0,0,0,.55)); }
+    .pw-center { inset: 0; }
+    .pw-top-center { top: 6vh; left: 50%; transform: translateX(-50%); }
+    .pw-top-left { top: 6vh; left: 5vw; }
+    .pw-top-right { top: 6vh; right: 5vw; }
+
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
        body names ~28px (TV min 24–28), big group title ~46px, ~5% safe margin. */
@@ -495,6 +510,7 @@
         if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
         if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
         if ((d.window_type || 'groups') !== 'score') { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); }
+        if ((d.window_type || 'groups') !== 'photowall') { const _pw = document.getElementById('ov-pw'); if (_pw) _pw.remove(); }
         if ((d.window_type || 'groups') !== 'draw') {
             const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
             const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
@@ -643,6 +659,39 @@
         if (!keep) stage.innerHTML = '';
         if (!sc.found) { host.innerHTML = ''; return; }
         host.innerHTML = window.__scoreCardHtml(sc, false);
+        return;
+    }
+
+    // ── Foto sienelė (step-and-repeat sponsor wall) ─────────────
+    if ((d.window_type || 'groups') === 'photowall') {
+        const host = document.getElementById('ov-pw') || (() => {
+            const el = document.createElement('div'); el.id = 'ov-pw'; document.body.appendChild(el); return el;
+        })();
+        if (!keep) stage.innerHTML = '';
+
+        const logos = (d.items || []).map((x) => x.logo).filter(Boolean);
+        const CELL = ({ s: 90, m: 130, l: 180, xl: 240 })[d.tile_size || 'm'] || 130;
+        const gap = Math.round(CELL * (({ tight: 0.18, normal: 0.4, wide: 0.75 })[d.gap || 'normal'] ?? 0.4));
+        const step = CELL + gap;
+        const W = window.innerWidth || 1920, H = window.innerHeight || 1080;
+        const cols = Math.ceil(W / step) + 2, rows = Math.ceil(H / step) + 2;
+
+        let wall = '';
+        if (logos.length) {
+            let idx = 0;
+            for (let r = 0; r < rows; r++) {
+                let cells = '';
+                for (let c = 0; c < cols + 1; c++) {
+                    cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"><img src="${logos[idx++ % logos.length]}" alt=""></div>`;
+                }
+                wall += `<div class="pw-row" style="gap:${gap}px;margin-bottom:${gap}px;${r % 2 ? `margin-left:${-Math.round(step / 2)}px` : ''}">${cells}</div>`;
+            }
+        }
+        const MAIN = ({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32;
+        const main = d.main_logo
+            ? `<div class="pw-main pw-${d.main_position || 'center'}"><img src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div>`
+            : '';
+        host.innerHTML = `<div class="pw-stage"><div class="pw-wall">${wall}</div>${main}</div>`;
         return;
     }
 
