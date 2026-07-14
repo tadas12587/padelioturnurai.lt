@@ -337,18 +337,36 @@
 
     /* ── Foto sienelė (step-and-repeat) ─────────────────────────── */
     .pw-stage { position: fixed; inset: 0; overflow: hidden; background: var(--ov-bg); }
+    /* 2-colour checkerboard from theme colours (good with the strict grid) */
+    .pw-stage.pw-checker { background-color: var(--ov-bg);
+        --pw-c2: color-mix(in srgb, var(--ov-accent) 16%, var(--ov-bg));
+        background-image:
+            linear-gradient(45deg, var(--pw-c2) 25%, transparent 25% 75%, var(--pw-c2) 75%),
+            linear-gradient(45deg, var(--pw-c2) 25%, transparent 25% 75%, var(--pw-c2) 75%);
+        background-size: var(--pw-csz, 200px) var(--pw-csz, 200px);
+        background-position: 0 0, calc(var(--pw-csz, 200px) / 2) calc(var(--pw-csz, 200px) / 2); }
     .pw-wall { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         display: flex; flex-direction: column; align-items: center; }
-    .pw-row { display: flex; justify-content: center; align-items: center; flex: none; }
+    .pw-wall.pw-diag { transform: translate(-50%, -50%) rotate(-18deg); }
+    .pw-row { display: flex; justify-content: center; align-items: center; flex: none; will-change: transform; }
     .pw-tile { display: flex; align-items: center; justify-content: center; flex: none; }
     .pw-tile img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: .9;
         filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+    /* alternating rows drift sideways and back (ping-pong) */
+    @keyframes pwSlideA { 0%, 100% { transform: translateX(calc(var(--pw-move,60px) * -1)); } 50% { transform: translateX(var(--pw-move,60px)); } }
+    @keyframes pwSlideB { 0%, 100% { transform: translateX(var(--pw-move,60px)); } 50% { transform: translateX(calc(var(--pw-move,60px) * -1)); } }
     /* branding placed on the wall (logo + free-text title) */
     .pw-el { position: absolute; z-index: 3; display: flex; align-items: center; }
+    .pw-logo-wrap { display: flex; align-items: center; justify-content: center; }
     .pw-logo { max-width: 62vw; height: auto; filter: drop-shadow(0 8px 26px rgba(0,0,0,.55)); }
     .pw-title { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
         color: var(--ov-text); line-height: 1.05; text-align: center;
         text-shadow: 0 2px 12px rgba(0,0,0,.7), 0 0 2px color-mix(in srgb, var(--ov-accent) 60%, transparent); }
+    /* solid backing panel so branding covers the tiled logos behind it */
+    .pw-panel { background: var(--ov-bg); border: 2px solid color-mix(in srgb, var(--ov-accent) 55%, transparent);
+        border-radius: 16px; box-shadow: 0 12px 44px rgba(0,0,0,.55); }
+    .pw-logo-wrap.pw-panel { padding: 2.2vw 2.6vw; }
+    .pw-title.pw-panel { padding: .45em .9em; text-shadow: none; }
     .pw-pos-center        { inset: 0; justify-content: center; }
     .pw-pos-top-center    { top: 5vh; left: 0; right: 0; justify-content: center; }
     .pw-pos-bottom-center { bottom: 5vh; left: 0; right: 0; justify-content: center; }
@@ -677,11 +695,15 @@
         if (!keep) stage.innerHTML = '';
 
         const logos = (d.items || []).map((x) => x.logo).filter(Boolean);
+        const layout = d.layout_variant || 'brick';
+        const anim = d.animate || 'none';
         const CELL = ({ s: 90, m: 130, l: 180, xl: 240 })[d.tile_size || 'm'] || 130;
         const gap = Math.round(CELL * (({ tight: 0.18, normal: 0.4, wide: 0.75 })[d.gap || 'normal'] ?? 0.4));
         const step = CELL + gap;
         const W = window.innerWidth || 1920, H = window.innerHeight || 1080;
-        const cols = Math.ceil(W / step) + 2, rows = Math.ceil(H / step) + 2;
+        const buf = layout === 'diagonal' ? 6 : (anim === 'slide' ? 4 : 2);
+        const cols = Math.ceil(W / step) + buf, rows = Math.ceil(H / step) + buf;
+        const dur = d.anim_speed && d.anim_speed > 0 ? d.anim_speed : 9;
 
         let wall = '';
         if (logos.length) {
@@ -691,19 +713,25 @@
                 for (let c = 0; c < cols + 1; c++) {
                     cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"><img src="${logos[idx++ % logos.length]}" alt=""></div>`;
                 }
-                wall += `<div class="pw-row" style="gap:${gap}px;margin-bottom:${gap}px;${r % 2 ? `margin-left:${-Math.round(step / 2)}px` : ''}">${cells}</div>`;
+                const off = (layout === 'brick' && r % 2) ? `margin-left:${-Math.round(step / 2)}px;` : '';
+                const move = anim === 'slide' ? `--pw-move:${step}px;animation:pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite;` : '';
+                wall += `<div class="pw-row" style="gap:${gap}px;margin-bottom:${gap}px;${off}${move}">${cells}</div>`;
             }
         }
         const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const MAIN = ({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32;
         const main = d.main_logo
-            ? `<div class="pw-el pw-pos-${d.main_position || 'center'}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div>`
+            ? `<div class="pw-el pw-pos-${d.main_position || 'center'}"><div class="pw-logo-wrap${d.main_bg ? ' pw-panel' : ''}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div></div>`
             : '';
         const TSZ = ({ s: 3, m: 4.5, l: 6, xl: 8 })[d.title_size || 'm'] || 4.5;
         const title = d.title
-            ? `<div class="pw-el pw-pos-${d.title_position || 'bottom-center'}"><div class="pw-title" style="font-size:${TSZ}vw">${esc(d.title)}</div></div>`
+            ? `<div class="pw-el pw-pos-${d.title_position || 'bottom-center'}"><div class="pw-title${d.title_bg ? ' pw-panel' : ''}" style="font-size:${TSZ}vw">${esc(d.title)}</div></div>`
             : '';
-        host.innerHTML = `<div class="pw-stage"><div class="pw-wall">${wall}</div>${main}${title}</div>`;
+
+        const stageCls = 'pw-stage' + (d.bg_pattern === 'checker' ? ' pw-checker' : '');
+        const stageStyle = d.bg_pattern === 'checker' ? `--pw-csz:${step * 2}px` : '';
+        const wallCls = 'pw-wall' + (layout === 'diagonal' ? ' pw-diag' : '');
+        host.innerHTML = `<div class="${stageCls}" style="${stageStyle}"><div class="${wallCls}">${wall}</div>${main}${title}</div>`;
         return;
     }
 

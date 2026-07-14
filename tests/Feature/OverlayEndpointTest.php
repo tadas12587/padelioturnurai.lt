@@ -280,7 +280,8 @@ class OverlayEndpointTest extends TestCase
             'name' => 'PW', 'type' => 'group_standings', 'tournament_external_id' => '10424',
             'windows' => [['id' => 'w1', 'type' => 'photowall', 'name' => 'Foto sienelė',
                 'gallery_ids' => [$gallery->id], 'pw_main_position' => 'top-left', 'pw_main_size' => 'xl',
-                'pw_tile_size' => 'l', 'pw_gap' => 'wide', 'pw_title' => 'Padel Open 2026', 'pw_title_position' => 'bottom-center']],
+                'pw_tile_size' => 'l', 'pw_gap' => 'wide', 'pw_title' => 'Padel Open 2026', 'pw_title_position' => 'bottom-center',
+                'pw_layout' => 'grid', 'pw_bg_pattern' => 'checker', 'pw_animate' => 'slide', 'pw_title_bg' => true]],
             'state' => ['active_window_id' => 'w1', 'next_match' => ''],
         ]);
 
@@ -291,7 +292,11 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('main_position', 'top-left')
             ->assertJsonPath('tile_size', 'l')
             ->assertJsonPath('title', 'Padel Open 2026')
-            ->assertJsonPath('title_position', 'bottom-center');
+            ->assertJsonPath('title_position', 'bottom-center')
+            ->assertJsonPath('layout_variant', 'grid')
+            ->assertJsonPath('bg_pattern', 'checker')
+            ->assertJsonPath('animate', 'slide')
+            ->assertJsonPath('title_bg', true);
     }
 
     public function test_control_dock_play_is_an_exclusive_switch(): void

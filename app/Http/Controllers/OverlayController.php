@@ -315,11 +315,17 @@ class OverlayController extends Controller
                 : ($base['logo'] ?? null);
             $payload['main_position'] = $window['pw_main_position'] ?? 'center';
             $payload['main_size']     = $window['pw_main_size'] ?? 'l';
+            $payload['main_bg']       = (bool) ($window['pw_logo_bg'] ?? true);
             $payload['tile_size']     = $window['pw_tile_size'] ?? 'm';
             $payload['gap']           = $window['pw_gap'] ?? 'normal';
+            $payload['layout_variant'] = $window['pw_layout'] ?? 'brick';
+            $payload['bg_pattern']    = $window['pw_bg_pattern'] ?? 'solid';
+            $payload['animate']       = $window['pw_animate'] ?? 'none';
+            $payload['anim_speed']    = isset($window['pw_anim_speed']) && $window['pw_anim_speed'] !== '' ? (float) $window['pw_anim_speed'] : null;
             $payload['title']         = $window['pw_title'] ?? null;
             $payload['title_position'] = $window['pw_title_position'] ?? 'bottom-center';
             $payload['title_size']    = $window['pw_title_size'] ?? 'm';
+            $payload['title_bg']      = (bool) ($window['pw_title_bg'] ?? true);
         } else {
             $resolved = $data->resolveWindow($tid, $window);
             if (empty($resolved['groups'])) {
