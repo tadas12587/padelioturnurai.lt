@@ -462,6 +462,19 @@ class OverlayResource extends Resource
                             Select::make('pw_gap')->label('Tarpai tarp logotipų')
                                 ->options(['tight' => 'Maži', 'normal' => 'Vidutiniai', 'wide' => 'Dideli'])->default('normal')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_layout')->label('Išdėstymas')
+                                ->options(['brick' => 'Plytelės (paslinktos eilės)', 'grid' => 'Griežtas tinklelis', 'diagonal' => 'Įstrižas'])->default('brick')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_bg_pattern')->label('Fono raštas')
+                                ->options(['solid' => 'Vientisas (temos spalva)', 'checker' => 'Šachmatai (2 spalvos)'])->default('solid')
+                                ->helperText('Šachmatai gerai tinka su griežtu tinkleliu.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_animate')->label('Animacija')
+                                ->options(['none' => 'Nėra', 'slide' => 'Slinkimas į šonus (pirmyn–atgal)'])->default('none')->live()
+                                ->helperText('Gretimos eilės slenka į priešingas puses ir atgal.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_anim_speed')->label('Animacijos greitis (s, nebūtina)')->numeric()->minValue(3)->maxValue(30)->placeholder('9')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall' && ($get('pw_animate') ?? 'none') === 'slide'),
                             FileUpload::make('pw_main_logo')->label('Turnyro logo')
                                 ->image()->disk('public')->directory('overlay-photowall')
                                 ->helperText('Įkėlus — rodomas ant sienos pasirinktoje vietoje. Neįkėlus — imamas overlay turnyro logo.')
@@ -472,6 +485,8 @@ class OverlayResource extends Resource
                             Select::make('pw_main_size')->label('Turnyro logo dydis')
                                 ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('l')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Toggle::make('pw_logo_bg')->label('Fonas po logo (uždengia logotipus)')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             TextInput::make('pw_title')->label('Turnyro pavadinimas (laisva forma)')
                                 ->helperText('Nebūtina. Rodomas ant sienos pasirinktoje vietoje; spalva iš temos.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
@@ -480,6 +495,8 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Select::make('pw_title_size')->label('Pavadinimo dydis')
                                 ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Toggle::make('pw_title_bg')->label('Fonas po pavadinimu (uždengia logotipus)')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                         ])
                         ->collapsible()
