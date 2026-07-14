@@ -136,7 +136,8 @@
       "Bash(php -l app/Models/Gallery.php)",
       "Bash(php -l app/Filament/Resources/GalleryResource.php)",
       "Bash(git commit -q -m 'feat\\(gallery\\): delete image files from disk on removal and gallery delete *)",
-      "Bash(git commit -q -m 'feat\\(overlay\\): Foto sienelė — step-and-repeat sponsor wall window *)"
+      "Bash(git commit -q -m 'feat\\(overlay\\): Foto sienelė — step-and-repeat sponsor wall window *)",
+      "Bash(git commit -q -m 'feat\\(photowall\\): free-text title, theme colours, true-corner logo placement *)"
     ]
   }
 }
