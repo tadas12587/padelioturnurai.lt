@@ -473,7 +473,10 @@ class OverlayResource extends Resource
                                 ->options(['none' => 'Nėra', 'slide' => 'Slinkimas į šonus (pirmyn–atgal)'])->default('none')->live()
                                 ->helperText('Gretimos eilės slenka į priešingas puses ir atgal.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
-                            TextInput::make('pw_anim_speed')->label('Animacijos greitis (s, nebūtina)')->numeric()->minValue(3)->maxValue(30)->placeholder('9')
+                            TextInput::make('pw_anim_speed')->label('Animacijos greitis')
+                                ->type('range')->default(35)
+                                ->extraInputAttributes(['min' => 1, 'max' => 100, 'step' => 1])
+                                ->helperText('Kairė — labai labai lėtai (vos matoma), dešinė — greitai.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall' && ($get('pw_animate') ?? 'none') === 'slide'),
                             FileUpload::make('pw_main_logo')->label('Turnyro logo')
                                 ->image()->disk('public')->directory('overlay-photowall')
@@ -482,8 +485,15 @@ class OverlayResource extends Resource
                             Select::make('pw_main_position')->label('Turnyro logo vieta')
                                 ->options(self::photowallPositions())->default('center')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
-                            Select::make('pw_main_size')->label('Turnyro logo dydis')
+                            Select::make('pw_main_size')->label('Turnyro logo dydis (greitas)')
                                 ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('l')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_main_size_num')->label('Logo dydis tiksliai (plotis, vw)')->numeric()->minValue(2)->maxValue(90)->step(0.5)
+                                ->placeholder('Auto (pagal „greitą" dydį)')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_main_dx')->label('Logo poslinkis X (vw, gali būti neigiamas / už krašto)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_main_dy')->label('Logo poslinkis Y (vh)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Toggle::make('pw_logo_bg')->label('Fonas po logo (uždengia logotipus)')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
@@ -493,8 +503,15 @@ class OverlayResource extends Resource
                             Select::make('pw_title_position')->label('Pavadinimo vieta')
                                 ->options(self::photowallPositions())->default('bottom-center')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
-                            Select::make('pw_title_size')->label('Pavadinimo dydis')
+                            Select::make('pw_title_size')->label('Pavadinimo dydis (greitas)')
                                 ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title_size_num')->label('Pavadinimo dydis tiksliai (šrifto, vw)')->numeric()->minValue(1)->maxValue(20)->step(0.1)
+                                ->placeholder('Auto')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title_dx')->label('Pavadinimo poslinkis X (vw, gali būti neigiamas / už krašto)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title_dy')->label('Pavadinimo poslinkis Y (vh)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Toggle::make('pw_title_bg')->label('Fonas po pavadinimu (uždengia logotipus)')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),

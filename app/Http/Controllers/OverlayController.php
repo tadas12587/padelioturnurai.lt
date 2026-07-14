@@ -313,18 +313,25 @@ class OverlayController extends Controller
             $payload['main_logo']     = ! empty($window['pw_main_logo'])
                 ? \Illuminate\Support\Facades\Storage::url($window['pw_main_logo'])
                 : ($base['logo'] ?? null);
+            $num = fn ($k) => isset($window[$k]) && $window[$k] !== '' ? (float) $window[$k] : null;
             $payload['main_position'] = $window['pw_main_position'] ?? 'center';
             $payload['main_size']     = $window['pw_main_size'] ?? 'l';
+            $payload['main_size_num'] = $num('pw_main_size_num');
+            $payload['main_dx']       = $num('pw_main_dx') ?? 0;
+            $payload['main_dy']       = $num('pw_main_dy') ?? 0;
             $payload['main_bg']       = (bool) ($window['pw_logo_bg'] ?? true);
             $payload['tile_size']     = $window['pw_tile_size'] ?? 'm';
             $payload['gap']           = $window['pw_gap'] ?? 'normal';
             $payload['layout_variant'] = $window['pw_layout'] ?? 'brick';
             $payload['bg_pattern']    = $window['pw_bg_pattern'] ?? 'solid';
             $payload['animate']       = $window['pw_animate'] ?? 'none';
-            $payload['anim_speed']    = isset($window['pw_anim_speed']) && $window['pw_anim_speed'] !== '' ? (float) $window['pw_anim_speed'] : null;
+            $payload['anim_speed']    = $num('pw_anim_speed');
             $payload['title']         = $window['pw_title'] ?? null;
             $payload['title_position'] = $window['pw_title_position'] ?? 'bottom-center';
             $payload['title_size']    = $window['pw_title_size'] ?? 'm';
+            $payload['title_size_num'] = $num('pw_title_size_num');
+            $payload['title_dx']      = $num('pw_title_dx') ?? 0;
+            $payload['title_dy']      = $num('pw_title_dy') ?? 0;
             $payload['title_bg']      = (bool) ($window['pw_title_bg'] ?? true);
         } else {
             $resolved = $data->resolveWindow($tid, $window);
