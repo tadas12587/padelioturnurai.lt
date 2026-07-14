@@ -106,7 +106,7 @@
             return JSON.stringify({ t: w.window_type, g: w.groups, b: w.bracket, it: w.items,
                 sc: w.schedule, sv: w.schedule_variant, nm: w.next_match, dr: w.draw, h2: h2,
                 sc2: w.score, v: w.variant, cp: w.corner_position, csz: w.corner_size,
-                pw: [w.main_logo, w.main_position, w.main_size, w.tile_size, w.gap],
+                pw: [w.main_logo, w.main_position, w.main_size, w.tile_size, w.gap, w.title, w.title_position, w.title_size],
                 tt: w.tournament_title, ti: w.title, lg: w.logo, c: w.columns });
         }
 

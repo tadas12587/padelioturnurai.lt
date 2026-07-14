@@ -341,14 +341,21 @@
         display: flex; flex-direction: column; align-items: center; }
     .pw-row { display: flex; justify-content: center; align-items: center; flex: none; }
     .pw-tile { display: flex; align-items: center; justify-content: center; flex: none; }
-    .pw-tile img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: .92;
+    .pw-tile img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: .9;
         filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
-    .pw-main { position: absolute; z-index: 3; display: flex; align-items: center; justify-content: center; }
-    .pw-main img { max-width: 62vw; height: auto; filter: drop-shadow(0 8px 26px rgba(0,0,0,.55)); }
-    .pw-center { inset: 0; }
-    .pw-top-center { top: 6vh; left: 50%; transform: translateX(-50%); }
-    .pw-top-left { top: 6vh; left: 5vw; }
-    .pw-top-right { top: 6vh; right: 5vw; }
+    /* branding placed on the wall (logo + free-text title) */
+    .pw-el { position: absolute; z-index: 3; display: flex; align-items: center; }
+    .pw-logo { max-width: 62vw; height: auto; filter: drop-shadow(0 8px 26px rgba(0,0,0,.55)); }
+    .pw-title { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        color: var(--ov-text); line-height: 1.05; text-align: center;
+        text-shadow: 0 2px 12px rgba(0,0,0,.7), 0 0 2px color-mix(in srgb, var(--ov-accent) 60%, transparent); }
+    .pw-pos-center        { inset: 0; justify-content: center; }
+    .pw-pos-top-center    { top: 5vh; left: 0; right: 0; justify-content: center; }
+    .pw-pos-bottom-center { bottom: 5vh; left: 0; right: 0; justify-content: center; }
+    .pw-pos-top-left      { top: 5vh; left: 4vw; }
+    .pw-pos-top-right     { top: 5vh; right: 4vw; }
+    .pw-pos-bottom-left   { bottom: 5vh; left: 4vw; }
+    .pw-pos-bottom-right  { bottom: 5vh; right: 4vw; }
 
     /* ── Draw (burtai) ───────────────────────────────────────── */
     /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
@@ -687,11 +694,16 @@
                 wall += `<div class="pw-row" style="gap:${gap}px;margin-bottom:${gap}px;${r % 2 ? `margin-left:${-Math.round(step / 2)}px` : ''}">${cells}</div>`;
             }
         }
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const MAIN = ({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32;
         const main = d.main_logo
-            ? `<div class="pw-main pw-${d.main_position || 'center'}"><img src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div>`
+            ? `<div class="pw-el pw-pos-${d.main_position || 'center'}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div>`
             : '';
-        host.innerHTML = `<div class="pw-stage"><div class="pw-wall">${wall}</div>${main}</div>`;
+        const TSZ = ({ s: 3, m: 4.5, l: 6, xl: 8 })[d.title_size || 'm'] || 4.5;
+        const title = d.title
+            ? `<div class="pw-el pw-pos-${d.title_position || 'bottom-center'}"><div class="pw-title" style="font-size:${TSZ}vw">${esc(d.title)}</div></div>`
+            : '';
+        host.innerHTML = `<div class="pw-stage"><div class="pw-wall">${wall}</div>${main}${title}</div>`;
         return;
     }
 

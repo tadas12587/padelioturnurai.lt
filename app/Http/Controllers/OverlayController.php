@@ -317,6 +317,9 @@ class OverlayController extends Controller
             $payload['main_size']     = $window['pw_main_size'] ?? 'l';
             $payload['tile_size']     = $window['pw_tile_size'] ?? 'm';
             $payload['gap']           = $window['pw_gap'] ?? 'normal';
+            $payload['title']         = $window['pw_title'] ?? null;
+            $payload['title_position'] = $window['pw_title_position'] ?? 'bottom-center';
+            $payload['title_size']    = $window['pw_title_size'] ?? 'm';
         } else {
             $resolved = $data->resolveWindow($tid, $window);
             if (empty($resolved['groups'])) {

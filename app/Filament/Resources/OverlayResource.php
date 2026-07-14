@@ -462,16 +462,24 @@ class OverlayResource extends Resource
                             Select::make('pw_gap')->label('Tarpai tarp logotipų')
                                 ->options(['tight' => 'Maži', 'normal' => 'Vidutiniai', 'wide' => 'Dideli'])->default('normal')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
-                            FileUpload::make('pw_main_logo')->label('Turnyro logo (centrinis)')
+                            FileUpload::make('pw_main_logo')->label('Turnyro logo')
                                 ->image()->disk('public')->directory('overlay-photowall')
-                                ->helperText('Įkėlus — rodomas virš sienos pasirinktoje vietoje. Neįkėlus — imamas overlay turnyro logo.')
+                                ->helperText('Įkėlus — rodomas ant sienos pasirinktoje vietoje. Neįkėlus — imamas overlay turnyro logo.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Select::make('pw_main_position')->label('Turnyro logo vieta')
-                                ->options(['center' => 'Centre', 'top-center' => 'Centre viršuje', 'top-left' => 'Kairėje viršuje', 'top-right' => 'Dešinėje viršuje'])
-                                ->default('center')
+                                ->options(self::photowallPositions())->default('center')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Select::make('pw_main_size')->label('Turnyro logo dydis')
                                 ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('l')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title')->label('Turnyro pavadinimas (laisva forma)')
+                                ->helperText('Nebūtina. Rodomas ant sienos pasirinktoje vietoje; spalva iš temos.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_title_position')->label('Pavadinimo vieta')
+                                ->options(self::photowallPositions())->default('bottom-center')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_title_size')->label('Pavadinimo dydis')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('m')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                         ])
                         ->collapsible()
@@ -480,6 +488,20 @@ class OverlayResource extends Resource
                         ->addActionLabel('Pridėti langą'),
                 ]),
         ]);
+    }
+
+    /** @return array<string,string> placement options for photo-wall logo/title. */
+    private static function photowallPositions(): array
+    {
+        return [
+            'center'        => 'Centre',
+            'top-center'    => 'Centre viršuje',
+            'top-left'      => 'Kairėje viršuje',
+            'top-right'     => 'Dešinėje viršuje',
+            'bottom-center' => 'Centre apačioje',
+            'bottom-left'   => 'Kairėje apačioje',
+            'bottom-right'  => 'Dešinėje apačioje',
+        ];
     }
 
     /** Sponsor source fields show for a sponsors/photowall window, or an h2h window with the bar on. */
