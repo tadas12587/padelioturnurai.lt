@@ -140,7 +140,8 @@
       "Bash(git commit -q -m 'feat\\(photowall\\): free-text title, theme colours, true-corner logo placement *)",
       "Bash(git commit -q -m 'feat\\(photowall\\): backing panels, layout variants, checker bg, slide animation *)",
       "Bash(grep -n 'type\\\\b\\\\|getType\\\\|$type' vendor/filament/forms/src/Components/TextInput.php)",
-      "Bash(git commit -q -m 'feat\\(photowall\\): slider speed \\(down to barely-moving\\) + numeric size/offset fine-tuning *)"
+      "Bash(git commit -q -m 'feat\\(photowall\\): slider speed \\(down to barely-moving\\) + numeric size/offset fine-tuning *)",
+      "Bash(git commit -q -m 'fix\\(photowall\\): tournament logo layers above the title text *)"
     ]
   }
 }
