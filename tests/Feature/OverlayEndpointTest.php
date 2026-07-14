@@ -281,7 +281,8 @@ class OverlayEndpointTest extends TestCase
             'windows' => [['id' => 'w1', 'type' => 'photowall', 'name' => 'Foto sienelė',
                 'gallery_ids' => [$gallery->id], 'pw_main_position' => 'top-left', 'pw_main_size' => 'xl',
                 'pw_tile_size' => 'l', 'pw_gap' => 'wide', 'pw_title' => 'Padel Open 2026', 'pw_title_position' => 'bottom-center',
-                'pw_layout' => 'grid', 'pw_bg_pattern' => 'checker', 'pw_animate' => 'slide', 'pw_title_bg' => true]],
+                'pw_layout' => 'grid', 'pw_bg_pattern' => 'checker', 'pw_animate' => 'slide', 'pw_title_bg' => true,
+                'pw_anim_speed' => 8, 'pw_main_size_num' => 26.5, 'pw_main_dx' => -4, 'pw_title_dy' => 3]],
             'state' => ['active_window_id' => 'w1', 'next_match' => ''],
         ]);
 
@@ -296,7 +297,11 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('layout_variant', 'grid')
             ->assertJsonPath('bg_pattern', 'checker')
             ->assertJsonPath('animate', 'slide')
-            ->assertJsonPath('title_bg', true);
+            ->assertJsonPath('title_bg', true)
+            ->assertJsonPath('anim_speed', 8)
+            ->assertJsonPath('main_size_num', 26.5)
+            ->assertJsonPath('main_dx', -4)
+            ->assertJsonPath('title_dy', 3);
     }
 
     public function test_control_dock_play_is_an_exclusive_switch(): void

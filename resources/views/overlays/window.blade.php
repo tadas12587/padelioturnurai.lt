@@ -703,7 +703,9 @@
         const W = window.innerWidth || 1920, H = window.innerHeight || 1080;
         const buf = layout === 'diagonal' ? 6 : (anim === 'slide' ? 4 : 2);
         const cols = Math.ceil(W / step) + buf, rows = Math.ceil(H / step) + buf;
-        const dur = d.anim_speed && d.anim_speed > 0 ? d.anim_speed : 9;
+        // speed is a 1..100 slider; map to a duration (3s fast … 240s barely moving)
+        const sp = Math.max(1, Math.min(100, (d.anim_speed && d.anim_speed > 0) ? d.anim_speed : 35));
+        const dur = (3 + ((100 - sp) / 99) * (240 - 3)).toFixed(1);
 
         let wall = '';
         if (logos.length) {
@@ -719,13 +721,14 @@
             }
         }
         const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-        const MAIN = ({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32;
+        const off = (dx, dy) => (dx || dy) ? `transform:translate(${dx || 0}vw,${dy || 0}vh);` : '';
+        const MAIN = (d.main_size_num > 0) ? d.main_size_num : (({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32);
         const main = d.main_logo
-            ? `<div class="pw-el pw-pos-${d.main_position || 'center'}"><div class="pw-logo-wrap${d.main_bg ? ' pw-panel' : ''}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div></div>`
+            ? `<div class="pw-el pw-pos-${d.main_position || 'center'}" style="${off(d.main_dx, d.main_dy)}"><div class="pw-logo-wrap${d.main_bg ? ' pw-panel' : ''}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div></div>`
             : '';
-        const TSZ = ({ s: 3, m: 4.5, l: 6, xl: 8 })[d.title_size || 'm'] || 4.5;
+        const TSZ = (d.title_size_num > 0) ? d.title_size_num : (({ s: 3, m: 4.5, l: 6, xl: 8 })[d.title_size || 'm'] || 4.5);
         const title = d.title
-            ? `<div class="pw-el pw-pos-${d.title_position || 'bottom-center'}"><div class="pw-title${d.title_bg ? ' pw-panel' : ''}" style="font-size:${TSZ}vw">${esc(d.title)}</div></div>`
+            ? `<div class="pw-el pw-pos-${d.title_position || 'bottom-center'}" style="${off(d.title_dx, d.title_dy)}"><div class="pw-title${d.title_bg ? ' pw-panel' : ''}" style="font-size:${TSZ}vw">${esc(d.title)}</div></div>`
             : '';
 
         const stageCls = 'pw-stage' + (d.bg_pattern === 'checker' ? ' pw-checker' : '');
