@@ -131,7 +131,11 @@
       "Bash(git commit -q -m 'fix\\(control\\): OBS dock is an exclusive switch again \\(old off, new on\\) *)",
       "Bash(php -l app/Services/OverlayData.php)",
       "Bash(git commit -q -m 'feat\\(h2h\\): animated background — colour-mixing gradient and/or floating image *)",
-      "Bash(git commit -q -m 'feat\\(overlay\\): reusable named image galleries for sponsor layers *)"
+      "Bash(git commit -q -m 'feat\\(overlay\\): reusable named image galleries for sponsor layers *)",
+      "Bash(php -r '$l=json_decode\\(file_get_contents\\(\"composer.lock\"\\),true\\); foreach\\($l[\"packages\"] as $p\\){ if\\($p[\"name\"]===\"filament/filament\"\\){echo \"installed: \".$p[\"version\"].\"\\\\n\";}}')",
+      "Bash(php -l app/Models/Gallery.php)",
+      "Bash(php -l app/Filament/Resources/GalleryResource.php)",
+      "Bash(git commit -q -m 'feat\\(gallery\\): delete image files from disk on removal and gallery delete *)"
     ]
   }
 }
