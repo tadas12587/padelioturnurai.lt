@@ -357,6 +357,7 @@
     @keyframes pwSlideB { 0%, 100% { transform: translateX(var(--pw-move,60px)); } 50% { transform: translateX(calc(var(--pw-move,60px) * -1)); } }
     /* branding placed on the wall (logo + free-text title) */
     .pw-el { position: absolute; z-index: 3; display: flex; align-items: center; }
+    .pw-el.pw-front { z-index: 4; } /* tournament logo sits above the title text */
     .pw-logo-wrap { display: flex; align-items: center; justify-content: center; }
     .pw-logo { max-width: 62vw; height: auto; filter: drop-shadow(0 8px 26px rgba(0,0,0,.55)); }
     .pw-title { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
@@ -724,7 +725,7 @@
         const off = (dx, dy) => (dx || dy) ? `transform:translate(${dx || 0}vw,${dy || 0}vh);` : '';
         const MAIN = (d.main_size_num > 0) ? d.main_size_num : (({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32);
         const main = d.main_logo
-            ? `<div class="pw-el pw-pos-${d.main_position || 'center'}" style="${off(d.main_dx, d.main_dy)}"><div class="pw-logo-wrap${d.main_bg ? ' pw-panel' : ''}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div></div>`
+            ? `<div class="pw-el pw-front pw-pos-${d.main_position || 'center'}" style="${off(d.main_dx, d.main_dy)}"><div class="pw-logo-wrap${d.main_bg ? ' pw-panel' : ''}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div></div>`
             : '';
         const TSZ = (d.title_size_num > 0) ? d.title_size_num : (({ s: 3, m: 4.5, l: 6, xl: 8 })[d.title_size || 'm'] || 4.5);
         const title = d.title
