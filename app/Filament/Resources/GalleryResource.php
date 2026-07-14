@@ -12,6 +12,7 @@ use Filament\Tables\Actions\DeleteAction;
 use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Storage;
 
 class GalleryResource extends Resource
 {
@@ -39,7 +40,9 @@ class GalleryResource extends Resource
                 ->label('Nuotraukos')
                 ->image()->multiple()->reorderable()->appendFiles()
                 ->disk('public')->directory('galleries')
-                ->helperText('Įkelk kelias nuotraukas iškart; vilkdamas keisk eiliškumą. PNG su permatomu fonu — geriausia logotipams.'),
+                // Removing a photo here deletes the file from the server too.
+                ->deleteUploadedFileUsing(fn (string $file) => Storage::disk('public')->delete($file))
+                ->helperText('Įkelk kelias nuotraukas iškart; vilkdamas keisk eiliškumą. Pašalinus nuotrauką — ji ištrinama ir iš serverio.'),
         ]);
     }
 
