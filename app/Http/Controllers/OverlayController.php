@@ -384,6 +384,7 @@ class OverlayController extends Controller
 
         $validated = $request->validate([
             'tournament_id'        => 'required',
+            'partial'              => 'boolean',
             'title'                => 'nullable|string',
             'categories'           => 'array',
             'groups_by_category'   => 'array',
@@ -393,16 +394,27 @@ class OverlayController extends Controller
             'participants_by_category' => 'array',
         ]);
 
+        $tid = (string) $validated['tournament_id'];
+
+        // A "partial" push only carries what the bridge could actually fetch
+        // (e.g. the upstream tournament query is down). Keep whatever we
+        // already stored for the missing keys instead of wiping it.
+        $partial  = (bool) ($validated['partial'] ?? false);
+        $existing = $partial ? (OverlaySnapshot::where('tournament_external_id', $tid)->value('payload') ?? []) : [];
+        $keep = fn (string $key, $default) => array_key_exists($key, $validated) && $validated[$key] !== null
+            ? $validated[$key]
+            : ($existing[$key] ?? $default);
+
         OverlaySnapshot::updateOrCreate(
-            ['tournament_external_id' => (string) $validated['tournament_id']],
+            ['tournament_external_id' => $tid],
             ['payload' => [
-                'title'                => $validated['title'] ?? null,
-                'categories'           => $validated['categories'] ?? [],
-                'groups_by_category'   => $validated['groups_by_category'] ?? [],
-                'category_stages'      => $validated['category_stages'] ?? [],
-                'brackets_by_category' => $validated['brackets_by_category'] ?? [],
-                'matches'              => $validated['matches'] ?? [],
-                'participants_by_category' => $validated['participants_by_category'] ?? [],
+                'title'                => $keep('title', null),
+                'categories'           => $keep('categories', []),
+                'groups_by_category'   => $keep('groups_by_category', []),
+                'category_stages'      => $keep('category_stages', []),
+                'brackets_by_category' => $keep('brackets_by_category', []),
+                'matches'              => $keep('matches', []),
+                'participants_by_category' => $keep('participants_by_category', []),
             ]],
         );
 
