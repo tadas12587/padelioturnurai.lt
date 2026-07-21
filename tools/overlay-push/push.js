@@ -475,6 +475,13 @@ async function fetchDrawCategories(tournamentId) {
 async function pushOnce(tournamentId) {
   cycleN++;
   const key = String(tournamentId);
+
+  // Susitikimus paimame pirmiausia — iš jų atkuriame lenteles/bracketus IR
+  // papildome kategorijų sąrašą (tournamentDrawCategories duoda tik tas, kurios
+  // turi bracketą — grupinės-only kategorijos ten nepatenka).
+  let matches = [];
+  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
+
   let tournament = null;
   try {
     tournament = await fetchTournament(tournamentId);
@@ -497,21 +504,31 @@ async function pushOnce(tournamentId) {
     haveTitle = false;
     try {
       categories = await fetchDrawCategories(tournamentId);
-      console.error(`  ↩︎ Kategorijos gautos apeinamuoju keliu (${categories.length}); pavadinimas paliekamas ankstesnis`);
     } catch (e) {
-      console.error(`  ! Ir atsarginis kategorijų kelias nepavyko: ${e.message}`);
+      console.error(`  ! Kategorijų kelias nepavyko: ${e.message}`);
+    }
+  }
+
+  // Papildome kategorijas tomis, kurios randamos tik susitikimuose (grupinės).
+  {
+    const have = new Set(categories.map((c) => String(c.id)));
+    const seen = new Map();
+    for (const m of matches) {
+      const cid = m.category_id;
+      if (cid != null && !have.has(String(cid)) && !seen.has(String(cid))) {
+        seen.set(String(cid), { id: cid, mde: null, category: { id: cid, name: m.category || ('#' + cid) } });
+      }
+    }
+    if (seen.size) {
+      categories = categories.concat([...seen.values()]);
+      console.error(`  ↩︎ Kategorijos papildytos iš matches (+${seen.size}); iš viso ${categories.length}`);
     }
   }
 
   const groupsByCategory = {};
   const participantsByCategory = {};
 
-  // Susitikimus paimame anksti — iš jų atkuriame lenteles/bracketus, jei
-  // Tournated „groups"/„draws" grąžina tuščią arba Unauthorized.
-  let matches = [];
-  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
-
-  const recheck = (cycleN % RECHECK_EVERY) === 0; // ret:kartais perpatikrinam ar atrakino
+  const recheck = (cycleN % RECHECK_EVERY) === 0; // kartais perpatikrinam ar atrakino
   for (const cat of categories) {
     const g = gateCache.get(String(cat.id)) || {};
 
