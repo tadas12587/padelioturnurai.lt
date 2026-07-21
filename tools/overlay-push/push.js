@@ -22,7 +22,7 @@ const INGEST_TOKEN   = process.env.INGEST_TOKEN   || 'ugx490pqlkt3nycwmdojfeb5ah
 // Turnyrų ID sąrašą imame iš serverio (kuriuos naudoja overlay'ai admin'e).
 // TOURNAMENT_ID — neprivalomas atsarginis variantas, jei serveris nepasiekiamas.
 const TOURNAMENT_ID  = process.env.TOURNAMENT_ID  || '';
-const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 7000);         // kas kiek siųsti (ms)
+const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 30000);        // grafikas/rezultatai kas 30 s
 
 const GRAPHQL_URL = 'https://api.tournated.com/graphql';
 const ORIGIN      = 'https://play.padel.lt';
@@ -492,7 +492,7 @@ let cycleN = 0;
 // tad juos perskaičiuojam rečiau — kas FULL_EVERY ciklų. Rungtynės (grafikas,
 // rezultatai) atnaujinamos KIEKVIENĄ ciklą, kad matytųsi greitai.
 const heavyCache = new Map();
-const FULL_EVERY = Number(process.env.FULL_EVERY || 4);
+const FULL_EVERY = Number(process.env.FULL_EVERY || 2); // sunkūs duomenys ~kas 2 ciklus (≈60 s)
 let tournamentBroken = false; // ar „tournament(id:)" šiuo metu neveikia (skip'inam)
 let heavyRefreshing = false;  // ar šiuo metu fone atnaujinami „sunkūs" duomenys
 
@@ -711,7 +711,7 @@ async function loop() {
   console.log(`🏓 Overlay push paleistas`);
   console.log(`   Turnyrai: iš admin (auto)${TOURNAMENT_ID ? ` arba ${TOURNAMENT_ID}` : ''}`);
   console.log(`   Svetainė: ${SITE_URL}`);
-  console.log(`   Intervalas: ${POLL_INTERVAL_MS / 1000}s`);
+  console.log(`   Grafikas/rezultatai: kas ${POLL_INTERVAL_MS / 1000}s | grupės/bracketai/dalyviai: kas ~${(POLL_INTERVAL_MS * FULL_EVERY) / 1000}s`);
   if (TOURNATED_TOKEN) {
     let exp = '';
     try { const pl = JSON.parse(Buffer.from(TOURNATED_TOKEN.split('.')[1], 'base64').toString()); if (pl.exp) exp = ` (galioja iki ${new Date(pl.exp * 1000).toLocaleString()})`; } catch (_) {}
