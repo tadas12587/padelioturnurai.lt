@@ -24,3 +24,6 @@ Homestead.yaml
 Thumbs.db
 
 /tools/overlay-push/dist/
+
+# Local Tournated auth token (secret, never commit)
+tools/overlay-push/.token

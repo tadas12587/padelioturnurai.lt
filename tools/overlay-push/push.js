@@ -27,22 +27,37 @@ const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 7000);         /
 const GRAPHQL_URL = 'https://api.tournated.com/graphql';
 const ORIGIN      = 'https://play.padel.lt';
 
-// ── GraphQL pagalbinė ───────────────────────────────────────
-const GQL_TIMEOUT_MS = Number(process.env.GQL_TIMEOUT_MS || 20000);
+// Tournated prisijungimo tokenas (Bearer). Su juo atsirakina draws/groups/
+// registracijos/dalyviai. Imamas iš env TOURNATED_TOKEN arba iš vietinio
+// failo tools/overlay-push/.token (į git nepatenka). Pasibaigus galiojimui —
+// skriptas savaime grįžta prie atkūrimo iš rungtynių.
+let TOURNATED_TOKEN = process.env.TOURNATED_TOKEN || '';
+try {
+  if (!TOURNATED_TOKEN) {
+    const fs = require('fs'), path = require('path');
+    const f = path.join(__dirname, '.token');
+    if (fs.existsSync(f)) TOURNATED_TOKEN = fs.readFileSync(f, 'utf8').trim().replace(/^Bearer\s+/i, '');
+  }
+} catch (_) { /* nesvarbu */ }
 
-async function gql(query) {
+// ── GraphQL pagalbinė ───────────────────────────────────────
+const GQL_TIMEOUT_MS = Number(process.env.GQL_TIMEOUT_MS || 15000);
+
+async function gql(query, timeoutMs = GQL_TIMEOUT_MS) {
   const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), GQL_TIMEOUT_MS);
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
   let res;
   try {
+    const headers = { 'Content-Type': 'application/json', 'Origin': ORIGIN };
+    if (TOURNATED_TOKEN) headers.Authorization = `Bearer ${TOURNATED_TOKEN}`;
     res = await fetch(GRAPHQL_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Origin': ORIGIN },
+      headers,
       body: JSON.stringify({ query }),
       signal: ac.signal,
     });
   } catch (e) {
-    if (e.name === 'AbortError') throw new Error(`API neatsakė per ${GQL_TIMEOUT_MS / 1000}s (Tournated pusės problema)`);
+    if (e.name === 'AbortError') throw new Error(`API neatsakė per ${timeoutMs / 1000}s (Tournated pusės problema)`);
     throw new Error(`Tinklo klaida: ${e.message}`);
   } finally {
     clearTimeout(timer);
@@ -64,12 +79,14 @@ async function gql(query) {
 
 // ── Turnyro kategorijos ─────────────────────────────────────
 async function fetchTournament(id) {
+  // Trumpas laikas — šis resolveris Tournated pusėje šiuo metu kabo, nenorim
+  // laukti pilno GQL_TIMEOUT kiekvieną kartą.
   const data = await gql(`{
     tournament(id: ${id}) {
       title
       tournamentCategory { id category { id name } mde }
     }
-  }`);
+  }`, 5000);
   return data.tournament || null;
 }
 
@@ -471,6 +488,14 @@ const gateCache = new Map();
 const RECHECK_EVERY = 15;
 let cycleN = 0;
 
+// „Sunkūs" duomenys (kategorijos, grupės, bracketai, dalyviai) keičiasi lėtai,
+// tad juos perskaičiuojam rečiau — kas FULL_EVERY ciklų. Rungtynės (grafikas,
+// rezultatai) atnaujinamos KIEKVIENĄ ciklą, kad matytųsi greitai.
+const heavyCache = new Map();
+const FULL_EVERY = Number(process.env.FULL_EVERY || 4);
+let tournamentBroken = false; // ar „tournament(id:)" šiuo metu neveikia (skip'inam)
+let heavyRefreshing = false;  // ar šiuo metu fone atnaujinami „sunkūs" duomenys
+
 /**
  * Atsarginis kategorijų šaltinis. Tournated „tournament(id:)" užklausa gali
  * kaboti (jų pusės gedimas), o „tournamentDrawCategories" veikia ir grąžina
@@ -485,22 +510,18 @@ async function fetchDrawCategories(tournamentId) {
   }));
 }
 
-// ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
-async function pushOnce(tournamentId) {
-  cycleN++;
-  const key = String(tournamentId);
-
-  // Susitikimus paimame pirmiausia — iš jų atkuriame lenteles/bracketus IR
-  // papildome kategorijų sąrašą (tournamentDrawCategories duoda tik tas, kurios
-  // turi bracketą — grupinės-only kategorijos ten nepatenka).
-  let matches = [];
-  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
-
+// ── „Sunkūs" duomenys: kategorijos, grupės, bracketai, dalyviai ──
+async function computeHeavy(tournamentId, key, matches) {
   let tournament = null;
-  try {
-    tournament = await fetchTournament(tournamentId);
-  } catch (e) {
-    console.error(`  ! Turnyro info nepavyko: ${e.message}`);
+  // „tournament(id:)" kabo — bandome tik pirmą kartą ir retkarčiais (recheck),
+  // kad neblokuotų kiekvieno sunkaus ciklo.
+  if (!tournamentBroken || (cycleN % RECHECK_EVERY === 0)) {
+    try {
+      tournament = await fetchTournament(tournamentId);
+      tournamentBroken = false;
+    } catch (e) {
+      tournamentBroken = true;
+    }
   }
 
   let haveTitle = true;
@@ -624,22 +645,34 @@ async function pushOnce(tournamentId) {
     if (segments.length) bracketsByCategory[String(cat.id)] = { segments };
   }
 
-  const snapshot = {
-    tournament_id: tournamentId,
-    categories,
-    groups_by_category: groupsByCategory,
-    participants_by_category: participantsByCategory,
-    category_stages: categoryStages,
-    brackets_by_category: bracketsByCategory,
-    matches,
+  return {
+    categories, groupsByCategory, participantsByCategory, categoryStages, bracketsByCategory,
+    haveTitle, title: tournament.title || null,
   };
+}
 
-  // Žinom pavadinimą — siunčiam. Nežinom (Tournated „tournament" neveikia) —
-  // pažymim „partial", kad serveris paliktų anksčiau išsaugotą pavadinimą.
-  if (haveTitle) {
-    snapshot.title = tournament.title || null;
+// ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
+async function pushOnce(tournamentId) {
+  cycleN++;
+  const key = String(tournamentId);
+
+  // Rungtynes imame KIEKVIENĄ ciklą (grafikas/rezultatai — greitai).
+  let matches = [];
+  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
+
+  // Siunčiam iškart: šviežios rungtynės + paskutiniai kešuoti „sunkūs" duomenys.
+  const heavy = heavyCache.get(key);
+  const snapshot = { tournament_id: tournamentId, matches };
+  if (heavy) {
+    snapshot.categories = heavy.categories;
+    snapshot.groups_by_category = heavy.groupsByCategory;
+    snapshot.participants_by_category = heavy.participantsByCategory;
+    snapshot.category_stages = heavy.categoryStages;
+    snapshot.brackets_by_category = heavy.bracketsByCategory;
+    if (heavy.haveTitle) snapshot.title = heavy.title || null;
+    else snapshot.partial = true;
   } else {
-    snapshot.partial = true;
+    snapshot.partial = true; // sunkių dar neturim — siunčiam tik grafiką
   }
 
   const res = await fetch(`${SITE_URL}/overlay/ingest`, {
@@ -656,10 +689,21 @@ async function pushOnce(tournamentId) {
     throw new Error(`Serveris atsakė ${res.status}: ${text.slice(0, 200)}`);
   }
 
-  const catCount = categories.length;
-  const groupCount = Object.values(groupsByCategory).reduce((n, g) => n + g.length, 0);
-  const titleLabel = haveTitle ? `"${tournament.title ?? ''}"` : '(pavadinimas — ankstesnis)';
+  const catCount = (snapshot.categories || []).length;
+  const groupCount = Object.values(snapshot.groups_by_category || {}).reduce((n, g) => n + g.length, 0);
+  const titleLabel = snapshot.title ? `"${snapshot.title}"` : (heavy ? '(pavadinimas — ankstesnis)' : '(kraunama…)');
   console.log(`✅ [${new Date().toLocaleTimeString()}] Nusiųsta: ${titleLabel} — ${catCount} kat., ${groupCount} grupių, ${matches.length} susitikimų`);
+
+  // „Sunkius" duomenis (grupes/bracketus/dalyvius) atnaujinam FONE — neblokuoja
+  // grafiko. Kai baigia, atsiranda kešе kitiems ciklams.
+  const refreshHeavy = !heavyCache.has(key) || (cycleN % FULL_EVERY === 0);
+  if (refreshHeavy && !heavyRefreshing) {
+    heavyRefreshing = true;
+    computeHeavy(tournamentId, key, matches)
+      .then((h) => { heavyCache.set(key, h); })
+      .catch((e) => console.error(`  ! Sunkių duomenų atnaujinimas: ${e.message}`))
+      .finally(() => { heavyRefreshing = false; });
+  }
 }
 
 // ── Pagrindinis ciklas ──────────────────────────────────────
@@ -667,7 +711,15 @@ async function loop() {
   console.log(`🏓 Overlay push paleistas`);
   console.log(`   Turnyrai: iš admin (auto)${TOURNAMENT_ID ? ` arba ${TOURNAMENT_ID}` : ''}`);
   console.log(`   Svetainė: ${SITE_URL}`);
-  console.log(`   Intervalas: ${POLL_INTERVAL_MS / 1000}s\n`);
+  console.log(`   Intervalas: ${POLL_INTERVAL_MS / 1000}s`);
+  if (TOURNATED_TOKEN) {
+    let exp = '';
+    try { const pl = JSON.parse(Buffer.from(TOURNATED_TOKEN.split('.')[1], 'base64').toString()); if (pl.exp) exp = ` (galioja iki ${new Date(pl.exp * 1000).toLocaleString()})`; } catch (_) {}
+    console.log(`   Tournated tokenas: ✔ prijungtas${exp}`);
+  } else {
+    console.log(`   Tournated tokenas: ✗ nėra (dirbama iš rungtynių)`);
+  }
+  console.log('');
 
   if (INGEST_TOKEN === 'ĮRAŠYK_SLAPTĄ_RAKTĄ') {
     console.error('❌ Pirma įrašyk INGEST_TOKEN (tą patį, kaip serverio .env OVERLAY_INGEST_TOKEN).');
