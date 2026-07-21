@@ -16,6 +16,9 @@
 //      TOURNAMENT_ID=10424 INGEST_TOKEN=xxxx node push.js
 // ============================================================
 
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 // ── Nustatymai (gali keisti čia arba per aplinkos kintamuosius) ──
 const SITE_URL       = process.env.SITE_URL       || 'https://padelioturnyrai.lt';
 const INGEST_TOKEN   = process.env.INGEST_TOKEN   || 'ugx490pqlkt3nycwmdojfeb5ahi6r2sz817v';   // turi sutapti su .env OVERLAY_INGEST_TOKEN
@@ -34,9 +37,8 @@ const ORIGIN      = 'https://play.padel.lt';
 let TOURNATED_TOKEN = process.env.TOURNATED_TOKEN || '';
 try {
   if (!TOURNATED_TOKEN) {
-    const fs = require('fs'), path = require('path');
-    const f = path.join(__dirname, '.token');
-    if (fs.existsSync(f)) TOURNATED_TOKEN = fs.readFileSync(f, 'utf8').trim().replace(/^Bearer\s+/i, '');
+    const f = fileURLToPath(new URL('.token', import.meta.url)); // .token šalia push.js
+    if (existsSync(f)) TOURNATED_TOKEN = readFileSync(f, 'utf8').trim().replace(/^Bearer\s+/i, '');
   }
 } catch (_) { /* nesvarbu */ }
 
