@@ -152,7 +152,8 @@
       "Bash(GQL_TIMEOUT_MS=8000 timeout 90 node -e ' *)",
       "Bash(GQL_TIMEOUT_MS=8000 timeout 60 node -e ' *)",
       "Bash(timeout 60 node -e ' *)",
-      "Bash(git commit -q -m 'fix\\(push/ingest\\): partial pushes no longer wipe title, categories and groups *)"
+      "Bash(git commit -q -m 'fix\\(push/ingest\\): partial pushes no longer wipe title, categories and groups *)",
+      "Bash(git commit -q -m 'feat\\(push\\): work around broken upstream tournament query via tournamentDrawCategories *)"
     ]
   }
 }
