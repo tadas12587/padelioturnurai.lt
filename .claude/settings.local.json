@@ -153,7 +153,12 @@
       "Bash(GQL_TIMEOUT_MS=8000 timeout 60 node -e ' *)",
       "Bash(timeout 60 node -e ' *)",
       "Bash(git commit -q -m 'fix\\(push/ingest\\): partial pushes no longer wipe title, categories and groups *)",
-      "Bash(git commit -q -m 'feat\\(push\\): work around broken upstream tournament query via tournamentDrawCategories *)"
+      "Bash(git commit -q -m 'feat\\(push\\): work around broken upstream tournament query via tournamentDrawCategories *)",
+      "Bash(timeout 115 node -e ' *)",
+      "Bash(sed -n '/async function fetchGroups/,/^}/p' push.js)",
+      "Bash(sed -n '/function normalizeMatch/,/^}/p' push.js)",
+      "Bash(sed -n '/function extractBracket/,/^}/p' push.js)",
+      "Bash(git commit -q -m 'feat\\(push\\): rebuild group tables and brackets from matches \\(draws/groups locked\\) *)"
     ]
   }
 }

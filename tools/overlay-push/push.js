@@ -157,7 +157,152 @@ function normalizeMatch(m) {
     team1: names(m.participant1),
     team2: names(m.participant2),
     winner,
+    // reikalinga lentelių/bracketų atkūrimui iš matches (kai draws/groups užrakinti)
+    entry1_id: e1 ?? null,
+    entry2_id: e2 ?? null,
+    winner_entry_id: w != null ? w : null,
+    group_id: (m.group && m.group.id) || null,
+    group_name: (m.group && m.group.name) || null,
   };
+}
+
+// ── Rezultato eilutės parsinimas ("6:1 6:0" → setai/geimai) ──
+function parseScore(score) {
+  const sets = [];
+  let sw1 = 0, sw2 = 0, g1 = 0, g2 = 0;
+  String(score || '').trim().split(/\s+/).filter(Boolean).forEach((tok) => {
+    const p = tok.replace(/[\[\]]/g, '').split(':');
+    if (p.length === 2) {
+      const a = parseInt(p[0], 10), b = parseInt(p[1], 10);
+      if (!Number.isNaN(a) && !Number.isNaN(b)) {
+        sets.push([a, b]); g1 += a; g2 += b;
+        if (a > b) sw1++; else if (b > a) sw2++;
+      }
+    }
+  });
+  return { sets, sw1, sw2, g1, g2 };
+}
+
+// ── Grupių lentelės iš matches (kai „groups" grąžina tuščią) ──
+// Standartinis padel rikiavimas: 1) pergalės, 2) tarpusavis, 3) setų sk., 4) geimų sk.
+function buildGroupsFromMatches(matches, categoryId) {
+  const inCat = matches.filter((m) => String(m.category_id) === String(categoryId) && m.group_id != null);
+  if (!inCat.length) return [];
+
+  const byGroup = new Map();
+  for (const m of inCat) {
+    const gid = String(m.group_id);
+    if (!byGroup.has(gid)) byGroup.set(gid, { id: m.group_id, name: m.group_name || '', matches: [] });
+    byGroup.get(gid).matches.push(m);
+  }
+
+  const usersOf = (names) => (names || []).map((full) => ({ user: { name: String(full), surname: '' } }));
+  const out = [];
+  for (const g of byGroup.values()) {
+    const ent = new Map(); // entryId -> names[]
+    const addEnt = (id, names) => { if (id != null && !ent.has(String(id))) ent.set(String(id), { id, names: names || [] }); };
+    for (const m of g.matches) { addEnt(m.entry1_id, m.team1); addEnt(m.entry2_id, m.team2); }
+
+    const st = {};
+    for (const e of ent.values()) st[String(e.id)] = { id: e.id, w: 0, sw: 0, sl: 0, gw: 0, gl: 0, h2h: {} };
+    for (const m of g.matches) {
+      if ((m.status || '') !== 'completed') continue;
+      const e1 = m.entry1_id, e2 = m.entry2_id;
+      if (e1 == null || e2 == null) continue;
+      const A = st[String(e1)], B = st[String(e2)];
+      if (!A || !B) continue;
+      const sc = parseScore(m.score);
+      A.sw += sc.sw1; A.sl += sc.sw2; A.gw += sc.g1; A.gl += sc.g2;
+      B.sw += sc.sw2; B.sl += sc.sw1; B.gw += sc.g2; B.gl += sc.g1;
+      if (m.winner_entry_id === e1) { A.w++; A.h2h[String(e2)] = (A.h2h[String(e2)] || 0) + 1; }
+      else if (m.winner_entry_id === e2) { B.w++; B.h2h[String(e1)] = (B.h2h[String(e1)] || 0) + 1; }
+    }
+
+    const rows = Object.values(st).sort((a, b) => {
+      if (b.w !== a.w) return b.w - a.w;
+      const ah = a.h2h[String(b.id)] || 0, bh = b.h2h[String(a.id)] || 0;
+      if (ah !== bh) return bh - ah;
+      const asd = a.sw - a.sl, bsd = b.sw - b.sl; if (bsd !== asd) return bsd - asd;
+      return (b.gw - b.gl) - (a.gw - a.gl);
+    });
+    const placeById = {};
+    rows.forEach((r, i) => { placeById[String(r.id)] = i + 1; });
+
+    const entries = [...ent.values()].map((e) => ({
+      id: e.id,
+      place: placeById[String(e.id)] || null,
+      registrationRequest: { users: usersOf(e.names) },
+    }));
+    const gmatches = g.matches.map((m) => ({
+      id: m.id, status: m.status,
+      winner: m.winner_entry_id != null ? { id: m.winner_entry_id } : null,
+    }));
+    out.push({ id: g.id, name: g.name, segment: null, entries, matches: gmatches });
+  }
+  out.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  return out;
+}
+
+// ── Bracketai iš matches (kai „draws" užrakinti) ─────────────
+function buildBracketsFromMatches(matches, categoryId) {
+  const inCat = matches.filter((m) => String(m.category_id) === String(categoryId) && m.segment && m.group_id == null);
+  if (!inCat.length) return [];
+
+  const roundRank = (r) => {
+    const t = String(r || '').toLowerCase();
+    const num = t.match(/^r?(\d+)$/); if (num) return parseInt(num[1], 10);
+    if (/round of 64/.test(t)) return 1;
+    if (/round of 32/.test(t)) return 2;
+    if (/round of 16/.test(t)) return 3;
+    if (/quarter/.test(t)) return 50;
+    if (/semi/.test(t)) return 51;
+    if (/\bfinal\b/.test(t) && !/place/.test(t)) return 52;
+    const pl = t.match(/(\d+)\D*place/); if (pl) return 900 + parseInt(pl[1], 10);
+    return 100;
+  };
+  const roundTitle = (r) => {
+    const k = String(r || '').toLowerCase();
+    if (k === 'quarter-final') return 'Ketvirtfinaliai';
+    if (k === 'semi-final') return 'Pusfinaliai';
+    if (k === 'final') return 'Finalas';
+    const pl = String(r || '').match(/(\d+)\D*place/i); if (pl) return `Dėl ${pl[1]} vietos`;
+    return String(r || '');
+  };
+  const toMatch = (m) => {
+    const sc = parseScore(m.score);
+    return {
+      team1: (m.team1 || []).join(' / '), team2: (m.team2 || []).join(' / '),
+      sets1: sc.sets.map((s) => s[0]).join(' '), sets2: sc.sets.map((s) => s[1]).join(' '),
+      winner: m.winner, court: m.court || null, time: m.time || null,
+    };
+  };
+
+  const bySeg = new Map();
+  for (const m of inCat) { if (!bySeg.has(m.segment)) bySeg.set(m.segment, []); bySeg.get(m.segment).push(m); }
+  const order = [...bySeg.keys()].sort((a, b) => (a === 'main' ? -1 : b === 'main' ? 1 : String(a).localeCompare(String(b))));
+
+  const segments = [];
+  for (const s of order) {
+    const byRound = new Map();
+    for (const m of bySeg.get(s)) { const r = m.round || ''; if (!byRound.has(r)) byRound.set(r, []); byRound.get(r).push(m); }
+    const roundKeys = [...byRound.keys()].sort((a, b) => roundRank(a) - roundRank(b));
+
+    let third = null;
+    const rounds = [];
+    for (const rk of roundKeys) {
+      if (s === 'main' && /3rd|3\D*place/i.test(rk)) {
+        const arr = byRound.get(rk); if (arr.length) third = toMatch(arr[0]);
+        continue;
+      }
+      rounds.push({ title: roundTitle(rk), matches: byRound.get(rk).map(toMatch) });
+    }
+    if (!rounds.length && !third) continue;
+    segments.push({
+      key: `${categoryId}-${s}`, label: s === 'main' ? 'Pagrindinis' : String(s),
+      is_main: s === 'main', rounds, third, placements: [],
+    });
+  }
+  return segments;
 }
 
 async function fetchMatches(tournamentId) {
@@ -166,6 +311,7 @@ async function fetchMatches(tournamentId) {
       id time date duration status isMatchInProgress firstScoreSubmittedAt round bracketType score
       court { id name }
       tournamentCategory { id category { name } }
+      group { id name }
       entry1 { id } entry2 { id } winner { id }
       participant1 { users { name surname } }
       participant2 { users { name surname } }
@@ -352,17 +498,23 @@ async function pushOnce(tournamentId) {
   const groupsByCategory = {};
   const participantsByCategory = {};
 
+  // Susitikimus paimame anksti — iš jų atkuriame lenteles/bracketus, jei
+  // Tournated „groups"/„draws" grąžina tuščią arba Unauthorized.
+  let matches = [];
+  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
+
   for (const cat of categories) {
-    try {
-      groupsByCategory[String(cat.id)] = await fetchGroups(cat.id);
-    } catch (e) {
-      console.error(`  ! Kategorija ${cat.id}: ${e.message}`);
-      groupsByCategory[String(cat.id)] = [];
+    let groups = [];
+    try { groups = await fetchGroups(cat.id); } catch (e) { console.error(`  ! Kategorija ${cat.id}: ${e.message}`); }
+    if (!groups.length) {
+      const rebuilt = buildGroupsFromMatches(matches, cat.id);
+      if (rebuilt.length) { groups = rebuilt; console.error(`  ↩︎ Lentelės atkurtos iš matches (${cat.id}): ${rebuilt.length} gr.`); }
     }
+    groupsByCategory[String(cat.id)] = groups;
+
     try {
       participantsByCategory[String(cat.id)] = await fetchParticipants(tournamentId, cat.id);
     } catch (e) {
-      console.error(`  ! Dalyviai ${cat.id}: ${e.message}`);
       participantsByCategory[String(cat.id)] = [];
     }
   }
@@ -400,17 +552,20 @@ async function pushOnce(tournamentId) {
       }
     }
 
+    // Nepavykus per „draws" — atkuriame bracketus iš matches.
+    if (!segments.length) {
+      const rebuilt = buildBracketsFromMatches(matches, cat.id);
+      if (rebuilt.length) { segments.push(...rebuilt); console.error(`  ↩︎ Bracketai atkurti iš matches (${cat.id}): ${rebuilt.length} segm.`); }
+    }
+
     categoryStages[String(cat.id)] = {
       has_groups: groups.length > 0,
       has_bracket: segments.length > 0,
       draw_type: draws[0]?.type ?? null,
-      draw_size: draws[0]?.size ?? null,
+      draw_size: draws[0]?.size ?? cat.mde ?? null,
     };
     if (segments.length) bracketsByCategory[String(cat.id)] = { segments };
   }
-
-  let matches = [];
-  try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
 
   const snapshot = {
     tournament_id: tournamentId,
