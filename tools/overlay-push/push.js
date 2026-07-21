@@ -243,6 +243,20 @@ function buildGroupsFromMatches(matches, categoryId) {
   return out;
 }
 
+// ── Dalyviai iš matches (kai „participants" užrakinti) ───────
+// Veikia tik jei kategorija jau turi rungtynes (po burtų/sėjos).
+function buildParticipantsFromMatches(matches, categoryId) {
+  const inCat = matches.filter((m) => String(m.category_id) === String(categoryId));
+  const byEntry = new Map();
+  const add = (id, names) => {
+    if (id == null || byEntry.has(String(id))) return;
+    const nm = (names || []).join(' / ');
+    if (nm) byEntry.set(String(id), { id: `e${id}`, name: nm, seed: null, pot: null });
+  };
+  for (const m of inCat) { add(m.entry1_id, m.team1); add(m.entry2_id, m.team2); }
+  return [...byEntry.values()];
+}
+
 // ── Bracketai iš matches (kai „draws" užrakinti) ─────────────
 function buildBracketsFromMatches(matches, categoryId) {
   const inCat = matches.filter((m) => String(m.category_id) === String(categoryId) && m.segment && m.group_id == null);
@@ -544,12 +558,13 @@ async function pushOnce(tournamentId) {
     }
     groupsByCategory[String(cat.id)] = groups;
 
+    let parts = [];
     if (!g.participants || recheck) {
-      try { participantsByCategory[String(cat.id)] = await fetchParticipants(tournamentId, cat.id); g.participants = false; }
-      catch (_) { participantsByCategory[String(cat.id)] = []; g.participants = true; }
-    } else {
-      participantsByCategory[String(cat.id)] = [];
+      try { parts = await fetchParticipants(tournamentId, cat.id); g.participants = false; }
+      catch (_) { g.participants = true; }
     }
+    if (!parts.length) parts = buildParticipantsFromMatches(matches, cat.id); // atsarginis kelias iš rungtynių
+    participantsByCategory[String(cat.id)] = parts;
 
     gateCache.set(String(cat.id), g);
   }
