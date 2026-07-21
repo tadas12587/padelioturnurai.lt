@@ -273,6 +273,28 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonCount(2, 'items');
     }
 
+    public function test_partial_ingest_keeps_existing_title_and_categories(): void
+    {
+        config(['services.overlay.ingest_token' => 'secret']);
+        OverlaySnapshot::create(['tournament_external_id' => '10931', 'payload' => [
+            'title' => 'Padel Open', 'categories' => [['id' => 1]], 'matches' => [['id' => 1]],
+            'groups_by_category' => ['1' => [['id' => 9]]],
+        ]]);
+
+        // bridge could only fetch matches (upstream tournament query down)
+        $this->withHeader('X-Overlay-Token', 'secret')
+            ->postJson('/overlay/ingest', [
+                'tournament_id' => '10931', 'partial' => true,
+                'matches' => [['id' => 1], ['id' => 2]],
+            ])->assertOk();
+
+        $payload = OverlaySnapshot::where('tournament_external_id', '10931')->value('payload');
+        $this->assertSame('Padel Open', $payload['title']);            // kept
+        $this->assertSame([['id' => 1]], $payload['categories']);      // kept
+        $this->assertSame(['1' => [['id' => 9]]], $payload['groups_by_category']); // kept
+        $this->assertCount(2, $payload['matches']);                    // replaced
+    }
+
     public function test_photowall_window_returns_wall_config(): void
     {
         $gallery = \App\Models\Gallery::create(['name' => 'Rėmėjai', 'images' => ['galleries/a.png', 'galleries/b.png']]);

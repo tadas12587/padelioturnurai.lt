@@ -314,6 +314,7 @@ async function pushOnce(tournamentId) {
     console.error(`  ! Turnyro info nepavyko: ${e.message}`);
   }
 
+  let haveTournament = true;
   if (tournament) {
     lastGoodTournament.set(key, tournament);
   } else {
@@ -323,6 +324,7 @@ async function pushOnce(tournamentId) {
     } else {
       console.error('  ↩︎ Nėra turnyro info — siunčiu tik susitikimus');
       tournament = { title: null, tournamentCategory: [] };
+      haveTournament = false;
     }
   }
 
@@ -389,6 +391,23 @@ async function pushOnce(tournamentId) {
 
   let matches = [];
   try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
+
+  // Nepavykus gauti turnyro info siunčiame TIK susitikimus ir pažymime
+  // „partial" — serveris tada išsaugo anksčiau turėtą pavadinimą/kategorijas
+  // vietoj to, kad jas ištrintų.
+  if (!haveTournament) {
+    const res = await fetch(`${SITE_URL}/overlay/ingest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Overlay-Token': INGEST_TOKEN },
+      body: JSON.stringify({ tournament_id: tournamentId, partial: true, matches }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Serveris atsakė ${res.status}: ${text.slice(0, 200)}`);
+    }
+    console.log(`✅ [${new Date().toLocaleTimeString()}] Dalinis siuntimas — ${matches.length} susitikimų (turnyro info išsaugota ankstesnė)`);
+    return;
+  }
 
   const snapshot = {
     tournament_id: tournamentId,
