@@ -169,9 +169,14 @@
         let pollTimer = null;
         function schedule(d) {
             const wins = (d && d.windows) ? d.windows : (d ? [d] : []);
-            const fast = wins.some(w => (w.window_type) === 'draw');
+            const types = wins.map(w => w.window_type);
+            // Draw reveal needs to feel instant; schedule/scores/brackets update
+            // often during play, so poll them faster than static windows.
+            const ms = types.includes('draw') ? 500
+                : types.some(t => ['schedule', 'score', 'results', 'bracket', 'h2h', 'groups'].includes(t)) ? 1200
+                : POLL_MS;
             clearTimeout(pollTimer);
-            pollTimer = setTimeout(loop, fast ? 500 : POLL_MS);
+            pollTimer = setTimeout(loop, ms);
         }
         async function loop() { const d = await tick(); schedule(d); }
         loop();

@@ -22,7 +22,7 @@ const INGEST_TOKEN   = process.env.INGEST_TOKEN   || 'ugx490pqlkt3nycwmdojfeb5ah
 // Turnyrų ID sąrašą imame iš serverio (kuriuos naudoja overlay'ai admin'e).
 // TOURNAMENT_ID — neprivalomas atsarginis variantas, jei serveris nepasiekiamas.
 const TOURNAMENT_ID  = process.env.TOURNAMENT_ID  || '';
-const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 20000);        // kas kiek siųsti (ms)
+const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 7000);         // kas kiek siųsti (ms)
 
 const GRAPHQL_URL = 'https://api.tournated.com/graphql';
 const ORIGIN      = 'https://play.padel.lt';
@@ -450,6 +450,13 @@ async function fetchWantedTournaments() {
 // „tournament" užklausai overlay'ai toliau gautų susitikimus/grupes.
 const lastGoodTournament = new Map();
 
+// Kešas: kurios per-kategorijos užklausos užrakintos (groups/draws/participants).
+// Greitieji ciklai jų nebekartoja — statome viską iš „matches". Kas
+// RECHECK_EVERY ciklų perpatikrinam, ar Tournated atrakino.
+const gateCache = new Map();
+const RECHECK_EVERY = 15;
+let cycleN = 0;
+
 /**
  * Atsarginis kategorijų šaltinis. Tournated „tournament(id:)" užklausa gali
  * kaboti (jų pusės gedimas), o „tournamentDrawCategories" veikia ir grąžina
@@ -466,6 +473,7 @@ async function fetchDrawCategories(tournamentId) {
 
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
 async function pushOnce(tournamentId) {
+  cycleN++;
   const key = String(tournamentId);
   let tournament = null;
   try {
@@ -503,28 +511,41 @@ async function pushOnce(tournamentId) {
   let matches = [];
   try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
 
+  const recheck = (cycleN % RECHECK_EVERY) === 0; // ret:kartais perpatikrinam ar atrakino
   for (const cat of categories) {
+    const g = gateCache.get(String(cat.id)) || {};
+
     let groups = [];
-    try { groups = await fetchGroups(cat.id); } catch (e) { console.error(`  ! Kategorija ${cat.id}: ${e.message}`); }
+    if (!g.groups || recheck) {
+      try { groups = await fetchGroups(cat.id); } catch (_) { groups = []; }
+    }
     if (!groups.length) {
-      const rebuilt = buildGroupsFromMatches(matches, cat.id);
-      if (rebuilt.length) { groups = rebuilt; console.error(`  ↩︎ Lentelės atkurtos iš matches (${cat.id}): ${rebuilt.length} gr.`); }
+      groups = buildGroupsFromMatches(matches, cat.id);
+      g.groups = true; // legacy neveikia — kituose cikluose praleisim
+    } else {
+      g.groups = false;
     }
     groupsByCategory[String(cat.id)] = groups;
 
-    try {
-      participantsByCategory[String(cat.id)] = await fetchParticipants(tournamentId, cat.id);
-    } catch (e) {
+    if (!g.participants || recheck) {
+      try { participantsByCategory[String(cat.id)] = await fetchParticipants(tournamentId, cat.id); g.participants = false; }
+      catch (_) { participantsByCategory[String(cat.id)] = []; g.participants = true; }
+    } else {
       participantsByCategory[String(cat.id)] = [];
     }
+
+    gateCache.set(String(cat.id), g);
   }
 
   const categoryStages = {};
   const bracketsByCategory = {};
   for (const cat of categories) {
     const groups = groupsByCategory[String(cat.id)] || [];
+    const g = gateCache.get(String(cat.id)) || {};
     let draws = [];
-    try { draws = await fetchDraws(cat.id); } catch (_) { draws = []; }
+    if (!g.draws || recheck) {
+      try { draws = await fetchDraws(cat.id); } catch (_) { draws = []; }
+    }
 
     // Selectable "segments". A play-each-place draw is split into its main tree
     // plus one segment per placement block (5-8, 9-16, …). Separate draws (one
@@ -555,8 +576,12 @@ async function pushOnce(tournamentId) {
     // Nepavykus per „draws" — atkuriame bracketus iš matches.
     if (!segments.length) {
       const rebuilt = buildBracketsFromMatches(matches, cat.id);
-      if (rebuilt.length) { segments.push(...rebuilt); console.error(`  ↩︎ Bracketai atkurti iš matches (${cat.id}): ${rebuilt.length} segm.`); }
+      if (rebuilt.length) segments.push(...rebuilt);
+      g.draws = true; // legacy neveikia — kituose cikluose praleisim
+    } else {
+      g.draws = false;
     }
+    gateCache.set(String(cat.id), g);
 
     categoryStages[String(cat.id)] = {
       has_groups: groups.length > 0,
