@@ -304,6 +304,20 @@ async function fetchWantedTournaments() {
 // „tournament" užklausai overlay'ai toliau gautų susitikimus/grupes.
 const lastGoodTournament = new Map();
 
+/**
+ * Atsarginis kategorijų šaltinis. Tournated „tournament(id:)" užklausa gali
+ * kaboti (jų pusės gedimas), o „tournamentDrawCategories" veikia ir grąžina
+ * tą pačią kategorijų struktūrą.
+ */
+async function fetchDrawCategories(tournamentId) {
+  const data = await gql(`{ tournamentDrawCategories(filter: { tournament: ${tournamentId} }) }`);
+  return (data.tournamentDrawCategories || []).map((c) => ({
+    id: c.id,
+    mde: c.mde ?? null,
+    category: c.category ? { id: c.category.id, name: c.category.name } : null,
+  }));
+}
+
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
 async function pushOnce(tournamentId) {
   const key = String(tournamentId);
@@ -314,21 +328,27 @@ async function pushOnce(tournamentId) {
     console.error(`  ! Turnyro info nepavyko: ${e.message}`);
   }
 
-  let haveTournament = true;
+  let haveTitle = true;
+  let categories = [];
+
   if (tournament) {
     lastGoodTournament.set(key, tournament);
+    categories = tournament.tournamentCategory || [];
+  } else if (lastGoodTournament.has(key)) {
+    tournament = lastGoodTournament.get(key);
+    categories = tournament.tournamentCategory || [];
+    console.error('  ↩︎ Naudoju paskutinę žinomą turnyro info');
   } else {
-    tournament = lastGoodTournament.get(key) || null;
-    if (tournament) {
-      console.error('  ↩︎ Naudoju paskutinę žinomą turnyro info');
-    } else {
-      console.error('  ↩︎ Nėra turnyro info — siunčiu tik susitikimus');
-      tournament = { title: null, tournamentCategory: [] };
-      haveTournament = false;
+    tournament = { title: null, tournamentCategory: [] };
+    haveTitle = false;
+    try {
+      categories = await fetchDrawCategories(tournamentId);
+      console.error(`  ↩︎ Kategorijos gautos apeinamuoju keliu (${categories.length}); pavadinimas paliekamas ankstesnis`);
+    } catch (e) {
+      console.error(`  ! Ir atsarginis kategorijų kelias nepavyko: ${e.message}`);
     }
   }
 
-  const categories = tournament.tournamentCategory || [];
   const groupsByCategory = {};
   const participantsByCategory = {};
 
@@ -392,26 +412,8 @@ async function pushOnce(tournamentId) {
   let matches = [];
   try { matches = await fetchMatches(tournamentId); } catch (e) { console.error(`  ! Matches: ${e.message}`); }
 
-  // Nepavykus gauti turnyro info siunčiame TIK susitikimus ir pažymime
-  // „partial" — serveris tada išsaugo anksčiau turėtą pavadinimą/kategorijas
-  // vietoj to, kad jas ištrintų.
-  if (!haveTournament) {
-    const res = await fetch(`${SITE_URL}/overlay/ingest`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Overlay-Token': INGEST_TOKEN },
-      body: JSON.stringify({ tournament_id: tournamentId, partial: true, matches }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Serveris atsakė ${res.status}: ${text.slice(0, 200)}`);
-    }
-    console.log(`✅ [${new Date().toLocaleTimeString()}] Dalinis siuntimas — ${matches.length} susitikimų (turnyro info išsaugota ankstesnė)`);
-    return;
-  }
-
   const snapshot = {
     tournament_id: tournamentId,
-    title: tournament.title || null,
     categories,
     groups_by_category: groupsByCategory,
     participants_by_category: participantsByCategory,
@@ -419,6 +421,14 @@ async function pushOnce(tournamentId) {
     brackets_by_category: bracketsByCategory,
     matches,
   };
+
+  // Žinom pavadinimą — siunčiam. Nežinom (Tournated „tournament" neveikia) —
+  // pažymim „partial", kad serveris paliktų anksčiau išsaugotą pavadinimą.
+  if (haveTitle) {
+    snapshot.title = tournament.title || null;
+  } else {
+    snapshot.partial = true;
+  }
 
   const res = await fetch(`${SITE_URL}/overlay/ingest`, {
     method: 'POST',
@@ -436,7 +446,8 @@ async function pushOnce(tournamentId) {
 
   const catCount = categories.length;
   const groupCount = Object.values(groupsByCategory).reduce((n, g) => n + g.length, 0);
-  console.log(`✅ [${new Date().toLocaleTimeString()}] Nusiųsta: "${tournament.title}" — ${catCount} kat., ${groupCount} grupių, ${matches.length} susitikimų`);
+  const titleLabel = haveTitle ? `"${tournament.title ?? ''}"` : '(pavadinimas — ankstesnis)';
+  console.log(`✅ [${new Date().toLocaleTimeString()}] Nusiųsta: ${titleLabel} — ${catCount} kat., ${groupCount} grupių, ${matches.length} susitikimų`);
 }
 
 // ── Pagrindinis ciklas ──────────────────────────────────────
