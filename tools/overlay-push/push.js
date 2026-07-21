@@ -28,13 +28,36 @@ const GRAPHQL_URL = 'https://api.tournated.com/graphql';
 const ORIGIN      = 'https://play.padel.lt';
 
 // ── GraphQL pagalbinė ───────────────────────────────────────
+const GQL_TIMEOUT_MS = Number(process.env.GQL_TIMEOUT_MS || 20000);
+
 async function gql(query) {
-  const res = await fetch(GRAPHQL_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Origin': ORIGIN },
-    body: JSON.stringify({ query }),
-  });
-  const json = await res.json();
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), GQL_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(GRAPHQL_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Origin': ORIGIN },
+      body: JSON.stringify({ query }),
+      signal: ac.signal,
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(`API neatsakė per ${GQL_TIMEOUT_MS / 1000}s (Tournated pusės problema)`);
+    throw new Error(`Tinklo klaida: ${e.message}`);
+  } finally {
+    clearTimeout(timer);
+  }
+
+  // 502/504 dažnai grąžina tuščią kūną — be šito gaudavosi „Unexpected end of JSON input".
+  const text = await res.text();
+  if (!text.trim()) throw new Error(`API grąžino tuščią atsakymą (HTTP ${res.status}) — Tournated pusės problema`);
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(`API grąžino ne JSON (HTTP ${res.status}): ${text.slice(0, 120)}`);
+  }
   if (json.errors) throw new Error(JSON.stringify(json.errors));
   return json.data;
 }
@@ -277,10 +300,31 @@ async function fetchWantedTournaments() {
   return Array.isArray(json.tournament_ids) ? json.tournament_ids.map(String) : [];
 }
 
+// Paskutinė sėkmingai gauta turnyro info — kad laikinai nulūžus Tournated
+// „tournament" užklausai overlay'ai toliau gautų susitikimus/grupes.
+const lastGoodTournament = new Map();
+
 // ── Vienas ciklas: surinkti viską ir nusiųsti ───────────────
 async function pushOnce(tournamentId) {
-  const tournament = await fetchTournament(tournamentId);
-  if (!tournament) throw new Error(`Turnyras ${tournamentId} nerastas`);
+  const key = String(tournamentId);
+  let tournament = null;
+  try {
+    tournament = await fetchTournament(tournamentId);
+  } catch (e) {
+    console.error(`  ! Turnyro info nepavyko: ${e.message}`);
+  }
+
+  if (tournament) {
+    lastGoodTournament.set(key, tournament);
+  } else {
+    tournament = lastGoodTournament.get(key) || null;
+    if (tournament) {
+      console.error('  ↩︎ Naudoju paskutinę žinomą turnyro info');
+    } else {
+      console.error('  ↩︎ Nėra turnyro info — siunčiu tik susitikimus');
+      tournament = { title: null, tournamentCategory: [] };
+    }
+  }
 
   const categories = tournament.tournamentCategory || [];
   const groupsByCategory = {};

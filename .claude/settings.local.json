@@ -141,7 +141,17 @@
       "Bash(git commit -q -m 'feat\\(photowall\\): backing panels, layout variants, checker bg, slide animation *)",
       "Bash(grep -n 'type\\\\b\\\\|getType\\\\|$type' vendor/filament/forms/src/Components/TextInput.php)",
       "Bash(git commit -q -m 'feat\\(photowall\\): slider speed \\(down to barely-moving\\) + numeric size/offset fine-tuning *)",
-      "Bash(git commit -q -m 'fix\\(photowall\\): tournament logo layers above the title text *)"
+      "Bash(git commit -q -m 'fix\\(photowall\\): tournament logo layers above the title text *)",
+      "Bash(grep -n \"gql\\(\\\\`\" push.js)",
+      "Bash(grep -n -A4 \"await gql\\(\\\\`{\" push.js)",
+      "Bash(timeout 100 node -e ' *)",
+      "Bash(timeout 110 node -e ' *)",
+      "Bash(node -c push.js)",
+      "Bash(node --check push.js)",
+      "Bash(timeout 90 node -e ' *)",
+      "Bash(GQL_TIMEOUT_MS=8000 timeout 90 node -e ' *)",
+      "Bash(GQL_TIMEOUT_MS=8000 timeout 60 node -e ' *)",
+      "Bash(timeout 60 node -e ' *)"
     ]
   }
 }
