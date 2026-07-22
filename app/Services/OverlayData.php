@@ -378,6 +378,25 @@ class OverlayData
         return array_values($out);
     }
 
+    /**
+     * Žaidėjų šalys iš Tournated (name → nation kodas, pvz. „LT").
+     *
+     * @return array<string,string> personKey => nation
+     */
+    public function peopleNations(string $tournamentId): array
+    {
+        $out = [];
+        foreach ($this->payload($tournamentId)['people'] ?? [] as $p) {
+            $name = trim((string) ($p['name'] ?? ''));
+            $nation = $p['nation'] ?? null;
+            if ($name !== '' && $nation) {
+                $out[$this->personKey($name)] = (string) $nation;
+            }
+        }
+
+        return $out;
+    }
+
     /** @return array<string,mixed> */
     public function photoFor(string $tournamentId, string $name, string $fallbackGender): array
     {

@@ -164,6 +164,9 @@ async function fetchDraws(categoryId) {
 function normalizeMatch(m) {
   const names = (p) => (p && p.users)
     ? p.users.map((u) => `${u.name || ''} ${u.surname || ''}`.trim()).filter(Boolean) : [];
+  // Kiekvienas žaidėjas su šalimi (nation, pvz. „LT") — profilio „Šalis" laukui.
+  const people = (p) => (p && p.users)
+    ? p.users.map((u) => ({ name: `${u.name || ''} ${u.surname || ''}`.trim(), nation: u.nation || null })).filter((x) => x.name) : [];
   const e1 = m.entry1 && m.entry1.id;
   const e2 = m.entry2 && m.entry2.id;
   const w = m.winner && m.winner.id;
@@ -194,6 +197,8 @@ function normalizeMatch(m) {
     winner_entry_id: w != null ? w : null,
     group_id: (m.group && m.group.id) || null,
     group_name: (m.group && m.group.name) || null,
+    players1: people(m.participant1),
+    players2: people(m.participant2),
   };
 }
 
@@ -358,8 +363,8 @@ async function fetchMatches(tournamentId) {
       tournamentCategory { id category { name } }
       group { id name }
       entry1 { id } entry2 { id } winner { id }
-      participant1 { users { name surname } }
-      participant2 { users { name surname } }
+      participant1 { users { name surname nation } }
+      participant2 { users { name surname nation } }
     }
   }`);
   return (data.matches || []).map(normalizeMatch);
@@ -659,8 +664,17 @@ async function computeHeavy(tournamentId, key, matches) {
     if (segments.length) bracketsByCategory[String(cat.id)] = { segments };
   }
 
+  // Žaidėjų šalys iš rungtynių (name → nation, pvz. „LT").
+  const peopleMap = new Map();
+  for (const m of matches) {
+    for (const p of [...(m.players1 || []), ...(m.players2 || [])]) {
+      if (p.name && !peopleMap.has(p.name)) peopleMap.set(p.name, p.nation || null);
+    }
+  }
+  const people = [...peopleMap].map(([name, nation]) => ({ name, nation }));
+
   return {
-    categories, groupsByCategory, participantsByCategory, categoryStages, bracketsByCategory,
+    categories, groupsByCategory, participantsByCategory, categoryStages, bracketsByCategory, people,
     haveTitle, title: tournament.title || null,
   };
 }
@@ -683,6 +697,7 @@ async function pushOnce(tournamentId) {
     snapshot.participants_by_category = heavy.participantsByCategory;
     snapshot.category_stages = heavy.categoryStages;
     snapshot.brackets_by_category = heavy.bracketsByCategory;
+    snapshot.people = heavy.people || [];
     if (heavy.haveTitle) snapshot.title = heavy.title || null;
     else snapshot.partial = true;
   } else {
