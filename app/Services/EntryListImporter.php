@@ -72,7 +72,7 @@ class EntryListImporter
         $parsed = self::fromFile($path);
         EntryList::updateOrCreate(
             ['tournament_external_id' => $tournamentId],
-            ['data' => $parsed['by_cat'], 'source_name' => $sourceName],
+            ['data' => $parsed['by_cat'], 'names' => $parsed['names'], 'source_name' => $sourceName],
         );
 
         return $parsed;
