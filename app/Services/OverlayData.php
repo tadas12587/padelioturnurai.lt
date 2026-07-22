@@ -127,6 +127,20 @@ class OverlayData
      */
     public function participants(string $tournamentId, int $categoryId): array
     {
+        // Manually imported Excel entry list wins (for the draw before matches
+        // exist). It is keyed by normalised category name.
+        $manual = \App\Models\EntryList::where('tournament_external_id', $tournamentId)->value('data');
+        if (! empty($manual)) {
+            foreach ($this->categories($tournamentId) as $c) {
+                if ((string) ($c['id'] ?? '') === (string) $categoryId) {
+                    $key = \App\Models\EntryList::normCategory((string) ($c['category']['name'] ?? ''));
+                    if (! empty($manual[$key])) {
+                        return $manual[$key];
+                    }
+                }
+            }
+        }
+
         $byCat = $this->payload($tournamentId)['participants_by_category'] ?? [];
 
         return $byCat[(string) $categoryId] ?? [];
