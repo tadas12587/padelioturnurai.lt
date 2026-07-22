@@ -547,7 +547,7 @@ async function computeHeavy(tournamentId, key, matches) {
   } else if (lastGoodTournament.has(key)) {
     tournament = lastGoodTournament.get(key);
     categories = tournament.tournamentCategory || [];
-    console.error('  ↩︎ Naudoju paskutinę žinomą turnyro info');
+    console.log('  ↩︎ Naudoju paskutinę žinomą turnyro info');
   } else {
     tournament = { title: null, tournamentCategory: [] };
     haveTitle = false;
@@ -570,7 +570,7 @@ async function computeHeavy(tournamentId, key, matches) {
     }
     if (seen.size) {
       categories = categories.concat([...seen.values()]);
-      console.error(`  ↩︎ Kategorijos papildytos iš matches (+${seen.size}); iš viso ${categories.length}`);
+      console.log(`  ↩︎ Kategorijos papildytos iš matches (+${seen.size}); iš viso ${categories.length}`);
     }
   }
 
