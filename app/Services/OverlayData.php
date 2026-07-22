@@ -379,30 +379,37 @@ class OverlayData
     }
 
     /**
-     * Žaidėjų šalys iš Tournated (name → nation kodas, pvz. „LT").
+     * Žaidėjai iš Tournated: personKey => ['id' => Tournated user id, 'nation' => kodas].
      *
-     * @return array<string,string> personKey => nation
+     * @return array<string,array{id:?int,nation:?string}>
      */
-    public function peopleNations(string $tournamentId): array
+    public function peopleByKey(string $tournamentId): array
     {
         $out = [];
         foreach ($this->payload($tournamentId)['people'] ?? [] as $p) {
             $name = trim((string) ($p['name'] ?? ''));
-            $nation = $p['nation'] ?? null;
-            if ($name !== '' && $nation) {
-                $out[$this->personKey($name)] = (string) $nation;
+            if ($name === '') {
+                continue;
             }
+            $out[$this->personKey($name)] = [
+                'id'     => isset($p['id']) && $p['id'] !== null ? (int) $p['id'] : null,
+                'nation' => $p['nation'] ?? null,
+            ];
         }
 
         return $out;
     }
 
-    /** @return array<string,mixed> */
-    public function photoFor(string $tournamentId, string $name, string $fallbackGender): array
+    /**
+     * Globali žaidėjo paieška: pagal Tournated ID (jei yra), kitaip pagal vardą.
+     *
+     * @return array<string,mixed>
+     */
+    public function photoFor(?int $userId, string $name, string $fallbackGender): array
     {
-        $row = \App\Models\PlayerPhoto::where('tournament_external_id', $tournamentId)
-            ->where('person_key', $this->personKey($name))
-            ->first();
+        $row = $userId
+            ? \App\Models\PlayerPhoto::where('tournated_user_id', $userId)->first()
+            : \App\Models\PlayerPhoto::where('person_key', $this->personKey($name))->first();
 
         $code = $this->countryCode($row->country ?? null);
         $info = [
@@ -444,12 +451,23 @@ class OverlayData
         }
 
         $gender = $this->genderFromCategory($m['category'] ?? null);
-        $side = fn ($players) => array_map(fn ($n) => $this->photoFor($tournamentId, $n, $gender), $players ?: []);
+        // Prefer players1/players2 (carry Tournated user id); fall back to names.
+        $side = function ($players, $names) use ($gender) {
+            if (is_array($players) && count($players)) {
+                return array_map(fn ($p) => $this->photoFor(
+                    isset($p['id']) && $p['id'] !== null ? (int) $p['id'] : null,
+                    (string) ($p['name'] ?? ''),
+                    $gender,
+                ), $players);
+            }
+
+            return array_map(fn ($n) => $this->photoFor(null, (string) $n, $gender), $names ?: []);
+        };
 
         return [
             'found'       => true,
-            'team1'       => $side($m['team1'] ?? []),
-            'team2'       => $side($m['team2'] ?? []),
+            'team1'       => $side($m['players1'] ?? null, $m['team1'] ?? []),
+            'team2'       => $side($m['players2'] ?? null, $m['team2'] ?? []),
             'category'    => $m['category'] ?? null,
             'center'      => [
                 'time'        => $m['time'] ?? null,

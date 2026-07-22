@@ -159,6 +159,52 @@ class H2hTest extends TestCase
         $this->assertSame('Lietuva', PlayerPhoto::where('person_key', 'jonas petraitis')->value('country'));
     }
 
+    public function test_players_are_shared_across_tournaments_by_user_id(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => 'AAA', 'payload' => [
+            'participants_by_category' => ['1' => [['id' => 'r1', 'name' => 'Jonas Petraitis / Antanas Kazlauskas']]],
+            'people' => [['id' => 500, 'name' => 'Jonas Petraitis', 'nation' => 'LT'], ['id' => 501, 'name' => 'Antanas Kazlauskas', 'nation' => 'LT']],
+            'matches' => [],
+        ]]);
+        \App\Filament\Resources\PlayerPhotoResource::loadPeople('AAA');
+        PlayerPhoto::where('tournated_user_id', 500)->update(['photo' => 'player-photos/j.gif']);
+
+        // Same player (id 500) in another tournament, spelled slightly differently.
+        OverlaySnapshot::create(['tournament_external_id' => 'BBB', 'payload' => [
+            'participants_by_category' => ['9' => [['id' => 'r9', 'name' => 'Jonas Petraitis / Zigmas Wanderis']]],
+            'people' => [['id' => 500, 'name' => 'Jonas Petraitis', 'nation' => 'LT'], ['id' => 777, 'name' => 'Zigmas Wanderis', 'nation' => 'PL']],
+            'matches' => [],
+        ]]);
+        \App\Filament\Resources\PlayerPhotoResource::loadPeople('BBB');
+
+        // Still ONE card for player 500, keeping its photo.
+        $this->assertSame(1, PlayerPhoto::where('tournated_user_id', 500)->count());
+        $this->assertSame('player-photos/j.gif', PlayerPhoto::where('tournated_user_id', 500)->value('photo'));
+    }
+
+    public function test_h2h_finds_photo_by_user_id(): void
+    {
+        PlayerPhoto::create(['tournament_external_id' => 'AAA', 'tournated_user_id' => 500, 'person_key' => 'jonas petraitis', 'name' => 'Jonas Petraitis', 'gender' => 'V', 'photo' => 'player-photos/j.gif', 'country' => 'LT']);
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [[
+                'id' => 5, 'category' => 'Vyrai', 'team1' => ['Kitoks Vardas'], 'team2' => ['C D'],
+                'players1' => [['id' => 500, 'name' => 'Kitoks Vardas', 'nation' => 'LT']],
+                'players2' => [['id' => 999, 'name' => 'C D', 'nation' => null]],
+            ]],
+        ]]);
+        $overlay = Overlay::create([
+            'name' => 'H', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata']],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 5],
+        ]);
+
+        // Even though the match name differs, the photo is found by user id 500.
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('h2h.team1.0.is_stock', false)
+            ->assertJsonPath('h2h.team1.0.country', 'LT');
+    }
+
     public function test_show_match_sets_state_and_active_window(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
