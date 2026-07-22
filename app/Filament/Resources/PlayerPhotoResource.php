@@ -30,9 +30,10 @@ class PlayerPhotoResource extends Resource
     {
         return $form->schema([
             Forms\Components\Select::make('tournament_external_id')
-                ->label('Turnyro ID')
+                ->label('Turnyras (paskutinis, informacijai)')
                 ->options(fn () => self::tournamentOptions())
-                ->searchable()->required(),
+                ->searchable()
+                ->helperText('Žaidėjas bendras visiems turnyrams (pagal Tournated ID); šis laukas — tik informacinis.'),
             Forms\Components\TextInput::make('name')->label('Vardas')->required(),
             Forms\Components\Select::make('gender')->label('Lytis')
                 ->options(['V' => 'Vyras', 'M' => 'Moteris'])->default('V')->required(),
@@ -55,7 +56,8 @@ class PlayerPhotoResource extends Resource
                 Tables\Columns\TextColumn::make('name')->label('Vardas')->searchable(),
                 Tables\Columns\TextColumn::make('gender')->label('Lytis')->badge()
                     ->formatStateUsing(fn ($state) => $state === 'M' ? 'Moteris' : 'Vyras'),
-                Tables\Columns\TextColumn::make('tournament_external_id')->label('Turnyras')->searchable(),
+                Tables\Columns\TextColumn::make('country')->label('Šalis')->badge()->toggleable(),
+                Tables\Columns\TextColumn::make('tournated_user_id')->label('Tournated ID')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('name')
             ->actions([
@@ -95,19 +97,29 @@ class PlayerPhotoResource extends Resource
             }
         }
 
-        $nationByKey = $data->peopleNations($tid); // personKey => „LT" (iš Tournated)
+        $people = $data->peopleByKey($tid); // personKey => ['id' => .., 'nation' => ..]
 
         $n = 0;
         foreach ($data->participantsPeople($tid) as $name) {
             $key = $data->personKey($name);
-            $row = PlayerPhoto::firstOrNew(['tournament_external_id' => $tid, 'person_key' => $key]);
+            $uid = $people[$key]['id'] ?? null;
+            $nation = $people[$key]['nation'] ?? null;
+
+            // Globali biblioteka: raktas — Tournated ID (jei yra), kitaip vardas.
+            $row = $uid
+                ? PlayerPhoto::firstOrNew(['tournated_user_id' => $uid])
+                : PlayerPhoto::firstOrNew(['person_key' => $key, 'tournated_user_id' => null]);
+
+            $row->tournated_user_id = $uid;
+            $row->person_key = $key;
             $row->name = $name;
+            $row->tournament_external_id = $tid; // paskutinis matytas turnyras (informacijai)
             if (! $row->exists) {
                 $row->gender = $genderByKey[$key] ?? $defaultGender;
             }
             // Šalį įrašom tik jei dar tuščia — kad neperrašytume rankinio pakeitimo.
-            if (empty($row->country) && ! empty($nationByKey[$key])) {
-                $row->country = $nationByKey[$key];
+            if (empty($row->country) && ! empty($nation)) {
+                $row->country = $nation;
             }
             $row->save();
             $n++;

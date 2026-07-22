@@ -164,9 +164,9 @@ async function fetchDraws(categoryId) {
 function normalizeMatch(m) {
   const names = (p) => (p && p.users)
     ? p.users.map((u) => `${u.name || ''} ${u.surname || ''}`.trim()).filter(Boolean) : [];
-  // Kiekvienas žaidėjas su šalimi (nation, pvz. „LT") — profilio „Šalis" laukui.
+  // Kiekvienas žaidėjas su Tournated ID ir šalimi — globaliai žaidėjų bibliotekai.
   const people = (p) => (p && p.users)
-    ? p.users.map((u) => ({ name: `${u.name || ''} ${u.surname || ''}`.trim(), nation: u.nation || null })).filter((x) => x.name) : [];
+    ? p.users.map((u) => ({ id: u.id ?? null, name: `${u.name || ''} ${u.surname || ''}`.trim(), nation: u.nation || null })).filter((x) => x.name) : [];
   const e1 = m.entry1 && m.entry1.id;
   const e2 = m.entry2 && m.entry2.id;
   const w = m.winner && m.winner.id;
@@ -363,8 +363,8 @@ async function fetchMatches(tournamentId) {
       tournamentCategory { id category { name } }
       group { id name }
       entry1 { id } entry2 { id } winner { id }
-      participant1 { users { name surname nation } }
-      participant2 { users { name surname nation } }
+      participant1 { users { id name surname nation } }
+      participant2 { users { id name surname nation } }
     }
   }`);
   return (data.matches || []).map(normalizeMatch);
@@ -664,14 +664,16 @@ async function computeHeavy(tournamentId, key, matches) {
     if (segments.length) bracketsByCategory[String(cat.id)] = { segments };
   }
 
-  // Žaidėjų šalys iš rungtynių (name → nation, pvz. „LT").
+  // Žaidėjai iš rungtynių: Tournated ID + vardas + šalis (globaliai bibliotekai).
   const peopleMap = new Map();
   for (const m of matches) {
     for (const p of [...(m.players1 || []), ...(m.players2 || [])]) {
-      if (p.name && !peopleMap.has(p.name)) peopleMap.set(p.name, p.nation || null);
+      if (!p.name) continue;
+      const key = p.id != null ? `id:${p.id}` : `nm:${p.name.toLowerCase()}`;
+      if (!peopleMap.has(key)) peopleMap.set(key, { id: p.id ?? null, name: p.name, nation: p.nation || null });
     }
   }
-  const people = [...peopleMap].map(([name, nation]) => ({ name, nation }));
+  const people = [...peopleMap.values()];
 
   return {
     categories, groupsByCategory, participantsByCategory, categoryStages, bracketsByCategory, people,
