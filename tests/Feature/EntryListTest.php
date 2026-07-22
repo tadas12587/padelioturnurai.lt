@@ -43,6 +43,26 @@ class EntryListTest extends TestCase
         $this->assertSame([], $data->participants('10931', 59198));
     }
 
+    public function test_imported_categories_appear_even_without_scraped_categories(): void
+    {
+        // No snapshot categories at all (scraper hasn't run yet).
+        OverlaySnapshot::create(['tournament_external_id' => '10931', 'payload' => ['categories' => [], 'matches' => []]]);
+        EntryList::create(['tournament_external_id' => '10931',
+            'data'  => [EntryList::normCategory('BESSO - Masters grupė (A-)') => [['id' => 'x', 'name' => 'A B / C D', 'seed' => null, 'pot' => null]]],
+            'names' => [EntryList::normCategory('BESSO - Masters grupė (A-)') => 'BESSO - Masters grupė (A-)'],
+        ]);
+
+        $data = app(OverlayData::class);
+        $cats = $data->categories('10931');
+        $this->assertCount(1, $cats);
+        $this->assertSame('BESSO - Masters grupė (A-)', $cats[0]['category']['name']);
+
+        // The draw can pull participants using that synthetic category id.
+        $teams = $data->participants('10931', (int) $cats[0]['id']);
+        $this->assertCount(1, $teams);
+        $this->assertSame('A B / C D', $teams[0]['name']);
+    }
+
     public function test_reimport_replaces_the_previous_list(): void
     {
         EntryList::create(['tournament_external_id' => '10931', 'data' => ['a' => [['id' => 1, 'name' => 'X / Y']]]]);

@@ -11,9 +11,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class EntryList extends Model
 {
-    protected $fillable = ['tournament_external_id', 'data', 'source_name'];
+    protected $fillable = ['tournament_external_id', 'data', 'names', 'source_name'];
 
-    protected $casts = ['data' => 'array'];
+    protected $casts = ['data' => 'array', 'names' => 'array'];
 
     /** Normalise a category name for matching (trim, collapse spaces, lowercase). */
     public static function normCategory(string $name): string

@@ -4,9 +4,8 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\PlayerPhotoResource;
 use App\Models\EntryList;
-use App\Models\Overlay;
+use App\Models\OverlaySnapshot;
 use App\Services\EntryListImporter;
-use App\Services\OverlayData;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -49,10 +48,10 @@ class EntryImportPage extends Page
                         Storage::disk('local')->delete($data['file']);
                     }
 
+                    $msg = "Importuota {$res['total']} porų, " . count($res['by_cat']) . ' kategorijų. Burtų lange kategorijas rink iš karto.';
                     $unmatched = $this->unmatchedCategories($data['tid'], $res['names']);
-                    $msg = "Importuota {$res['total']} porų, " . count($res['by_cat']) . ' kategorijų.';
                     if ($unmatched) {
-                        $msg .= ' ⚠ Nesutampa su turnyro kategorijomis: ' . implode('; ', $unmatched);
+                        $msg .= ' ⚠ Šie pavadinimai nesutampa su Tournated kategorijomis (patikrink rašybą): ' . implode('; ', $unmatched);
                     }
                     Notification::make()->title($msg)->success()->send();
                 }),
@@ -64,9 +63,10 @@ class EntryImportPage extends Page
     {
         return EntryList::orderByDesc('updated_at')->get()->map(function (EntryList $e) {
             $data = $e->data ?? [];
+            $names = $e->names ?? [];
             $cats = [];
             foreach ($data as $norm => $teams) {
-                $cats[] = ['name' => $norm, 'count' => count($teams)];
+                $cats[] = ['name' => $names[$norm] ?? $norm, 'count' => count($teams)];
             }
 
             return [
@@ -79,11 +79,20 @@ class EntryImportPage extends Page
         })->all();
     }
 
-    /** Category names from the file that don't match the tournament's categories. */
+    /**
+     * Excel category names that don't match the SCRAPED (Tournated) categories.
+     * Only meaningful once the scraper has loaded categories — until then the
+     * import stands on its own, so we don't warn.
+     */
     private function unmatchedCategories(string $tid, array $names): array
     {
+        $payload = OverlaySnapshot::where('tournament_external_id', $tid)->value('payload') ?? [];
+        $snap = $payload['categories'] ?? [];
+        if (empty($snap)) {
+            return [];
+        }
         $known = [];
-        foreach (app(OverlayData::class)->categories($tid) as $c) {
+        foreach ($snap as $c) {
             $known[EntryList::normCategory((string) ($c['category']['name'] ?? ''))] = true;
         }
         $out = [];

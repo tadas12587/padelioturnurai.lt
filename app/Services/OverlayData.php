@@ -53,7 +53,31 @@ class OverlayData
     /** @return array<int,mixed> */
     public function categories(string $tournamentId): array
     {
-        return $this->payload($tournamentId)['categories'] ?? [];
+        $cats = $this->payload($tournamentId)['categories'] ?? [];
+
+        // Add categories that exist only in a manually imported Excel entry list
+        // (so the draw can pick them before Tournated has loaded categories).
+        // They get a stable synthetic id and disappear once the real category
+        // (same name) arrives from the scraper.
+        $entry = \App\Models\EntryList::where('tournament_external_id', $tournamentId)->first();
+        if ($entry && ! empty($entry->data)) {
+            $have = [];
+            foreach ($cats as $c) {
+                $have[\App\Models\EntryList::normCategory((string) ($c['category']['name'] ?? ''))] = true;
+            }
+            $names = $entry->names ?? [];
+            foreach (array_keys($entry->data) as $norm) {
+                if (! isset($have[$norm])) {
+                    $cats[] = [
+                        'id'       => 900000000 + (crc32($norm) % 90000000), // sintetinis, stabilus
+                        'category' => ['id' => null, 'name' => $names[$norm] ?? $norm],
+                        'imported' => true,
+                    ];
+                }
+            }
+        }
+
+        return $cats;
     }
 
     /**

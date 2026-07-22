@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->string('tournament_external_id')->unique();
             $table->json('data')->nullable();       // { normCategoryName: [ {id,name,seed,...} ] }
+            $table->json('names')->nullable();       // { normCategoryName: "Display Name" }
             $table->string('source_name')->nullable();
             $table->timestamps();
         });
