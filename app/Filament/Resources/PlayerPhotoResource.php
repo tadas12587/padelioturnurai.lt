@@ -97,27 +97,29 @@ class PlayerPhotoResource extends Resource
             }
         }
 
-        $people = $data->peopleByKey($tid); // personKey => ['id' => .., 'nation' => ..]
-
+        // Importuojam TIK žaidėjus su Tournated ID. Ant ID kaupiam info palaipsniui
+        // (vardas, šalis…) — net jei pirmas scrape jos negavo. Jokių dublikatų.
         $n = 0;
-        foreach ($data->participantsPeople($tid) as $name) {
+        foreach ($data->peopleList($tid) as $p) {
+            $uid = isset($p['id']) && $p['id'] !== null && $p['id'] !== '' ? (int) $p['id'] : null;
+            if (! $uid) {
+                continue; // be ID — nepridedam
+            }
+            $name = trim((string) ($p['name'] ?? ''));
             $key = $data->personKey($name);
-            $uid = $people[$key]['id'] ?? null;
-            $nation = $people[$key]['nation'] ?? null;
+            $nation = $p['nation'] ?? null;
 
-            // Globali biblioteka: raktas — Tournated ID (jei yra), kitaip vardas.
-            $row = $uid
-                ? PlayerPhoto::firstOrNew(['tournated_user_id' => $uid])
-                : PlayerPhoto::firstOrNew(['person_key' => $key, 'tournated_user_id' => null]);
-
+            $row = PlayerPhoto::firstOrNew(['tournated_user_id' => $uid]);
             $row->tournated_user_id = $uid;
-            $row->person_key = $key;
-            $row->name = $name;
+            if ($name !== '') {
+                $row->name = $name;
+                $row->person_key = $key;
+            }
             $row->tournament_external_id = $tid; // paskutinis matytas turnyras (informacijai)
             if (! $row->exists) {
                 $row->gender = $genderByKey[$key] ?? $defaultGender;
             }
-            // Šalį įrašom tik jei dar tuščia — kad neperrašytume rankinio pakeitimo.
+            // Įrašom tik jei dar tuščia — kad neperrašytume rankinio pakeitimo.
             if (empty($row->country) && ! empty($nation)) {
                 $row->country = $nation;
             }

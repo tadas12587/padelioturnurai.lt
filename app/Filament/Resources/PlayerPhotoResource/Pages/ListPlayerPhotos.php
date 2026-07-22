@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PlayerPhotoResource\Pages;
 
 use App\Filament\Resources\PlayerPhotoResource;
+use App\Models\PlayerPhoto;
 use App\Models\Setting;
 use Filament\Actions;
 use Filament\Forms;
@@ -51,6 +52,19 @@ class ListPlayerPhotos extends ListRecords
                     Setting::set('h2h_stock_male', $data['male'] ?? null);
                     Setting::set('h2h_stock_female', $data['female'] ?? null);
                     Notification::make()->title('Stock nuotraukos išsaugotos')->success()->send();
+                }),
+
+            Actions\Action::make('deleteAll')
+                ->label('Ištrinti visus')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Ištrinti visus žaidėjus?')
+                ->modalDescription('Bus pašalinti VISI žaidėjų įrašai. Po to paspausk „Užkrauti dalyvius" — jie bus importuoti iš naujo pagal Tournated ID.')
+                ->action(function () {
+                    $n = PlayerPhoto::query()->count();
+                    PlayerPhoto::query()->delete();
+                    Notification::make()->title("Ištrinta žaidėjų: {$n}")->success()->send();
                 }),
 
             Actions\CreateAction::make(),
