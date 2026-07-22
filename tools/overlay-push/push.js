@@ -93,15 +93,16 @@ async function gql(query, timeoutMs = GQL_TIMEOUT_MS) {
 
 // ── Turnyro kategorijos ─────────────────────────────────────
 async function fetchTournament(id) {
-  // Trumpas laikas — šis resolveris Tournated pusėje šiuo metu kabo, nenorim
-  // laukti pilno GQL_TIMEOUT kiekvieną kartą.
+  // `tournament(id:)` Tournated pusėje kabo; jų puslapis naudoja
+  // `tournamentDetailById` — jis veikia (net viešai) ir duoda pavadinimą +
+  // VISAS kategorijas (net registracijų-only turnyrų, be burtų/rungtynių).
   const data = await gql(`{
-    tournament(id: ${id}) {
+    tournamentDetailById(id: ${id}) {
       title
-      tournamentCategory { id category { id name } mde }
+      tournamentCategory { id mde category { id name } }
     }
-  }`, 5000);
-  return data.tournament || null;
+  }`);
+  return data.tournamentDetailById || null;
 }
 
 // ── Vienos kategorijos grupės ───────────────────────────────
