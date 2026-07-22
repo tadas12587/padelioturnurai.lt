@@ -16,8 +16,11 @@
 //      TOURNAMENT_ID=10424 INGEST_TOKEN=xxxx node push.js
 // ============================================================
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { createServer } from 'node:http';
+import { spawn } from 'node:child_process';
 
 // ── Nustatymai (gali keisti čia arba per aplinkos kintamuosius) ──
 const SITE_URL       = process.env.SITE_URL       || 'https://padelioturnyrai.lt';
@@ -34,13 +37,22 @@ const ORIGIN      = 'https://play.padel.lt';
 // registracijos/dalyviai. Imamas iš env TOURNATED_TOKEN arba iš vietinio
 // failo tools/overlay-push/.token (į git nepatenka). Pasibaigus galiojimui —
 // skriptas savaime grįžta prie atkūrimo iš rungtynių.
-let TOURNATED_TOKEN = process.env.TOURNATED_TOKEN || '';
+// .token vieta: šalia programos (sukompiliuotas .exe/.app) arba šalia push.js.
+// „Sukompiliuota", jei vykdomasis failas nėra node/bun (o pati programa).
+const IS_COMPILED = !/[\\/](node|bun)(\.exe)?$/i.test(process.execPath || '');
+let TOKEN_FILE;
 try {
-  if (!TOURNATED_TOKEN) {
-    const f = fileURLToPath(new URL('.token', import.meta.url)); // .token šalia push.js
-    if (existsSync(f)) TOURNATED_TOKEN = readFileSync(f, 'utf8').trim().replace(/^Bearer\s+/i, '');
-  }
-} catch (_) { /* nesvarbu */ }
+  TOKEN_FILE = IS_COMPILED
+    ? join(dirname(process.execPath), '.token')
+    : join(dirname(fileURLToPath(import.meta.url)), '.token');
+} catch (_) { TOKEN_FILE = '.token'; }
+
+function readTokenFile() {
+  try { if (existsSync(TOKEN_FILE)) return readFileSync(TOKEN_FILE, 'utf8').trim().replace(/^Bearer\s+/i, ''); } catch (_) {}
+  return '';
+}
+
+let TOURNATED_TOKEN = process.env.TOURNATED_TOKEN || readTokenFile();
 
 // ── GraphQL pagalbinė ───────────────────────────────────────
 const GQL_TIMEOUT_MS = Number(process.env.GQL_TIMEOUT_MS || 15000);
@@ -708,8 +720,104 @@ async function pushOnce(tournamentId) {
   }
 }
 
+// ── Tokeno įvedimas per naršyklę ────────────────────────────
+function openBrowser(url) {
+  try {
+    if (process.platform === 'win32') spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
+    else if (process.platform === 'darwin') spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
+    else spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
+  } catch (_) { /* atidarys ranka */ }
+}
+
+const TOKEN_PAGE = `<!doctype html><html lang="lt"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Tournated tokenas</title>
+<style>
+:root{--b:#0f1014;--c:#1a1c22;--l:#2a2d36;--t:#f2f3f5;--m:#9aa0ad;--a:#C9A84C}
+*{box-sizing:border-box}body{margin:0;background:var(--b);color:var(--t);font-family:system-ui,'Segoe UI',sans-serif}
+.w{max-width:720px;margin:0 auto;padding:26px}
+h1{font-size:22px;margin:0 0 4px}.sub{color:var(--m);margin:0 0 20px}
+ol{color:var(--m);line-height:1.7;padding-left:20px}code{background:#000;padding:2px 6px;border-radius:5px;color:var(--a)}
+textarea{width:100%;height:130px;margin-top:14px;background:#141821;color:var(--t);border:1px solid var(--l);border-radius:10px;padding:12px;font-family:ui-monospace,monospace;font-size:13px}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+button{padding:14px 20px;font-size:15px;font-weight:600;border:none;border-radius:10px;cursor:pointer}
+.save{background:var(--a);color:#0A0A0F}.skip{background:transparent;border:1px solid var(--l);color:var(--m)}
+.msg{margin-top:16px;font-weight:600;min-height:22px}.ok{color:#7fd6a0}.err{color:#f3a0a0}
+.card{background:var(--c);border:1px solid var(--l);border-radius:14px;padding:22px}
+</style></head><body><div class="w"><div class="card">
+<h1>🔑 Tournated tokenas</h1>
+<p class="sub">Įklijuok savo Tournated prisijungimo tokeną. Su juo transliacija gauna oficialius bracketus, grupes ir dalyvius.</p>
+<ol>
+<li>Prisijunk prie <code>play.padel.lt</code>.</li>
+<li>Atidaryk <b>DevTools</b> (F12) → <b>Network</b>, filtre įrašyk <code>graphql</code>, perkrauk puslapį (F5).</li>
+<li>Spustelk bet kurią <code>graphql</code> užklausą → <b>Headers</b> → <b>Request Headers</b>.</li>
+<li>Nukopijuok <code>authorization: Bearer …</code> reikšmę ir įklijuok žemiau.</li>
+</ol>
+<textarea id="t" placeholder="Bearer eyJhbGciOi… (arba be žodžio Bearer)"></textarea>
+<div class="row">
+<button class="save" onclick="save()">Išsaugoti ir paleisti</button>
+<button class="skip" onclick="skip()">Paleisti be tokeno</button>
+</div>
+<div class="msg" id="m"></div>
+</div></div>
+<script>
+async function save(){const t=document.getElementById('t').value.trim();const m=document.getElementById('m');
+ if(!t){m.className='msg err';m.textContent='Įklijuok tokeną.';return;}
+ m.className='msg';m.textContent='Saugoma…';
+ try{const r=await fetch('/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:t})});const j=await r.json();
+  if(j.ok){m.className='msg ok';m.textContent='✔ Išsaugota! Programa paleista — šį langą gali uždaryti.';}
+  else{m.className='msg err';m.textContent='✗ '+(j.error||'Klaida');}}catch(e){m.className='msg err';m.textContent='✗ '+e.message;}}
+async function skip(){const m=document.getElementById('m');try{await fetch('/skip',{method:'POST'});m.className='msg';m.textContent='Paleista be tokeno (dirbama iš rungtynių). Langą gali uždaryti.';}catch(e){}}
+</script></body></html>`;
+
+function tokenSetupServer() {
+  return new Promise((resolve) => {
+    const PORT = Number(process.env.TOKEN_PORT || 8770);
+    const srv = createServer((req, res) => {
+      if (req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        return res.end(TOKEN_PAGE);
+      }
+      if (req.method === 'POST' && req.url === '/save') {
+        let b = ''; req.on('data', (d) => (b += d)); req.on('end', () => {
+          let tok = ''; try { tok = JSON.parse(b).token || ''; } catch { tok = b; }
+          tok = String(tok).trim().replace(/^Bearer\s+/i, '');
+          if (tok.split('.').length !== 3) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ ok: false, error: 'Netinkamas tokenas (turėtų būti Bearer JWT).' }));
+          }
+          try { writeFileSync(TOKEN_FILE, tok, 'utf8'); }
+          catch (e) { res.writeHead(500, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: false, error: 'Nepavyko įrašyti: ' + e.message })); }
+          res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true }));
+          setTimeout(() => { try { srv.close(); } catch (_) {} resolve(tok); }, 300);
+        });
+        return;
+      }
+      if (req.method === 'POST' && req.url === '/skip') {
+        res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true }));
+        setTimeout(() => { try { srv.close(); } catch (_) {} resolve(''); }, 200);
+        return;
+      }
+      res.writeHead(404); res.end();
+    });
+    srv.on('error', (e) => { console.error(`Tokeno lango klaida: ${e.message} — dirbama iš rungtynių.`); resolve(''); });
+    srv.listen(PORT, '127.0.0.1', () => {
+      const url = `http://127.0.0.1:${PORT}`;
+      console.log(`\n🔑 Reikia Tournated tokeno. Atidaryk naršyklėje: ${url}`);
+      console.log('   (jei neatsidarė automatiškai — nukopijuok nuorodą; arba paspausk „Paleisti be tokeno")\n');
+      openBrowser(url);
+    });
+  });
+}
+
+async function ensureToken() {
+  if (TOURNATED_TOKEN) return TOURNATED_TOKEN;      // env arba .token failas
+  return await tokenSetupServer();                  // interaktyvus įvedimas
+}
+
 // ── Pagrindinis ciklas ──────────────────────────────────────
 async function loop() {
+  TOURNATED_TOKEN = await ensureToken();
+
   console.log(`🏓 Overlay push paleistas`);
   console.log(`   Turnyrai: iš admin (auto)${TOURNAMENT_ID ? ` arba ${TOURNAMENT_ID}` : ''}`);
   console.log(`   Svetainė: ${SITE_URL}`);
