@@ -128,13 +128,18 @@ class H2hTest extends TestCase
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
             'participants_by_category' => ['53636' => [['id' => 'r1', 'name' => 'Jonas Petraitis / Antanas Kazlauskas']]],
+            'people' => [
+                ['id' => 10, 'name' => 'Jonas Petraitis', 'nation' => 'LT'],
+                ['id' => 11, 'name' => 'Antanas Kazlauskas', 'nation' => 'LT'],
+                ['id' => null, 'name' => 'Be Id Zaidejas', 'nation' => 'LT'], // be ID — neimportuojamas
+            ],
             'matches' => [],
         ]]);
 
         \App\Filament\Resources\PlayerPhotoResource::loadPeople('10424');
 
-        $this->assertDatabaseHas('player_photos', ['person_key' => 'jonas petraitis', 'name' => 'Jonas Petraitis']);
-        $this->assertSame(2, PlayerPhoto::where('tournament_external_id', '10424')->count());
+        $this->assertDatabaseHas('player_photos', ['person_key' => 'jonas petraitis', 'name' => 'Jonas Petraitis', 'tournated_user_id' => 10]);
+        $this->assertSame(2, PlayerPhoto::count()); // tik du su ID
     }
 
     public function test_load_people_fills_country_from_nation(): void
@@ -142,8 +147,8 @@ class H2hTest extends TestCase
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
             'participants_by_category' => ['1' => [['id' => 'r1', 'name' => 'Jonas Petraitis / Adam Kowalski']]],
             'people' => [
-                ['name' => 'Jonas Petraitis', 'nation' => 'LT'],
-                ['name' => 'Adam Kowalski', 'nation' => 'PL'],
+                ['id' => 20, 'name' => 'Jonas Petraitis', 'nation' => 'LT'],
+                ['id' => 21, 'name' => 'Adam Kowalski', 'nation' => 'PL'],
             ],
             'matches' => [],
         ]]);

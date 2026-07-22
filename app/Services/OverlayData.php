@@ -379,6 +379,16 @@ class OverlayData
     }
 
     /**
+     * Neapdorotas žaidėjų sąrašas iš snapshot'o: [{id, name, nation}, ...].
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function peopleList(string $tournamentId): array
+    {
+        return $this->payload($tournamentId)['people'] ?? [];
+    }
+
+    /**
      * Žaidėjai iš Tournated: personKey => ['id' => Tournated user id, 'nation' => kodas].
      *
      * @return array<string,array{id:?int,nation:?string}>
