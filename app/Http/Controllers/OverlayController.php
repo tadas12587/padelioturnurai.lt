@@ -392,6 +392,7 @@ class OverlayController extends Controller
             'brackets_by_category' => 'array',
             'matches'              => 'array',
             'participants_by_category' => 'array',
+            'people'               => 'array',
         ]);
 
         $tid = (string) $validated['tournament_id'];
@@ -415,6 +416,7 @@ class OverlayController extends Controller
                 'brackets_by_category' => $keep('brackets_by_category', []),
                 'matches'              => $keep('matches', []),
                 'participants_by_category' => $keep('participants_by_category', []),
+                'people'               => $keep('people', []),
             ]],
         );
 

@@ -95,6 +95,8 @@ class PlayerPhotoResource extends Resource
             }
         }
 
+        $nationByKey = $data->peopleNations($tid); // personKey => „LT" (iš Tournated)
+
         $n = 0;
         foreach ($data->participantsPeople($tid) as $name) {
             $key = $data->personKey($name);
@@ -102,6 +104,10 @@ class PlayerPhotoResource extends Resource
             $row->name = $name;
             if (! $row->exists) {
                 $row->gender = $genderByKey[$key] ?? $defaultGender;
+            }
+            // Šalį įrašom tik jei dar tuščia — kad neperrašytume rankinio pakeitimo.
+            if (empty($row->country) && ! empty($nationByKey[$key])) {
+                $row->country = $nationByKey[$key];
             }
             $row->save();
             $n++;

@@ -137,6 +137,28 @@ class H2hTest extends TestCase
         $this->assertSame(2, PlayerPhoto::where('tournament_external_id', '10424')->count());
     }
 
+    public function test_load_people_fills_country_from_nation(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'participants_by_category' => ['1' => [['id' => 'r1', 'name' => 'Jonas Petraitis / Adam Kowalski']]],
+            'people' => [
+                ['name' => 'Jonas Petraitis', 'nation' => 'LT'],
+                ['name' => 'Adam Kowalski', 'nation' => 'PL'],
+            ],
+            'matches' => [],
+        ]]);
+
+        \App\Filament\Resources\PlayerPhotoResource::loadPeople('10424');
+
+        $this->assertSame('LT', PlayerPhoto::where('person_key', 'jonas petraitis')->value('country'));
+        $this->assertSame('PL', PlayerPhoto::where('person_key', 'adam kowalski')->value('country'));
+
+        // manual country is not overwritten on re-run
+        PlayerPhoto::where('person_key', 'jonas petraitis')->update(['country' => 'Lietuva']);
+        \App\Filament\Resources\PlayerPhotoResource::loadPeople('10424');
+        $this->assertSame('Lietuva', PlayerPhoto::where('person_key', 'jonas petraitis')->value('country'));
+    }
+
     public function test_show_match_sets_state_and_active_window(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
