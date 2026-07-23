@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Overlay;
 use App\Models\OverlaySnapshot;
 use App\Services\OverlayData;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -10,6 +11,25 @@ use Tests\TestCase;
 class OverlayFlagsTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_show_flags_toggle_controls_the_flag_map(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'people' => [['id' => 1, 'name' => 'Jonas Petraitis', 'nation' => 'LT']],
+        ]]);
+
+        $on = Overlay::create(['name' => 'On', 'type' => 'group_standings',
+            'tournament_external_id' => '10424', 'config' => ['show_flags' => true]]);
+        $this->getJson("/overlay/{$on->token}/data")
+            ->assertJsonPath('show_flags', true)
+            ->assertJsonPath('flags.jonas petraitis', 'https://flagcdn.com/32x24/lt.png');
+
+        $off = Overlay::create(['name' => 'Off', 'type' => 'group_standings',
+            'tournament_external_id' => '10424', 'config' => ['show_flags' => false]]);
+        $this->getJson("/overlay/{$off->token}/data")
+            ->assertJsonPath('show_flags', false)
+            ->assertJsonPath('flags', []);
+    }
 
     public function test_flag_map_builds_urls_from_scraped_nation(): void
     {

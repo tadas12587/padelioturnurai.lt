@@ -44,6 +44,7 @@ class Overlay extends Model
             'logo'            => null,
             'position'        => 'bottom-left',
             'visible_columns' => ['place', 'name', 'points', 'wins', 'losses'],
+            'show_flags'      => true,
         ];
     }
 

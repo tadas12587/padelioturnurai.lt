@@ -204,7 +204,8 @@ class OverlayController extends Controller
             'position'    => $config['position'],
             'columns'     => $config['visible_columns'],
             'next_match'  => $state['next_match'],
-            'flags'       => $tid !== '' ? $data->flagMap($tid) : [],
+            'show_flags'  => (bool) ($config['show_flags'] ?? true),
+            'flags'       => ($tid !== '' && ($config['show_flags'] ?? true)) ? $data->flagMap($tid) : [],
         ];
 
         // Resolve every active window — several can be shown at once.

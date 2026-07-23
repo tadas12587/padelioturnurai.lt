@@ -338,6 +338,7 @@
         display: flex; flex-direction: column; gap: 2px; line-height: 1.12; }
     .sco-name .sco-pl { display: flex; align-items: center; min-width: 0; }
     .sco-name .sco-pl .ov-pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sco-name .sco-name-1 { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sco-set { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; color: var(--ov-muted); font-size: 1em; }
     .sco-games { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; color: var(--ov-text); font-size: 1.05em; }
     .sco-point { width: 2em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 1.15em; color: var(--ov-accent); }
@@ -489,6 +490,7 @@
     // PHP personKey: lowercase, strip LT/PL diacritics, trim. Used across every
     // overlay so any "Vardas Pavardė" gets its flag by name.
     window.__FLAGS = d.flags || {};
+    window.__SHOW_FLAGS = d.show_flags !== false;
     const __LTM = { 'ą':'a','č':'c','ę':'e','ė':'e','į':'i','š':'s','ų':'u','ū':'u','ž':'z','ł':'l','ó':'o','ś':'s','ź':'z','ż':'z','ń':'n','ć':'c' };
     window.__pkey = (s) => String(s || '').toLowerCase().replace(/[ąčęėįšųūžłóśźżńć]/g, (c) => __LTM[c] || c).trim();
     window.__flag = (name) => { const f = window.__FLAGS[window.__pkey(name)]; return f ? `<img class="ov-flag" src="${f}" alt="">` : ''; };
@@ -505,11 +507,12 @@
             let cells = '';
             for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
             cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
-            // One player per line (flag + abbreviated name) so both partners stay
-            // readable even with a long surname, instead of the team being clipped.
-            const nameHtml = (tm.players && tm.players.length)
+            // Flags on: one player per line (flag + abbreviated name) so both
+            // partners stay readable even with a long surname. Flags off: the
+            // original compact single-line team name.
+            const nameHtml = (window.__SHOW_FLAGS && tm.players && tm.players.length)
                 ? tm.players.map((p) => `<span class="sco-pl">${p.flag ? `<img class="ov-flag" src="${p.flag}" alt="">` : ''}<span class="ov-pn">${p.name}</span></span>`).join('')
-                : `<span class="sco-pl"><span class="ov-pn">${tm.name}</span></span>`;
+                : `<span class="sco-name-1">${tm.name}</span>`;
             return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${nameHtml}</span>${cells}</div>`;
         };
         const meta = [sc.court, sc.round].filter(Boolean).join(' · ');

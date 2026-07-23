@@ -87,6 +87,11 @@ class OverlayResource extends Resource
                         ])
                         ->default('bottom-left'),
 
+                    Toggle::make('config.show_flags')
+                        ->label('Rodyti šalių vėliavas')
+                        ->helperText('Įjungus — prie žaidėjų vardų rodomos vėliavos (grupės, bracket, tvarkaraštis, rezultatas, akistata). Išjungus — tik vardai, kaip anksčiau.')
+                        ->default(true),
+
                     CheckboxList::make('config.visible_columns')
                         ->label('Rodomi stulpeliai')
                         ->options([
