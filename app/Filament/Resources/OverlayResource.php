@@ -422,6 +422,16 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
                             TextInput::make('score_width')->label('Plotis (px)')->numeric()->default(520)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Select::make('score_anim')->label('Pasirodymo animacija')
+                                ->options([
+                                    'header_reveal' => 'Antraštė atskrenda, rezultatas išlenda (2 etapai)',
+                                    'slide'         => 'Įslenka iš šono',
+                                    'fade'          => 'Išnyra (fade + pakilimas)',
+                                    'pop'           => 'Pop (išsipučia)',
+                                    'none'          => 'Be animacijos',
+                                ])->default('header_reveal')
+                                ->helperText('Kryptis pagal poziciją: dešinėje — iš dešinės, kairėje — iš kairės.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
                             Toggle::make('show_level')->label('Rodyti lygį / kategoriją')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
 
