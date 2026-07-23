@@ -284,7 +284,7 @@ class OverlayData
      * @param  array<string,mixed>  $config
      * @return array<string,mixed>
      */
-    public function resolveScore(array $window, array $state, array $match, array $config): array
+    public function resolveScore(array $window, array $state, array $match, array $config, array $flagMap = []): array
     {
         if (empty($state['teams'])) {
             return ['found' => false];
@@ -315,6 +315,10 @@ class OverlayData
 
         $team = fn (int $t) => [
             'name'    => implode(' / ', array_map(fn ($n) => $this->abbrevName((string) $n), $state['teams'][$t] ?? [])),
+            'players' => array_map(fn ($n) => [
+                'name' => $this->abbrevName((string) $n),
+                'flag' => $flagMap[$this->personKey((string) $n)] ?? null,
+            ], $state['teams'][$t] ?? []),
             'sets'    => array_map(fn ($s) => $s[$t], $state['sets'] ?? []),
             'games'   => (int) ($state['games'][$t] ?? 0),
             'point'   => $pointFor($t),
@@ -344,6 +348,25 @@ class OverlayData
         ];
 
         return trim(strtr(mb_strtolower($name), $map));
+    }
+
+    /**
+     * personKey => flag URL for every scraped player that has a nation. Shared by
+     * all overlays so any "Vardas Pavardė" can get its country flag by name.
+     *
+     * @return array<string,string>
+     */
+    public function flagMap(string $tournamentId): array
+    {
+        $out = [];
+        foreach ($this->peopleByKey($tournamentId) as $key => $p) {
+            $code = $this->countryCode($p['nation'] ?? null);
+            if ($code) {
+                $out[$key] = "https://flagcdn.com/32x24/{$code}.png";
+            }
+        }
+
+        return $out;
     }
 
     /** Map a country name/code to an ISO-3166 alpha-2 code (for a flag), or null. */
