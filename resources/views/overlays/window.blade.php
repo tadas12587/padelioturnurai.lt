@@ -503,10 +503,7 @@
             let cells = '';
             for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
             cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
-            const nameHtml = (tm.players && tm.players.length)
-                ? tm.players.map((p) => `<span class="ov-pl">${p.flag ? `<img class="ov-flag" src="${p.flag}" alt="">` : ''}<span class="ov-pn">${p.name}</span></span>`).join('<span class="ov-slash">/</span>')
-                : window.__teamFlags(tm.name);
-            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${nameHtml}</span>${cells}</div>`;
+            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${tm.name}</span>${cells}</div>`;
         };
         const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
         const head = (sc.level || meta)
