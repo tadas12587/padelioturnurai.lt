@@ -394,12 +394,28 @@
     .draw-grid { display: grid; gap: 18px; align-content: start; }
     .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 4px solid var(--ov-accent); border-radius: 10px; padding: 14px 20px; }
     .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 24px; color: var(--ov-accent); margin-bottom: 8px; }
-    .dg-slot { display: flex; gap: 14px; font-size: 28px; padding: 9px 0; border-top: 1px solid rgba(127,127,127,.14); line-height: 1.15; }
+    .dg-slot { display: flex; align-items: flex-start; gap: 14px; font-size: 26px; padding: 10px 0; border-top: 1px solid rgba(127,127,127,.14); line-height: 1.15; }
     .dg-slot:first-of-type { border-top: 0; }
-    .dg-slot .pos { color: var(--ov-muted); min-width: 30px; flex: none; }
+    .dg-slot .pos { color: var(--ov-muted); min-width: 30px; flex: none; padding-top: 4px; }
     .dg-slot .nm { font-weight: 500; }
     .dg-slot.empty .nm { color: #5a5a66; font-style: italic; }
     .dg-slot.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
+    /* one member per line, flag on the left */
+    .dg-slot .nm, .dteam .nm { display: flex; flex-direction: column; gap: 3px; }
+    .dg-slot .pl, .dteam .pl { display: flex; align-items: center; gap: 11px; }
+    .dg-slot .pl .fl, .dteam .pl .fl { height: .8em; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); flex: none; }
+    .dg-slot .pl .fl-x, .dteam .pl .fl-x { width: 1.15em; flex: none; }   /* keep names aligned when no flag */
+    .dg-slot .pl .pn, .dteam .pl .pn { white-space: nowrap; }
+    /* main sponsor logo in a free corner */
+    .draw-mainspons { position: absolute; z-index: 6; pointer-events: none; }
+    .draw-mainspons img { object-fit: contain; filter: drop-shadow(0 6px 22px rgba(0,0,0,.55)); }
+    .draw-ms-top-right { top: 40px; right: 52px; }
+    .draw-ms-top-left { top: 40px; left: 52px; }
+    .draw-ms-bottom-right { bottom: 40px; right: 52px; }
+    .draw-ms-bottom-left { bottom: 40px; left: 52px; }
+    .draw-ms-sz-s img { height: 92px; }
+    .draw-ms-sz-m img { height: 150px; }
+    .draw-ms-sz-l img { height: 224px; }
     .dg-slot.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
     @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
     /* bracket draw: first-round seeding sheet (match cards in a grid) */
@@ -912,6 +928,16 @@
         const dr = d.draw || {};
         const slots = dr.slots || {};
         const nameAt = (k) => (slots[k] && slots[k].name) || null;
+        // Each team on two lines — one member per line, country flag on the left.
+        const playersHtml = (t) => {
+            if (t && t.players && t.players.length) {
+                return t.players.map((p) =>
+                    `<span class="pl">${p.flag ? `<img class="fl" src="${p.flag}" alt="">` : '<span class="fl-x"></span>'}<span class="pn">${p.name}</span></span>`
+                ).join('');
+            }
+            return `<span class="pl"><span class="pn">${(t && t.name) || '—'}</span></span>`;
+        };
+        const nmHtml = (k) => slots[k] ? playersHtml(slots[k]) : '<span class="pl empty"><span class="pn">—</span></span>';
         // A placement is "new" if its (slot|team) hasn't been handled yet. New
         // placements that still have a source chip in the pool fly from it to the
         // slot; the rest (e.g. BYE) just slide in.
@@ -930,7 +956,7 @@
         // 2 columns, rows = ceil(n/2), grid-auto-flow:column → 1..4 | 5..8.
         let boardHtml = '';
         if (dr.format === 'bracket') {
-            const teamRow = (k) => `<div class="dteam ${cellClass(k)}" data-slot="${k}"><span class="pos">${k}</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+            const teamRow = (k) => `<div class="dteam ${cellClass(k)}" data-slot="${k}"><span class="pos">${k}</span><span class="nm">${nmHtml(k)}</span></div>`;
             const pairs = dr.board || [];
             const rows = Math.max(1, Math.ceil(pairs.length / 2));
             boardHtml = `<div class="draw-bracket" style="grid-template-rows:repeat(${rows},auto)">`;
@@ -947,7 +973,7 @@
             for (const g of groups) {
                 boardHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
                 g.slots.forEach((k, i) => {
-                    boardHtml += `<div class="dg-slot ${cellClass(k)}" data-slot="${k}"><span class="pos">${i + 1}.</span><span class="nm">${nameAt(k) || '—'}</span></div>`;
+                    boardHtml += `<div class="dg-slot ${cellClass(k)}" data-slot="${k}"><span class="pos">${i + 1}.</span><span class="nm">${nmHtml(k)}</span></div>`;
                 });
                 boardHtml += '</div>';
             }
@@ -969,6 +995,11 @@
         const allSponsors = dr.sponsors || [];
         const sponsHtml = allSponsors.length ? '<div class="draw-spons" id="draw-spons"></div>' : '';
 
+        // One main sponsor logo, in a chosen free corner.
+        const msHtml = dr.main_sponsor
+            ? `<div class="draw-mainspons draw-ms-${dr.main_sponsor_position || 'top-right'} draw-ms-sz-${dr.main_sponsor_size || 'm'}"><img src="${dr.main_sponsor}" alt=""></div>`
+            : '';
+
         // The board is position:fixed, so it must live on <body> (outside #stage,
         // whose will-change:transform would otherwise become its containing block
         // and collapse it to a tiny box). Same trick as the results ticker.
@@ -976,7 +1007,7 @@
         const drawHost = document.getElementById('ov-draw') || (() => {
             const h = document.createElement('div'); h.id = 'ov-draw'; document.body.appendChild(h); return h;
         })();
-        drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
+        drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}${msHtml}</div>`;
 
         // Shrink the board to fit the available height so a full draw never
         // clips. Done synchronously (before the fly) so slot rects stay correct.

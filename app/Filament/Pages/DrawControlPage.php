@@ -276,6 +276,21 @@ class DrawControlPage extends Page
         return $window ? app(DrawEngine::class)->layout($window) : [];
     }
 
+    /** Is this draw window currently shown in OBS? */
+    public function isLive(): bool
+    {
+        return Overlay::isShown($this->selectedOverlay()?->state ?? [], (string) $this->windowId);
+    }
+
+    /** Draw progress: placed slots / total slots. @return array{placed:int,total:int} */
+    public function progress(): array
+    {
+        $slots = $this->drawState()['slots'] ?? [];
+        $placed = count(array_filter($slots, fn ($v) => $v !== null));
+
+        return ['placed' => $placed, 'total' => count($slots)];
+    }
+
     /** Team name for a placed slot value (for the board preview). */
     public function teamName($id): string
     {

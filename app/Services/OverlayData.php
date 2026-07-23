@@ -578,28 +578,48 @@ class OverlayData
         $layout = $engine->layout($window);
         $teams = collect($drawState['teams'] ?? [])->keyBy('id');
 
-        $nameOf = fn ($id) => $id === null ? null
-            : ['id' => $id, 'name' => $id === \App\Services\DrawEngine::BYE ? 'BYE' : ($teams[$id]['name'] ?? ('#' . $id))];
+        // Each team → its members (name + country flag), for a two-line layout.
+        $playersOf = function ($team) {
+            if (! empty($team['players']) && is_array($team['players'])) {
+                return array_values(array_map(function ($p) {
+                    $code = $this->countryCode($p['country'] ?? null);
+
+                    return ['name' => (string) ($p['name'] ?? ''), 'flag' => $code ? "https://flagcdn.com/32x24/{$code}.png" : null];
+                }, $team['players']));
+            }
+            // Fallback: split the joined "P1 / P2" name (no flags).
+            $parts = array_values(array_filter(array_map('trim', explode('/', (string) ($team['name'] ?? '')))));
+
+            return array_map(fn ($n) => ['name' => $n, 'flag' => null], $parts);
+        };
+
+        $teamOf = function ($id) use ($teams, $playersOf) {
+            if ($id === null) {
+                return null;
+            }
+            if ($id === \App\Services\DrawEngine::BYE) {
+                return ['id' => $id, 'name' => 'BYE', 'players' => [['name' => 'BYE', 'flag' => null]]];
+            }
+            $t = $teams[$id] ?? [];
+
+            return ['id' => $id, 'name' => $t['name'] ?? ('#' . $id), 'players' => $playersOf($t)];
+        };
 
         $slots = [];
         foreach (($drawState['slots'] ?? []) as $key => $tid) {
-            $slots[$key] = $nameOf($tid);
+            $slots[$key] = $teamOf($tid);
         }
 
         $placedIds = array_values(array_filter($drawState['slots'] ?? [], fn ($t) => $t !== null));
         $pool = collect($drawState['teams'] ?? [])
             ->reject(fn ($t) => in_array($t['id'], $placedIds, true))
-            ->map(fn ($t) => ['id' => $t['id'], 'name' => $t['name'] ?? ('#' . $t['id'])])
+            ->map(fn ($t) => ['id' => $t['id'], 'name' => $t['name'] ?? ('#' . $t['id']), 'players' => $playersOf($t)])
             ->values()->all();
 
         $current = $drawState['current'] ?? null;
         if ($current) {
             $tid = $current['team_id'] ?? null;
-            $current = [
-                'team_id' => $tid,
-                'name' => $tid === \App\Services\DrawEngine::BYE ? 'BYE' : ($teams[$tid]['name'] ?? ''),
-                'slot' => $current['slot'],
-            ];
+            $current = array_merge($teamOf($tid) ?? [], ['team_id' => $tid, 'slot' => $current['slot']]);
         }
 
         $board = $layout['format'] === 'bracket' ? $layout['pairs'] : $layout['groups'];
@@ -616,6 +636,9 @@ class OverlayData
             'show_tournament' => (bool) ($window['show_tournament'] ?? true),
             'sponsors' => $this->resolveSponsors($window),
             'rotate_seconds' => (int) ($window['rotate_seconds'] ?? 8),
+            'main_sponsor' => ! empty($window['draw_sponsor_logo']) ? Storage::url($window['draw_sponsor_logo']) : null,
+            'main_sponsor_position' => $window['draw_sponsor_position'] ?? 'top-right',
+            'main_sponsor_size' => $window['draw_sponsor_size'] ?? 'm',
         ];
     }
 

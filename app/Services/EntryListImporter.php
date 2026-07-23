@@ -50,6 +50,14 @@ class EntryListImporter
                 continue;
             }
 
+            $players = [];
+            if ($p1 !== '') {
+                $players[] = ['name' => $p1, 'country' => $col($row, 'player 1 country') ?: null];
+            }
+            if ($p2 !== '') {
+                $players[] = ['name' => $p2, 'country' => $col($row, 'player 2 country') ?: null];
+            }
+
             $norm = EntryList::normCategory($catName);
             $names[$norm] = $catName;
             $byCat[$norm][] = [
@@ -59,6 +67,7 @@ class EntryListImporter
                 'pot'     => null,
                 'gender'  => $genderCode($col($row, 'player 1 gender')),
                 'country' => $col($row, 'player 1 country') ?: null,
+                'players' => $players,
             ];
             $total++;
         }

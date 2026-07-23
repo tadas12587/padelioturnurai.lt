@@ -63,6 +63,27 @@ class EntryListTest extends TestCase
         $this->assertSame('A B / C D', $teams[0]['name']);
     }
 
+    public function test_resolve_draw_exposes_players_with_flags(): void
+    {
+        $window = ['type' => 'draw', 'format' => 'groups', 'group_count' => 1, 'group_size' => 2, 'use_pots' => false];
+        $drawState = [
+            'teams' => [[
+                'id' => 1, 'name' => 'Aidas Akcijonaitis / Egidijus Gudavičius',
+                'players' => [
+                    ['name' => 'Aidas Akcijonaitis', 'country' => 'Lithuania'],
+                    ['name' => 'Egidijus Gudavičius', 'country' => 'Poland'],
+                ],
+            ]],
+            'slots' => [], 'status' => 'idle', 'active_pot' => 1, 'current' => null,
+        ];
+
+        $res = app(\App\Services\OverlayData::class)->resolveDraw($window, $drawState);
+        $team = $res['pool'][0];
+        $this->assertSame('Aidas Akcijonaitis', $team['players'][0]['name']);
+        $this->assertStringContainsString('/lt.png', $team['players'][0]['flag']);
+        $this->assertStringContainsString('/pl.png', $team['players'][1]['flag']);
+    }
+
     public function test_reimport_replaces_the_previous_list(): void
     {
         EntryList::create(['tournament_external_id' => '10931', 'data' => ['a' => [['id' => 1, 'name' => 'X / Y']]]]);
