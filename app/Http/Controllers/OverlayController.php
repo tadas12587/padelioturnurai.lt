@@ -322,6 +322,8 @@ class OverlayController extends Controller
             $payload['main_bg']       = (bool) ($window['pw_logo_bg'] ?? true);
             $payload['tile_size']     = $window['pw_tile_size'] ?? 'm';
             $payload['gap']           = $window['pw_gap'] ?? 'normal';
+            $payload['gap_x_num']     = $num('pw_gap_x_num');
+            $payload['gap_y_num']     = $num('pw_gap_y_num');
             $payload['layout_variant'] = $window['pw_layout'] ?? 'brick';
             $payload['bg_pattern']    = $window['pw_bg_pattern'] ?? 'solid';
             $payload['animate']       = $window['pw_animate'] ?? 'none';

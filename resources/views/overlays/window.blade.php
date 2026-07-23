@@ -343,8 +343,8 @@
         background-image:
             linear-gradient(45deg, var(--pw-c2) 25%, transparent 25% 75%, var(--pw-c2) 75%),
             linear-gradient(45deg, var(--pw-c2) 25%, transparent 25% 75%, var(--pw-c2) 75%);
-        background-size: var(--pw-csz, 200px) var(--pw-csz, 200px);
-        background-position: 0 0, calc(var(--pw-csz, 200px) / 2) calc(var(--pw-csz, 200px) / 2); }
+        background-size: var(--pw-csz, 200px) var(--pw-csz-y, var(--pw-csz, 200px));
+        background-position: 0 0, calc(var(--pw-csz, 200px) / 2) calc(var(--pw-csz-y, var(--pw-csz, 200px)) / 2); }
     .pw-wall { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
         display: flex; flex-direction: column; align-items: center; }
     .pw-wall.pw-diag { transform: translate(-50%, -50%) rotate(-18deg); }
@@ -721,26 +721,29 @@
         const layout = d.layout_variant || 'brick';
         const anim = d.animate || 'none';
         const CELL = ({ s: 90, m: 130, l: 180, xl: 240 })[d.tile_size || 'm'] || 130;
-        const gap = Math.round(CELL * (({ tight: 0.18, normal: 0.4, wide: 0.75 })[d.gap || 'normal'] ?? 0.4));
-        const step = CELL + gap;
+        // Base gap from the preset; optional exact per-axis overrides (px).
+        const gBase = Math.round(CELL * (({ tight: 0.18, normal: 0.4, wide: 0.75 })[d.gap || 'normal'] ?? 0.4));
+        const gapX = (d.gap_x_num > 0) ? Math.round(d.gap_x_num) : gBase;
+        const gapY = (d.gap_y_num > 0) ? Math.round(d.gap_y_num) : gBase;
+        const stepX = CELL + gapX, stepY = CELL + gapY;
         const W = window.innerWidth || 1920, H = window.innerHeight || 1080;
         const buf = layout === 'diagonal' ? 6 : (anim === 'slide' ? 4 : 2);
-        const cols = Math.ceil(W / step) + buf, rows = Math.ceil(H / step) + buf;
+        const cols = Math.ceil(W / stepX) + buf, rows = Math.ceil(H / stepY) + buf;
         // speed is a 1..100 slider; map to a duration (3s fast … 240s barely moving)
         const sp = Math.max(1, Math.min(100, (d.anim_speed && d.anim_speed > 0) ? d.anim_speed : 35));
         const dur = (3 + ((100 - sp) / 99) * (240 - 3)).toFixed(1);
 
+        // Build empty tiles first; logos are assigned after we know which tiles
+        // are fully on-screen (so partial edge tiles get no logo and stay blank).
         let wall = '';
         if (logos.length) {
-            let idx = 0;
             for (let r = 0; r < rows; r++) {
                 let cells = '';
                 for (let c = 0; c < cols + 1; c++) {
-                    cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"><img src="${logos[idx++ % logos.length]}" alt=""></div>`;
+                    cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"></div>`;
                 }
-                const off = (layout === 'brick' && r % 2) ? `margin-left:${-Math.round(step / 2)}px;` : '';
-                const move = anim === 'slide' ? `--pw-move:${step}px;animation:pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite;` : '';
-                wall += `<div class="pw-row" style="gap:${gap}px;margin-bottom:${gap}px;${off}${move}">${cells}</div>`;
+                const off = (layout === 'brick' && r % 2) ? `margin-left:${-Math.round(stepX / 2)}px;` : '';
+                wall += `<div class="pw-row" style="gap:${gapX}px;margin-bottom:${gapY}px;${off}">${cells}</div>`;
             }
         }
         const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -755,9 +758,43 @@
             : '';
 
         const stageCls = 'pw-stage' + (d.bg_pattern === 'checker' ? ' pw-checker' : '');
-        const stageStyle = d.bg_pattern === 'checker' ? `--pw-csz:${step * 2}px` : '';
+        const stageStyle = d.bg_pattern === 'checker' ? `--pw-csz:${stepX * 2}px;--pw-csz-y:${stepY * 2}px` : '';
         const wallCls = 'pw-wall' + (layout === 'diagonal' ? ' pw-diag' : '');
         host.innerHTML = `<div class="${stageCls}" style="${stageStyle}"><div class="${wallCls}">${wall}</div>${main}${title}</div>`;
+
+        if (logos.length) {
+            // Hide any tile that isn't fully on-screen — a sponsor sitting on the
+            // border is cut off, so we'd rather not show it at all. The slide
+            // travel is added as a margin so animated tiles never cross an edge.
+            // Measured synchronously (getBoundingClientRect forces layout) before
+            // paint, so there is no flash. Rotation (diagonal) is covered because
+            // the measured rect is the on-screen bounding box.
+            const travel = anim === 'slide' ? stepX : 0;
+            const eps = 0.5;
+            const visible = [];
+            host.querySelectorAll('.pw-tile').forEach((t) => {
+                const r = t.getBoundingClientRect();
+                const inside = (r.left - travel) >= -eps && (r.right + travel) <= W + eps
+                    && (r.top - travel) >= -eps && (r.bottom + travel) <= H + eps;
+                if (inside) { visible.push(t); } else { t.style.visibility = 'hidden'; }
+            });
+            // Fill the fully-visible tiles round-robin so every sponsor appears
+            // roughly the same number of times (counts differ by at most one).
+            visible.forEach((t, i) => {
+                const im = document.createElement('img');
+                im.src = logos[i % logos.length];
+                im.alt = '';
+                t.appendChild(im);
+            });
+            // Start the slide only now — the visibility test above assumed the
+            // rows were at rest, so we must not have moved them before measuring.
+            if (anim === 'slide') {
+                host.querySelectorAll('.pw-row').forEach((row, r) => {
+                    row.style.setProperty('--pw-move', stepX + 'px');
+                    row.style.animation = `pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite`;
+                });
+            }
+        }
         return;
     }
 

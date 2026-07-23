@@ -472,6 +472,13 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Select::make('pw_gap')->label('Tarpai tarp logotipų')
                                 ->options(['tight' => 'Maži', 'normal' => 'Vidutiniai', 'wide' => 'Dideli'])->default('normal')
+                                ->helperText('Bazinis tarpas. Žemiau gali tiksliai nurodyti horizontalų ir vertikalų atskirai.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_gap_x_num')->label('Tarpas horizontaliai (px, tiksliai)')->numeric()->minValue(0)->maxValue(400)->step(1)
+                                ->helperText('Palik tuščią — naudojamas bazinis tarpas.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_gap_y_num')->label('Tarpas vertikaliai (px, tiksliai)')->numeric()->minValue(0)->maxValue(400)->step(1)
+                                ->helperText('Palik tuščią — naudojamas bazinis tarpas.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                             Select::make('pw_layout')->label('Išdėstymas')
                                 ->options(['brick' => 'Plytelės (paslinktos eilės)', 'grid' => 'Griežtas tinklelis', 'diagonal' => 'Įstrižas'])->default('brick')
