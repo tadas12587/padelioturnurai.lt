@@ -435,10 +435,14 @@
     .dteam.empty .nm { color: #5a5a66; font-style: italic; }
     .dteam.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
     .dteam.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
-    .draw-pool { width: 280px; flex: none; }
-    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 18px; color: var(--ov-muted); margin-bottom: 12px; }
-    .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .draw-pool .chip { font-size: 19px; background: rgba(127,127,127,.16); padding: 8px 13px; border-radius: 14px; color: var(--ov-text);
+    .draw-pool { flex: none; min-height: 0; max-width: 640px; display: flex; flex-direction: column; }
+    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 18px; color: var(--ov-muted); margin-bottom: 12px; flex: none; }
+    /* Auto-columns: chips fill a column top→bottom, then wrap into a new column
+       when the column is full (bounded by the available height above the ad bar). */
+    .draw-pool .chips-fit { flex: 1; min-height: 0; transform-origin: top left; }
+    .draw-pool .chips { display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start;
+        gap: 8px 14px; height: 100%; }
+    .draw-pool .chip { width: 236px; font-size: 19px; background: rgba(127,127,127,.16); padding: 8px 13px; border-radius: 14px; color: var(--ov-text);
         display: flex; flex-direction: column; gap: 4px; line-height: 1.1; }
     .draw-reveal { position: fixed; left: 50%; top: 56%; transform: translate(-50%,-50%); background: var(--ov-accent); color: #0A0A0F; padding: 12px 26px; border-radius: 10px; text-align: center; box-shadow: 0 20px 50px -18px rgba(0,0,0,.7); }
     .draw-reveal .k { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .14em; font-size: 11px; opacity: .7; }
@@ -984,7 +988,7 @@
         const bodyHtml = `<div class="draw-fit">${boardHtml}</div>`;
 
         const pool = (dr.pool || []).map((t) => `<span class="chip" data-team="${t.id}">${playersHtml(t)}</span>`).join('');
-        const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
+        const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips-fit"><div class="chips">${pool}</div></div></div>`;
 
         const logo = dr.show_tournament && d.logo ? `<img src="${d.logo}" alt="">` : '';
         const tname = d.tournament_title || d.title || '';
@@ -1021,6 +1025,19 @@
             const natural = fitEl.scrollHeight;
             if (natural > avail && avail > 0) {
                 fitEl.style.transform = `scale(${Math.max(0.5, avail / natural)})`;
+            }
+        }
+
+        // Pool auto-columns are bounded in height by CSS (flex column-wrap); if the
+        // wrapped columns still overrun the pool width, scale the whole block down.
+        const chipsFit = drawHost.querySelector('.draw-pool .chips-fit');
+        const chipsEl = drawHost.querySelector('.draw-pool .chips');
+        if (chipsFit && chipsEl) {
+            chipsFit.style.transform = 'none';
+            const availW = chipsFit.clientWidth;
+            const naturalW = chipsEl.scrollWidth;
+            if (naturalW > availW && availW > 0) {
+                chipsFit.style.transform = `scale(${Math.max(0.5, availW / naturalW)})`;
             }
         }
 
