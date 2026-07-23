@@ -335,7 +335,9 @@
     .sco-dot { width: .5em; height: .5em; border-radius: 50%; background: transparent; flex: none; }
     .sco-row.serve .sco-dot { background: var(--ov-accent); box-shadow: 0 0 .5em var(--ov-accent); }
     .sco-name { flex: 1; min-width: 0; font-size: 1em; font-weight: 500; color: var(--ov-text);
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        display: flex; flex-direction: column; gap: 2px; line-height: 1.12; }
+    .sco-name .sco-pl { display: flex; align-items: center; min-width: 0; }
+    .sco-name .sco-pl .ov-pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sco-set { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; color: var(--ov-muted); font-size: 1em; }
     .sco-games { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; color: var(--ov-text); font-size: 1.05em; }
     .sco-point { width: 2em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 1.15em; color: var(--ov-accent); }
@@ -503,7 +505,12 @@
             let cells = '';
             for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
             cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
-            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${tm.name}</span>${cells}</div>`;
+            // One player per line (flag + abbreviated name) so both partners stay
+            // readable even with a long surname, instead of the team being clipped.
+            const nameHtml = (tm.players && tm.players.length)
+                ? tm.players.map((p) => `<span class="sco-pl">${p.flag ? `<img class="ov-flag" src="${p.flag}" alt="">` : ''}<span class="ov-pn">${p.name}</span></span>`).join('')
+                : `<span class="sco-pl"><span class="ov-pn">${tm.name}</span></span>`;
+            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${nameHtml}</span>${cells}</div>`;
         };
         const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
         const head = (sc.level || meta)
@@ -513,6 +520,19 @@
         const cls = inline ? 'sco-inline' : ('sco-' + (sc.position || 'top-left'));
         const style = inline ? '' : ` style="width:${width}px;font-size:${Math.round(width / 26)}px"`;
         return `<div class="sco-card ${cls}${sc.tiebreak ? ' tb' : ''}"${style}>${head}${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
+    };
+
+    // Shrink any player name that would still overflow its line (e.g. a long
+    // double-barrelled surname) so both partners always stay fully visible.
+    window.__fitScoreNames = function (root) {
+        (root || document).querySelectorAll('.sco-name .ov-pn').forEach((el) => {
+            el.style.fontSize = '';
+            const cw = el.clientWidth, sw = el.scrollWidth;
+            if (sw > cw + 1 && cw > 0) {
+                const cur = parseFloat(getComputedStyle(el).fontSize) || 16;
+                el.style.fontSize = Math.max(9, Math.floor(cur * cw / sw)) + 'px';
+            }
+        });
     };
 
     // Animated H2H background: colour-mixing blobs (gradient) and/or a
@@ -714,6 +734,7 @@
             + centerSponsor + barHtml
             + `</div>`;
         window.__updH2hCenter(h);
+        window.__fitScoreNames(host);
         return;
     }
 
@@ -726,6 +747,7 @@
         if (!keep) stage.innerHTML = '';
         if (!sc.found) { host.innerHTML = ''; return; }
         host.innerHTML = window.__scoreCardHtml(sc, false);
+        window.__fitScoreNames(host);
         return;
     }
 
