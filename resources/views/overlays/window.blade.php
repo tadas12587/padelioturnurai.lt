@@ -368,14 +368,28 @@
     @keyframes scoHeadL  { from { opacity: 0; transform: translateX(-115%); } to { opacity: 1; transform: none; } }
     @keyframes scoHeadUp { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
     @keyframes scoBodyDown { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
-    /* Exit: leave the way it came. */
-    .sco-out.sco-side-right { animation: scoOutR .5s ease both; }
-    .sco-out.sco-side-left  { animation: scoOutL .5s ease both; }
-    .sco-out.sco-side-center { animation: scoOutDown .42s ease both; }
+    /* Exit — slide / fade / pop: the whole card leaves the way it came. */
+    .sco-out.sco-anim-slide.sco-side-right, .sco-out.sco-anim-pop.sco-side-right { animation: scoOutR .5s ease both; }
+    .sco-out.sco-anim-slide.sco-side-left,  .sco-out.sco-anim-pop.sco-side-left  { animation: scoOutL .5s ease both; }
+    .sco-out.sco-anim-slide.sco-side-center { animation: scoOutDown .42s ease both; }
+    .sco-out.sco-anim-fade { animation: scoOutDown .42s ease both; }
+    .sco-out.sco-anim-pop.sco-side-center { animation: scoOutPop .42s ease both; }
     @keyframes scoOutR    { from { opacity: 1; transform: translateX(var(--sco-cx,0)); } to { opacity: 0; transform: translateX(calc(var(--sco-cx,0) + 115%)); } }
     @keyframes scoOutL    { from { opacity: 1; transform: translateX(var(--sco-cx,0)); } to { opacity: 0; transform: translateX(calc(var(--sco-cx,0) - 115%)); } }
     @keyframes scoOutDown { from { opacity: 1; transform: translate(var(--sco-cx,0), 0); } to { opacity: 0; transform: translate(var(--sco-cx,0), 14px); } }
-    @media (prefers-reduced-motion: reduce) { .sco-in, .sco-out, .sco-in .sco-head, .sco-in .sco-body { animation: none !important; } }
+    @keyframes scoOutPop  { from { opacity: 1; transform: translateX(var(--sco-cx,0)) scale(1); } to { opacity: 0; transform: translateX(var(--sco-cx,0)) scale(.84); } }
+    /* Exit — header_reveal: exact reverse of the entrance. The result retracts up
+       behind the header, then the header flies back out to its side. */
+    .sco-out.sco-anim-header_reveal .sco-body { animation: scoBodyUp .4s cubic-bezier(.5,0,.9,.4) both; }
+    .sco-out.sco-anim-header_reveal.sco-side-right  .sco-head { animation: scoHeadOutR .45s cubic-bezier(.5,0,.9,.4) both; animation-delay: .32s; }
+    .sco-out.sco-anim-header_reveal.sco-side-left   .sco-head { animation: scoHeadOutL .45s cubic-bezier(.5,0,.9,.4) both; animation-delay: .32s; }
+    .sco-out.sco-anim-header_reveal.sco-side-center .sco-head { animation: scoHeadOutUp .4s ease both; animation-delay: .32s; }
+    @keyframes scoBodyUp    { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-100%); } }
+    @keyframes scoHeadOutR  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(115%); } }
+    @keyframes scoHeadOutL  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-115%); } }
+    @keyframes scoHeadOutUp { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-12px); } }
+    @media (prefers-reduced-motion: reduce) { .sco-in, .sco-out, .sco-in .sco-head, .sco-in .sco-body,
+        .sco-out .sco-head, .sco-out .sco-body { animation: none !important; } }
     .sco-card.tb .sco-games { color: var(--ov-accent); }
 
     /* ── Foto sienelė (step-and-repeat) ─────────────────────────── */
@@ -641,7 +655,7 @@
     if (!keep) {
         if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
         if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
-        if ((d.window_type || 'groups') !== 'score') { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); }
+        if ((d.window_type || 'groups') !== 'score') { if (window.__exitScore) window.__exitScore(); else { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); } }
         if ((d.window_type || 'groups') !== 'photowall') { const _pw = document.getElementById('ov-pw'); if (_pw) _pw.remove(); }
         if ((d.window_type || 'groups') !== 'draw') {
             const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
@@ -791,7 +805,12 @@
             const el = document.createElement('div'); el.id = 'ov-score'; document.body.appendChild(el); return el;
         })();
         if (!keep) stage.innerHTML = '';
-        if (!sc.found) { host.innerHTML = ''; host.dataset.shown = ''; return; }
+        if (!sc.found) {
+            // Animate out (if a card is present) rather than clearing instantly.
+            if (host.firstElementChild && window.__exitScore) window.__exitScore(); else host.innerHTML = '';
+            host.dataset.shown = '';
+            return;
+        }
         // Cancel a pending exit if the card came back before it finished leaving.
         if (host.dataset.exiting === '1') { clearTimeout(host.__exitTimer); host.dataset.exiting = ''; }
         const firstShow = host.dataset.shown !== '1';

@@ -93,8 +93,11 @@
             host.dataset.exiting = '1';
             card.classList.remove('sco-in');
             card.classList.add('sco-out');
-            host.__exitTimer = setTimeout(() => removeHost('ov-score'), 520);
+            // header_reveal exits in two stages, so it needs a little longer.
+            const dur = card.dataset.anim === 'header_reveal' ? 820 : 540;
+            host.__exitTimer = setTimeout(() => removeHost('ov-score'), dur);
         }
+        window.__exitScore = exitScore;
         let lastSigs = {}, stageShown = false;
 
         function playIntro() {
