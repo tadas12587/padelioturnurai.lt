@@ -733,17 +733,19 @@
         const sp = Math.max(1, Math.min(100, (d.anim_speed && d.anim_speed > 0) ? d.anim_speed : 35));
         const dur = (3 + ((100 - sp) / 99) * (240 - 3)).toFixed(1);
 
-        // Build empty tiles first; logos are assigned after we know which tiles
-        // are fully on-screen (so partial edge tiles get no logo and stay blank).
+        // Fill the whole wall edge-to-edge; logos cycle so each sponsor appears
+        // roughly the same number of times (counts differ by at most one).
         let wall = '';
         if (logos.length) {
+            let idx = 0;
             for (let r = 0; r < rows; r++) {
                 let cells = '';
                 for (let c = 0; c < cols + 1; c++) {
-                    cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"></div>`;
+                    cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"><img src="${logos[idx++ % logos.length]}" alt=""></div>`;
                 }
                 const off = (layout === 'brick' && r % 2) ? `margin-left:${-Math.round(stepX / 2)}px;` : '';
-                wall += `<div class="pw-row" style="gap:${gapX}px;margin-bottom:${gapY}px;${off}">${cells}</div>`;
+                const move = anim === 'slide' ? `--pw-move:${stepX}px;animation:pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite;` : '';
+                wall += `<div class="pw-row" style="gap:${gapX}px;margin-bottom:${gapY}px;${off}${move}">${cells}</div>`;
             }
         }
         const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -761,40 +763,6 @@
         const stageStyle = d.bg_pattern === 'checker' ? `--pw-csz:${stepX * 2}px;--pw-csz-y:${stepY * 2}px` : '';
         const wallCls = 'pw-wall' + (layout === 'diagonal' ? ' pw-diag' : '');
         host.innerHTML = `<div class="${stageCls}" style="${stageStyle}"><div class="${wallCls}">${wall}</div>${main}${title}</div>`;
-
-        if (logos.length) {
-            // Hide any tile that isn't fully on-screen — a sponsor sitting on the
-            // border is cut off, so we'd rather not show it at all. The slide
-            // travel is added as a margin so animated tiles never cross an edge.
-            // Measured synchronously (getBoundingClientRect forces layout) before
-            // paint, so there is no flash. Rotation (diagonal) is covered because
-            // the measured rect is the on-screen bounding box.
-            const travel = anim === 'slide' ? stepX : 0;
-            const eps = 0.5;
-            const visible = [];
-            host.querySelectorAll('.pw-tile').forEach((t) => {
-                const r = t.getBoundingClientRect();
-                const inside = (r.left - travel) >= -eps && (r.right + travel) <= W + eps
-                    && (r.top - travel) >= -eps && (r.bottom + travel) <= H + eps;
-                if (inside) { visible.push(t); } else { t.style.visibility = 'hidden'; }
-            });
-            // Fill the fully-visible tiles round-robin so every sponsor appears
-            // roughly the same number of times (counts differ by at most one).
-            visible.forEach((t, i) => {
-                const im = document.createElement('img');
-                im.src = logos[i % logos.length];
-                im.alt = '';
-                t.appendChild(im);
-            });
-            // Start the slide only now — the visibility test above assumed the
-            // rows were at rest, so we must not have moved them before measuring.
-            if (anim === 'slide') {
-                host.querySelectorAll('.pw-row').forEach((row, r) => {
-                    row.style.setProperty('--pw-move', stepX + 'px');
-                    row.style.animation = `pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite`;
-                });
-            }
-        }
         return;
     }
 
