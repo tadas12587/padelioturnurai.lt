@@ -35,7 +35,13 @@
     tbody td { padding: 9px 14px; font-size: 17px; text-align: right; color: var(--ov-text); font-variant-numeric: tabular-nums; }
     tbody td.col-place { width: 48px; text-align: left; }
     tbody td.col-name { text-align: left; font-weight: 500; line-height: 1.2; padding-right: 10px; }
-    tbody td.col-name .pl { display: block; }
+    tbody td.col-name .pl { display: flex; align-items: center; }
+    /* country flag shown next to a player name across every overlay */
+    .ov-flag { height: .82em; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+        margin-right: .42em; vertical-align: -0.1em; flex: none; }
+    .ov-pl { display: inline-flex; align-items: center; }
+    .ov-pn { white-space: nowrap; }
+    .ov-slash { opacity: .45; margin: 0 .4em; }
     tbody tr + tr td { border-top: 1px solid rgba(127,127,127,.14); }
     tbody tr:nth-child(even) { background: rgba(127,127,127,.08); }
     tbody tr.leader { background: rgba(127,127,127,.12); box-shadow: inset 3px 0 0 var(--ov-accent); }
@@ -477,6 +483,17 @@
     // the results branch re-creates it.
     if (!keep) { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
 
+    // Country flags from scraped players (personKey -> flag URL). Mirrors the
+    // PHP personKey: lowercase, strip LT/PL diacritics, trim. Used across every
+    // overlay so any "Vardas Pavardė" gets its flag by name.
+    window.__FLAGS = d.flags || {};
+    const __LTM = { 'ą':'a','č':'c','ę':'e','ė':'e','į':'i','š':'s','ų':'u','ū':'u','ž':'z','ł':'l','ó':'o','ś':'s','ź':'z','ż':'z','ń':'n','ć':'c' };
+    window.__pkey = (s) => String(s || '').toLowerCase().replace(/[ąčęėįšųūžłóśźżńć]/g, (c) => __LTM[c] || c).trim();
+    window.__flag = (name) => { const f = window.__FLAGS[window.__pkey(name)]; return f ? `<img class="ov-flag" src="${f}" alt="">` : ''; };
+    // "P1 / P2" -> per-player flag + name spans (one line).
+    window.__teamFlags = (team) => String(team || '').split(/\s*\/\s*/).filter(Boolean)
+        .map((n) => `<span class="ov-pl">${window.__flag(n)}<span class="ov-pn">${n}</span></span>`).join('<span class="ov-slash">/</span>') || String(team || '');
+
     // Shared scoreboard card markup, used by both the standalone "Rezultatas"
     // window and the Head-to-Head centre (same look, format and data).
     window.__scoreCardHtml = function (sc, inline) {
@@ -486,7 +503,10 @@
             let cells = '';
             for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
             cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
-            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${tm.name}</span>${cells}</div>`;
+            const nameHtml = (tm.players && tm.players.length)
+                ? tm.players.map((p) => `<span class="ov-pl">${p.flag ? `<img class="ov-flag" src="${p.flag}" alt="">` : ''}<span class="ov-pn">${p.name}</span></span>`).join('<span class="ov-slash">/</span>')
+                : window.__teamFlags(tm.name);
+            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${nameHtml}</span>${cells}</div>`;
         };
         const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
         const head = (sc.level || meta)
@@ -639,7 +659,8 @@
 
         const infoRow = (p) => {
             const rating = [p.rating_type, p.rating_points].filter(Boolean).join(' ');
-            const flag = p.flag ? `<img class="h2h-flag" src="${p.flag}" alt="">` : '';
+            const flagUrl = p.flag || window.__FLAGS[window.__pkey(p.name)] || '';
+            const flag = flagUrl ? `<img class="h2h-flag" src="${flagUrl}" alt="">` : '';
             const sub = [
                 rating ? `<span class="h2h-rt">${rating}</span>` : '',
                 (p.country || flag) ? `<span class="h2h-rc">${flag}${p.country || ''}</span>` : '',
@@ -807,7 +828,7 @@
         const setCells = (sets) => (sets || '').trim().split(/\s+/).filter(Boolean)
             .map((g) => `<span class="g">${g}</span>`).join('');
         const team = (name, sets, win) =>
-            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name || 'TBD'}</span><span class="sets">${setCells(sets)}</span></div>`;
+            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name ? window.__teamFlags(name) : 'TBD'}</span><span class="sets">${setCells(sets)}</span></div>`;
         const courtLine = (m) => (m.court || m.time)
             ? `<div class="mt">${[m.court, m.time].filter(Boolean).join(' · ')}</div>` : '';
         const matchBox = (m) =>
@@ -885,7 +906,9 @@
     if ((d.window_type || 'groups') === 'schedule') {
         const sc = d.schedule || {};
         const variant = d.schedule_variant || 'by_court';
-        const pair = (t) => (t && t.length) ? t.join(' / ') : 'TBD';
+        const pair = (t) => (t && t.length)
+            ? t.map((n) => `<span class="ov-pl">${window.__flag(n)}<span class="ov-pn">${n}</span></span>`).join('<span class="ov-slash">/</span>')
+            : 'TBD';
         const teams = (m) =>
             `<div class="sc-teams"><span class="${m.winner === 1 ? 'win' : ''}">${pair(m.team1)}</span>`
           + `<span class="${m.winner === 2 ? 'win' : ''}">${pair(m.team2)}</span></div>`;
@@ -1152,7 +1175,7 @@
                     html += `<td class="col-place"><span class="rank${m}">${r.place ?? '–'}</span></td>`;
                 } else if (c === 'name') {
                     const players = String(r.name || '').split(' / ');
-                    html += `<td class="col-name">${players.map(p => `<span class="pl">${p}</span>`).join('')}</td>`;
+                    html += `<td class="col-name">${players.map(p => `<span class="pl">${window.__flag(p)}<span class="ov-pn">${p}</span></span>`).join('')}</td>`;
                 } else {
                     const v = (r[c] === null || r[c] === undefined) ? '–' : r[c];
                     html += `<td class="col-${c}">${v}</td>`;

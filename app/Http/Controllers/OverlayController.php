@@ -204,6 +204,7 @@ class OverlayController extends Controller
             'position'    => $config['position'],
             'columns'     => $config['visible_columns'],
             'next_match'  => $state['next_match'],
+            'flags'       => $tid !== '' ? $data->flagMap($tid) : [],
         ];
 
         // Resolve every active window — several can be shown at once.
@@ -288,7 +289,7 @@ class OverlayController extends Controller
             $matchId = TournamentScore::matchFor($tid);
             $m = collect($data->matches($tid))
                 ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId) ?? [];
-            $payload['score'] = $data->resolveScore($window, $scoreState, $m, $data->scoreConfig($window));
+            $payload['score'] = $data->resolveScore($window, $scoreState, $m, $data->scoreConfig($window), $base['flags'] ?? []);
         } elseif ($type === 'h2h') {
             $payload['h2h'] = $data->resolveH2h($tid, $state['h2h_match_id'] ?? null, $window);
             // Optional: show the live (tournament-shared) score in the centre.
@@ -297,7 +298,7 @@ class OverlayController extends Controller
                 $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
                 $hm = collect($data->matches($tid))
                     ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) ($state['h2h_match_id'] ?? '')) ?? [];
-                $sc = $data->resolveScore($scoreWindow, $sharedScore, $hm, $data->scoreConfig($scoreWindow));
+                $sc = $data->resolveScore($scoreWindow, $sharedScore, $hm, $data->scoreConfig($scoreWindow), $base['flags'] ?? []);
                 if (! empty($sc['found'])) {
                     $payload['h2h']['live_score'] = $sc;
                 }
