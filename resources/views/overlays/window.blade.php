@@ -349,8 +349,9 @@
         display: flex; flex-direction: column; align-items: center; }
     .pw-wall.pw-diag { transform: translate(-50%, -50%) rotate(-18deg); }
     .pw-row { display: flex; justify-content: center; align-items: center; flex: none; will-change: transform; }
+    /* tile hugs the logo height (no forced square) so vertical gaps stay tight */
     .pw-tile { display: flex; align-items: center; justify-content: center; flex: none; }
-    .pw-tile img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: .9;
+    .pw-tile img { max-width: 100%; width: auto; height: auto; object-fit: contain; opacity: .9;
         filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
     /* alternating rows drift sideways and back (ping-pong) */
     @keyframes pwSlideA { 0%, 100% { transform: translateX(calc(var(--pw-move,60px) * -1)); } 50% { transform: translateX(var(--pw-move,60px)); } }
@@ -734,20 +735,23 @@
         const dur = (3 + ((100 - sp) / 99) * (240 - 3)).toFixed(1);
 
         // Fill the whole wall edge-to-edge; logos cycle so each sponsor appears
-        // roughly the same number of times (counts differ by at most one).
-        let wall = '';
-        if (logos.length) {
-            let idx = 0;
-            for (let r = 0; r < rows; r++) {
+        // roughly the same number of times (counts differ by at most one). Tiles
+        // are CELL wide but only as tall as the logo (capped at CELL), so the
+        // vertical spacing the viewer sees is exactly the gap, not square padding.
+        const rowInner = (n) => {
+            let out = '', idx = 0;
+            for (let r = 0; r < n; r++) {
                 let cells = '';
                 for (let c = 0; c < cols + 1; c++) {
-                    cells += `<div class="pw-tile" style="width:${CELL}px;height:${CELL}px"><img src="${logos[idx++ % logos.length]}" alt=""></div>`;
+                    cells += `<div class="pw-tile" style="width:${CELL}px"><img src="${logos[idx++ % logos.length]}" style="max-height:${CELL}px" alt=""></div>`;
                 }
                 const off = (layout === 'brick' && r % 2) ? `margin-left:${-Math.round(stepX / 2)}px;` : '';
                 const move = anim === 'slide' ? `--pw-move:${stepX}px;animation:pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite;` : '';
-                wall += `<div class="pw-row" style="gap:${gapX}px;margin-bottom:${gapY}px;${off}${move}">${cells}</div>`;
+                out += `<div class="pw-row" style="gap:${gapX}px;margin-bottom:${gapY}px;${off}${move}">${cells}</div>`;
             }
-        }
+            return out;
+        };
+        const wall = logos.length ? rowInner(rows) : '';
         const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
         const off = (dx, dy) => (dx || dy) ? `transform:translate(${dx || 0}vw,${dy || 0}vh);` : '';
         const MAIN = (d.main_size_num > 0) ? d.main_size_num : (({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32);
@@ -763,6 +767,27 @@
         const stageStyle = d.bg_pattern === 'checker' ? `--pw-csz:${stepX * 2}px;--pw-csz-y:${stepY * 2}px` : '';
         const wallCls = 'pw-wall' + (layout === 'diagonal' ? ' pw-diag' : '');
         host.innerHTML = `<div class="${stageCls}" style="${stageStyle}"><div class="${wallCls}">${wall}</div>${main}${title}</div>`;
+
+        // Real row height is only known after layout (logos hug their height). If
+        // the wall doesn't reach the bottom, add rows. offsetHeight ignores the
+        // diagonal rotation, so this stays correct for every layout. Guard against
+        // images not being laid out yet (height ~0 would ask for endless rows):
+        // skip until they have size, and re-measure once the first one loads.
+        if (logos.length) {
+            const wallEl = host.querySelector('.pw-wall');
+            const adjust = () => {
+                const firstRow = wallEl && wallEl.querySelector('.pw-row');
+                if (!firstRow) return;
+                const rh = firstRow.offsetHeight;
+                if (rh <= 8) return;
+                const realStep = rh + gapY;
+                const need = Math.min(rows * 6 + buf, Math.ceil(H / realStep) + buf);
+                if (need > wallEl.querySelectorAll('.pw-row').length) wallEl.innerHTML = rowInner(need);
+            };
+            adjust(); // exact when the logos are already cached
+            const probe = wallEl && wallEl.querySelector('.pw-tile img');
+            if (probe && !probe.complete) probe.addEventListener('load', adjust, { once: true });
+        }
         return;
     }
 
