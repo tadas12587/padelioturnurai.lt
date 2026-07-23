@@ -336,6 +336,7 @@ class OverlayData
             'status'   => $state['status'] ?? 'playing',
             'position' => $window['score_position'] ?? 'top-left',
             'width'    => (int) ($window['score_width'] ?? 520),
+            'anim'     => $window['score_anim'] ?? 'header_reveal',
         ];
     }
 

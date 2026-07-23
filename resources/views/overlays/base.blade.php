@@ -81,6 +81,20 @@
 
         const STAGE_TYPES = ['groups', 'group_standings', 'standings', 'bracket', 'schedule', 'results', 'next_match'];
         const removeHost = (id) => { const e = document.getElementById(id); if (e) e.remove(); };
+        // Animate the score card out (if it declares an animation) before removing
+        // its host; falls back to an instant remove. Guarded so repeated polls
+        // during the ~0.5s exit don't restart it.
+        function exitScore() {
+            const host = document.getElementById('ov-score');
+            if (!host) return;
+            const card = host.firstElementChild;
+            if (!card || !card.dataset.anim || card.dataset.anim === 'none') { removeHost('ov-score'); return; }
+            if (host.dataset.exiting === '1') return;
+            host.dataset.exiting = '1';
+            card.classList.remove('sco-in');
+            card.classList.add('sco-out');
+            host.__exitTimer = setTimeout(() => removeHost('ov-score'), 520);
+        }
         let lastSigs = {}, stageShown = false;
 
         function playIntro() {
@@ -93,7 +107,8 @@
         function hideEverything() {
             if (stageShown) { stage.classList.remove('in'); stageShown = false; }
             scrim.style.opacity = 0;
-            ['ov-ticker', 'draw-reveal-host', 'ov-draw', 'ov-spons', 'ov-h2h', 'ov-score', 'ov-pw'].forEach(removeHost);
+            exitScore();
+            ['ov-ticker', 'draw-reveal-host', 'ov-draw', 'ov-spons', 'ov-h2h', 'ov-pw'].forEach(removeHost);
             clearInterval(window.__drawSpons); clearInterval(window.__spTimer);
             window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
             stage.innerHTML = '';
@@ -132,7 +147,7 @@
                 const types = new Set(wins.map(w => w.window_type || 'groups'));
                 if (!types.has('sponsors')) { removeHost('ov-spons'); clearInterval(window.__spTimer); }
                 if (!types.has('h2h')) removeHost('ov-h2h');
-                if (!types.has('score')) removeHost('ov-score');
+                if (!types.has('score')) exitScore();
                 if (!types.has('photowall')) removeHost('ov-pw');
                 if (!types.has('draw')) {
                     removeHost('ov-draw'); removeHost('draw-reveal-host');

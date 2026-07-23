@@ -326,7 +326,9 @@
     .sco-bottom-center { bottom: 40px; left: 50%; transform: translateX(-50%); }
     .sco-bottom-right { bottom: 40px; right: 40px; }
     .sco-head { display: flex; align-items: center; justify-content: space-between; gap: 1em;
-        padding: .45em .9em; background: rgba(127,127,127,.14); font-family: 'Oswald',sans-serif; }
+        padding: .45em .9em; font-family: 'Oswald',sans-serif; position: relative; z-index: 2;
+        /* opaque so the result can hide behind it during the reveal animation */
+        background: linear-gradient(rgba(127,127,127,.14), rgba(127,127,127,.14)), var(--ov-bg); }
     .sco-level { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: .95em; color: var(--ov-accent); }
     .sco-meta { font-size: .72em; letter-spacing: .05em; text-transform: uppercase; color: var(--ov-muted); white-space: nowrap; }
     .sco-row { display: flex; align-items: center; gap: .6em; padding: .5em .9em; }
@@ -342,6 +344,38 @@
     .sco-set { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; color: var(--ov-muted); font-size: 1em; }
     .sco-games { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; color: var(--ov-text); font-size: 1.05em; }
     .sco-point { width: 2em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 1.15em; color: var(--ov-accent); }
+
+    /* ── Score entrance / exit animations ──────────────────────── */
+    .sco-card { --sco-cx: 0; }              /* corners: no horizontal centering offset */
+    .sco-side-center { --sco-cx: -50%; }    /* top/bottom-center keep translateX(-50%) */
+    .sco-body { position: relative; z-index: 1; }
+    /* Whole-card entrances (slide / fade / pop). Direction follows the corner. */
+    .sco-in.sco-anim-slide.sco-side-right  { animation: scoInR .55s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-slide.sco-side-left   { animation: scoInL .55s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-slide.sco-side-center { animation: scoInUp .5s ease both; }
+    .sco-in.sco-anim-fade { animation: scoInUp .5s ease both; }
+    .sco-in.sco-anim-pop  { animation: scoInPop .5s cubic-bezier(.2,1.3,.35,1) both; }
+    /* Two-stage: header flies in from the side, then the result slides down from behind it. */
+    .sco-in.sco-anim-header_reveal.sco-side-right  .sco-head { animation: scoHeadR .5s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-header_reveal.sco-side-left   .sco-head { animation: scoHeadL .5s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-header_reveal.sco-side-center .sco-head { animation: scoHeadUp .45s ease both; }
+    .sco-in.sco-anim-header_reveal .sco-body { animation: scoBodyDown .5s cubic-bezier(.16,1,.3,1) both; animation-delay: .42s; }
+    @keyframes scoInR  { from { opacity: 0; transform: translateX(calc(var(--sco-cx,0) + 115%)); } to { opacity: 1; transform: translateX(var(--sco-cx,0)); } }
+    @keyframes scoInL  { from { opacity: 0; transform: translateX(calc(var(--sco-cx,0) - 115%)); } to { opacity: 1; transform: translateX(var(--sco-cx,0)); } }
+    @keyframes scoInUp { from { opacity: 0; transform: translate(var(--sco-cx,0), 16px); } to { opacity: 1; transform: translate(var(--sco-cx,0), 0); } }
+    @keyframes scoInPop{ from { opacity: 0; transform: translateX(var(--sco-cx,0)) scale(.84); } to { opacity: 1; transform: translateX(var(--sco-cx,0)) scale(1); } }
+    @keyframes scoHeadR  { from { opacity: 0; transform: translateX(115%); } to { opacity: 1; transform: none; } }
+    @keyframes scoHeadL  { from { opacity: 0; transform: translateX(-115%); } to { opacity: 1; transform: none; } }
+    @keyframes scoHeadUp { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+    @keyframes scoBodyDown { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
+    /* Exit: leave the way it came. */
+    .sco-out.sco-side-right { animation: scoOutR .5s ease both; }
+    .sco-out.sco-side-left  { animation: scoOutL .5s ease both; }
+    .sco-out.sco-side-center { animation: scoOutDown .42s ease both; }
+    @keyframes scoOutR    { from { opacity: 1; transform: translateX(var(--sco-cx,0)); } to { opacity: 0; transform: translateX(calc(var(--sco-cx,0) + 115%)); } }
+    @keyframes scoOutL    { from { opacity: 1; transform: translateX(var(--sco-cx,0)); } to { opacity: 0; transform: translateX(calc(var(--sco-cx,0) - 115%)); } }
+    @keyframes scoOutDown { from { opacity: 1; transform: translate(var(--sco-cx,0), 0); } to { opacity: 0; transform: translate(var(--sco-cx,0), 14px); } }
+    @media (prefers-reduced-motion: reduce) { .sco-in, .sco-out, .sco-in .sco-head, .sco-in .sco-body { animation: none !important; } }
     .sco-card.tb .sco-games { color: var(--ov-accent); }
 
     /* ── Foto sienelė (step-and-repeat) ─────────────────────────── */
@@ -500,7 +534,7 @@
 
     // Shared scoreboard card markup, used by both the standalone "Rezultatas"
     // window and the Head-to-Head centre (same look, format and data).
-    window.__scoreCardHtml = function (sc, inline) {
+    window.__scoreCardHtml = function (sc, inline, entrance) {
         if (!sc || !sc.found) return '';
         const nSets = Math.max((sc.teams[0].sets || []).length, (sc.teams[1].sets || []).length);
         const row = (tm) => {
@@ -522,7 +556,16 @@
         const width = sc.width || 520;
         const cls = inline ? 'sco-inline' : ('sco-' + (sc.position || 'top-left'));
         const style = inline ? '' : ` style="width:${width}px;font-size:${Math.round(width / 26)}px"`;
-        return `<div class="sco-card ${cls}${sc.tiebreak ? ' tb' : ''}"${style}>${head}${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
+        const body = `<div class="sco-body">${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
+        // Entrance/exit animation for the standalone card. The TYPE + direction
+        // classes are always present so exit knows how to leave; the "sco-in"
+        // trigger is only added on first appearance (entrance=true).
+        let a = (!inline && sc.anim && sc.anim !== 'none') ? sc.anim : 'none';
+        if (a === 'header_reveal' && !head) a = 'slide'; // no header to fly → slide whole card
+        const side = /right/.test(sc.position || '') ? 'right' : (/left/.test(sc.position || '') ? 'left' : 'center');
+        const animCls = a === 'none' ? '' : ` sco-anim-${a} sco-side-${side}${entrance ? ' sco-in' : ''}`;
+        const animData = a === 'none' ? '' : ` data-anim="${a}" data-side="${side}"`;
+        return `<div class="sco-card ${cls}${sc.tiebreak ? ' tb' : ''}${animCls}"${style}${animData}>${head}${body}</div>`;
     };
 
     // Shrink any player name that would still overflow its line (e.g. a long
@@ -748,8 +791,12 @@
             const el = document.createElement('div'); el.id = 'ov-score'; document.body.appendChild(el); return el;
         })();
         if (!keep) stage.innerHTML = '';
-        if (!sc.found) { host.innerHTML = ''; return; }
-        host.innerHTML = window.__scoreCardHtml(sc, false);
+        if (!sc.found) { host.innerHTML = ''; host.dataset.shown = ''; return; }
+        // Cancel a pending exit if the card came back before it finished leaving.
+        if (host.dataset.exiting === '1') { clearTimeout(host.__exitTimer); host.dataset.exiting = ''; }
+        const firstShow = host.dataset.shown !== '1';
+        host.innerHTML = window.__scoreCardHtml(sc, false, firstShow);
+        host.dataset.shown = '1';
         window.__fitScoreNames(host);
         return;
     }
