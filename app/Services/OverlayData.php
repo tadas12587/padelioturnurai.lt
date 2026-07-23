@@ -386,6 +386,7 @@ class OverlayData
             'argentina' => 'ar', 'arg' => 'ar',
             'brazilija' => 'br', 'brazil' => 'br', 'bra' => 'br',
             'jav' => 'us', 'usa' => 'us',
+            'jungtiniai arabu emyratai' => 'ae', 'united arab emirates' => 'ae', 'uae' => 'ae', 'are' => 'ae', 'emiratai' => 'ae',
         ];
 
         return $map[$c] ?? null;
