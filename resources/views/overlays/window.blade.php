@@ -281,7 +281,6 @@
     .h2h-rt { color: var(--ov-accent); font-weight: 700; }
     .h2h-rc { display: inline-flex; align-items: center; gap: 8px; color: var(--ov-text); }
     .h2h-flag { height: 24px; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
-    .h2h-rcity { color: var(--ov-muted); }
     /* centre */
     .h2h-center { position: absolute; left: 50%; top: 44%; transform: translate(-50%,-50%); text-align: center; z-index: 5; }
     .h2h-vs { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 78px; line-height: 1; color: var(--ov-accent);
@@ -738,10 +737,11 @@
             const rating = [p.rating_type, p.rating_points].filter(Boolean).join(' ');
             const flagUrl = p.flag || window.__FLAGS[window.__pkey(p.name)] || '';
             const flag = flagUrl ? `<img class="h2h-flag" src="${flagUrl}" alt="">` : '';
+            // "Šalis, Miestas" — country and city in one span, same color/font/size.
+            const place = [p.country || '', p.city || ''].filter(Boolean).join(', ');
             const sub = [
                 rating ? `<span class="h2h-rt">${rating}</span>` : '',
-                (p.country || flag) ? `<span class="h2h-rc">${flag}${p.country || ''}</span>` : '',
-                p.city ? `<span class="h2h-rcity">${p.city}</span>` : '',
+                (place || flag) ? `<span class="h2h-rc">${flag}${place}</span>` : '',
             ].filter(Boolean).join('');
             return `<div class="h2h-row"><div class="h2h-rn">${p.name}</div>${sub ? `<div class="h2h-rsub">${sub}</div>` : ''}</div>`;
         };

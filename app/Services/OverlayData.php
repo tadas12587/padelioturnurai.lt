@@ -370,6 +370,32 @@ class OverlayData
         return $out;
     }
 
+    /** ISO-3166 alpha-2 code => full country name in Lithuanian. */
+    private const COUNTRY_NAMES_LT = [
+        'lt' => 'Lietuva', 'lv' => 'Latvija', 'ee' => 'Estija', 'pl' => 'Lenkija',
+        'es' => 'Ispanija', 'it' => 'Italija', 'fr' => 'Prancūzija', 'de' => 'Vokietija',
+        'se' => 'Švedija', 'fi' => 'Suomija', 'no' => 'Norvegija', 'dk' => 'Danija',
+        'gb' => 'Jungtinė Karalystė', 'ie' => 'Airija', 'pt' => 'Portugalija',
+        'ua' => 'Ukraina', 'nl' => 'Nyderlandai', 'be' => 'Belgija', 'ch' => 'Šveicarija',
+        'at' => 'Austrija', 'cz' => 'Čekija', 'sk' => 'Slovakija', 'hu' => 'Vengrija',
+        'ro' => 'Rumunija', 'gr' => 'Graikija', 'ar' => 'Argentina', 'br' => 'Brazilija',
+        'us' => 'JAV', 'ae' => 'Jungtiniai Arabų Emyratai', 'ru' => 'Rusija', 'by' => 'Baltarusija',
+        'tr' => 'Turkija', 'hr' => 'Kroatija', 'si' => 'Slovėnija', 'rs' => 'Serbija',
+        'bg' => 'Bulgarija', 'md' => 'Moldova', 'is' => 'Islandija', 'lu' => 'Liuksemburgas',
+        'mt' => 'Malta', 'cy' => 'Kipras', 'mx' => 'Meksika', 'ca' => 'Kanada',
+        'au' => 'Australija', 'nz' => 'Naujoji Zelandija', 'jp' => 'Japonija', 'cn' => 'Kinija',
+        'kr' => 'Pietų Korėja', 'in' => 'Indija', 'za' => 'Pietų Afrika', 'eg' => 'Egiptas',
+        'ma' => 'Marokas', 'il' => 'Izraelis', 'sa' => 'Saudo Arabija', 'qa' => 'Kataras',
+    ];
+
+    /** Alpha-2/name/localised country string -> full country name in Lithuanian, or null. */
+    public function countryNameLt(?string $country): ?string
+    {
+        $code = $this->countryCode($country);
+
+        return $code ? (self::COUNTRY_NAMES_LT[$code] ?? mb_strtoupper($code)) : null;
+    }
+
     /** Map a country name/code to an ISO-3166 alpha-2 code (for a flag), or null. */
     private function countryCode(?string $country): ?string
     {
@@ -488,7 +514,7 @@ class OverlayData
         $info = [
             'rating_type'   => $row->rating_type ?? null,
             'rating_points' => $row->rating_points ?? null,
-            'country'       => $row->country ?? null,
+            'country'       => $this->countryNameLt($row->country ?? null),
             'city'          => $row->city ?? null,
             'flag'          => $code ? "https://flagcdn.com/32x24/{$code}.png" : null,
         ];

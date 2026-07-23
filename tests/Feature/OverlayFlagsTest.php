@@ -49,6 +49,17 @@ class OverlayFlagsTest extends TestCase
         $this->assertArrayNotHasKey('be salies', $map); // no nation → no flag
     }
 
+    public function test_country_name_lt_maps_code_to_lithuanian_name(): void
+    {
+        $data = app(OverlayData::class);
+
+        $this->assertSame('Lietuva', $data->countryNameLt('LT'));
+        $this->assertSame('Latvija', $data->countryNameLt('Latvia'));
+        $this->assertSame('Jungtiniai Arabų Emyratai', $data->countryNameLt('United Arab Emirates'));
+        $this->assertNull($data->countryNameLt(null));
+        $this->assertNull($data->countryNameLt(''));
+    }
+
     public function test_resolve_score_attaches_flag_per_player_on_full_names(): void
     {
         $flagMap = ['jevgenij grigorenko' => 'https://flagcdn.com/32x24/lt.png'];
