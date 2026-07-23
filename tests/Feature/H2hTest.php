@@ -204,10 +204,11 @@ class H2hTest extends TestCase
         ]);
 
         // Even though the match name differs, the photo is found by user id 500.
+        // The country is shown as the full Lithuanian name, not the raw 'LT' code.
         $this->getJson("/overlay/{$overlay->token}/data")
             ->assertOk()
             ->assertJsonPath('h2h.team1.0.is_stock', false)
-            ->assertJsonPath('h2h.team1.0.country', 'LT');
+            ->assertJsonPath('h2h.team1.0.country', 'Lietuva');
     }
 
     public function test_show_match_sets_state_and_active_window(): void
