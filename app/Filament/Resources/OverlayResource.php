@@ -309,6 +309,17 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
                             Toggle::make('show_tournament')->label('Rodyti turnyro logo + pavadinimą')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            FileUpload::make('draw_sponsor_logo')->label('Pagrindinis rėmėjas — logo (kampe)')
+                                ->image()->disk('public')->directory('overlay-sponsors')
+                                ->helperText('Vienas didelis rėmėjo logo laisvame kampe. Neįkėlus — nesimato.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('draw_sponsor_position')->label('Pagrindinio rėmėjo vieta')
+                                ->options(['top-right' => 'Viršus — dešinė', 'top-left' => 'Viršus — kairė', 'bottom-right' => 'Apačia — dešinė', 'bottom-left' => 'Apačia — kairė'])
+                                ->default('top-right')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('draw_sponsor_size')->label('Pagrindinio rėmėjo dydis')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis'])->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
                             Select::make('sponsor_ids')->label('Rėmėjai iš sąrašo')->multiple()
                                 ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
