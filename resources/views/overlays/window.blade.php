@@ -402,10 +402,10 @@
     .dg-slot.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
     /* one member per line, flag on the left */
     .dg-slot .nm, .dteam .nm { display: flex; flex-direction: column; gap: 3px; }
-    .dg-slot .pl, .dteam .pl { display: flex; align-items: center; gap: 11px; }
-    .dg-slot .pl .fl, .dteam .pl .fl { height: .8em; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); flex: none; }
-    .dg-slot .pl .fl-x, .dteam .pl .fl-x { width: 1.15em; flex: none; }   /* keep names aligned when no flag */
-    .dg-slot .pl .pn, .dteam .pl .pn { white-space: nowrap; }
+    .dg-slot .pl, .dteam .pl, .draw-pool .chip .pl { display: flex; align-items: center; gap: 11px; }
+    .dg-slot .pl .fl, .dteam .pl .fl, .draw-pool .chip .pl .fl { height: .8em; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); flex: none; }
+    .dg-slot .pl .fl-x, .dteam .pl .fl-x, .draw-pool .chip .pl .fl-x { width: 1.15em; flex: none; }   /* keep names aligned when no flag */
+    .dg-slot .pl .pn, .dteam .pl .pn, .draw-pool .chip .pl .pn { white-space: nowrap; }
     /* main sponsor logo in a free corner */
     .draw-mainspons { position: absolute; z-index: 6; pointer-events: none; }
     .draw-mainspons img { object-fit: contain; filter: drop-shadow(0 6px 22px rgba(0,0,0,.55)); }
@@ -437,7 +437,8 @@
     .draw-pool { width: 280px; flex: none; }
     .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 18px; color: var(--ov-muted); margin-bottom: 12px; }
     .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .draw-pool .chip { font-size: 19px; background: rgba(127,127,127,.16); padding: 6px 12px; border-radius: 14px; color: var(--ov-text); }
+    .draw-pool .chip { font-size: 19px; background: rgba(127,127,127,.16); padding: 8px 13px; border-radius: 14px; color: var(--ov-text);
+        display: flex; flex-direction: column; gap: 4px; line-height: 1.1; }
     .draw-reveal { position: fixed; left: 50%; top: 56%; transform: translate(-50%,-50%); background: var(--ov-accent); color: #0A0A0F; padding: 12px 26px; border-radius: 10px; text-align: center; box-shadow: 0 20px 50px -18px rgba(0,0,0,.7); }
     .draw-reveal .k { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .14em; font-size: 11px; opacity: .7; }
     .draw-reveal .nm { font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 22px; margin-top: 3px; }
@@ -981,7 +982,7 @@
         }
         const bodyHtml = `<div class="draw-fit">${boardHtml}</div>`;
 
-        const pool = (dr.pool || []).map((t) => `<span class="chip" data-team="${t.id}">${t.name}</span>`).join('');
+        const pool = (dr.pool || []).map((t) => `<span class="chip" data-team="${t.id}">${playersHtml(t)}</span>`).join('');
         const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
 
         const logo = dr.show_tournament && d.logo ? `<img src="${d.logo}" alt="">` : '';
