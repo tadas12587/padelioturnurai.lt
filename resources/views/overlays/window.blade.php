@@ -407,7 +407,8 @@
     .dg-slot .pl .fl-x, .dteam .pl .fl-x, .draw-pool .chip .pl .fl-x { width: 1.15em; flex: none; }   /* keep names aligned when no flag */
     .dg-slot .pl .pn, .dteam .pl .pn, .draw-pool .chip .pl .pn { white-space: nowrap; }
     /* main sponsor logo in a free corner */
-    .draw-mainspons { position: absolute; z-index: 6; pointer-events: none; }
+    .draw-mainspons { position: absolute; z-index: 6; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .draw-mainspons .draw-ms-lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 15px; color: var(--ov-muted); }
     .draw-mainspons img { object-fit: contain; filter: drop-shadow(0 6px 22px rgba(0,0,0,.55)); }
     .draw-ms-top-right { top: 40px; right: 52px; }
     .draw-ms-top-left { top: 40px; left: 52px; }
@@ -990,15 +991,15 @@
         const group = dr.category || '';
         const headHtml = `<div class="draw-head"><div class="left">${logo}<div>`
             + `${tname ? `<div class="cat">${tname}</div>` : ''}`
-            + `<div class="tt">${group || 'Burtai'}</div></div></div>`
-            + `<div><span class="badge">BURTAI</span>${dr.status === 'done' ? '<span class="draw-done">Baigta</span>' : ''}</div></div>`;
+            + `${group ? `<div class="tt">${group}</div>` : ''}</div></div>`
+            + `${dr.status === 'done' ? '<div><span class="draw-done">Baigta</span></div>' : ''}</div>`;
 
         const allSponsors = dr.sponsors || [];
         const sponsHtml = allSponsors.length ? '<div class="draw-spons" id="draw-spons"></div>' : '';
 
         // One main sponsor logo, in a chosen free corner.
         const msHtml = dr.main_sponsor
-            ? `<div class="draw-mainspons draw-ms-${dr.main_sponsor_position || 'top-right'} draw-ms-sz-${dr.main_sponsor_size || 'm'}"><img src="${dr.main_sponsor}" alt=""></div>`
+            ? `<div class="draw-mainspons draw-ms-${dr.main_sponsor_position || 'top-right'} draw-ms-sz-${dr.main_sponsor_size || 'm'}"><div class="draw-ms-lbl">Grupės rėmėjas</div><img src="${dr.main_sponsor}" alt=""></div>`
             : '';
 
         // The board is position:fixed, so it must live on <body> (outside #stage,
