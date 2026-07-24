@@ -314,15 +314,18 @@
     .h2h-has-bar .h2h-team-info.left { transform: scale(.9); transform-origin: bottom left; }
     .h2h-has-bar .h2h-team-info.right { transform: scale(.9); transform-origin: bottom right; }
 
-    /* No-photos mode: the info card IS the content — wider, centred vertically,
-       bigger type, since it no longer sits as a caption over a player photo. */
-    .h2h-noimg .h2h-team-info { width: 40vw; bottom: auto; top: 50%; transform: translateY(-50%);
-        padding: 34px 42px; background: rgba(0,0,0,.86); }
-    .h2h-noimg .h2h-team-rating .val { font-size: 56px; }
-    .h2h-noimg .h2h-row { padding: 16px 0; }
-    .h2h-noimg .h2h-rn { font-size: 46px; }
-    .h2h-noimg .h2h-rsub { font-size: 28px; margin-top: 8px; }
-    .h2h-noimg .h2h-flag { height: 30px; }
+    /* No-photos mode: the info card IS the content — centred vertically, bigger
+       type, since it no longer sits as a caption over a player photo. Capped at
+       27vw (with the 2vw edge offset) so it never reaches the centre score/VS
+       card at any common canvas width — that card sits above it (z-index 5)
+       and would otherwise cut it off. */
+    .h2h-noimg .h2h-team-info { width: 27vw; bottom: auto; top: 50%; transform: translateY(-50%);
+        padding: 30px 34px; background: rgba(0,0,0,.86); }
+    .h2h-noimg .h2h-team-rating .val { font-size: 48px; }
+    .h2h-noimg .h2h-row { padding: 14px 0; }
+    .h2h-noimg .h2h-rn { font-size: 40px; }
+    .h2h-noimg .h2h-rsub { font-size: 25px; margin-top: 7px; }
+    .h2h-noimg .h2h-flag { height: 27px; }
     .h2h-noimg.h2h-has-bar .h2h-team-info { top: 46%; }
     .h2h-noimg.h2h-has-bar .h2h-team-info.left,
     .h2h-noimg.h2h-has-bar .h2h-team-info.right { transform: translateY(-50%) scale(.92); }
