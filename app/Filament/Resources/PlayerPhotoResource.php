@@ -57,9 +57,24 @@ class PlayerPhotoResource extends Resource
                 Tables\Columns\TextColumn::make('gender')->label('Lytis')->badge()
                     ->formatStateUsing(fn ($state) => $state === 'M' ? 'Moteris' : 'Vyras'),
                 Tables\Columns\TextColumn::make('country')->label('Šalis')->badge()->toggleable(),
+                Tables\Columns\TextColumn::make('city')->label('Miestas')
+                    ->badge()->color(fn ($state) => filled($state) ? 'success' : 'gray')
+                    ->formatStateUsing(fn ($state) => filled($state) ? $state : '— nėra')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('tournated_user_id')->label('Tournated ID')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->defaultSort('name')
+            ->filters([
+                Tables\Filters\TernaryFilter::make('city')
+                    ->label('Miestas')
+                    ->placeholder('Visi')
+                    ->trueLabel('Yra miestas')
+                    ->falseLabel('Nėra miesto')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('city')->where('city', '!=', ''),
+                        false: fn ($query) => $query->whereNull('city')->orWhere('city', ''),
+                    ),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),

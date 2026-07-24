@@ -5,10 +5,12 @@ namespace App\Filament\Resources\PlayerPhotoResource\Pages;
 use App\Filament\Resources\PlayerPhotoResource;
 use App\Models\PlayerPhoto;
 use App\Models\Setting;
+use App\Services\PlayerCityImporter;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Storage;
 
 class ListPlayerPhotos extends ListRecords
 {
@@ -30,6 +32,33 @@ class ListPlayerPhotos extends ListRecords
                 ->action(function (array $data) {
                     $n = PlayerPhotoResource::loadPeople($data['tid']);
                     Notification::make()->title("Užkrauta žmonių: {$n}")->success()->send();
+                }),
+
+            Actions\Action::make('importCities')
+                ->label('Importuoti miestus (Excel)')
+                ->icon('heroicon-o-map-pin')
+                ->color('gray')
+                ->form([
+                    Forms\Components\FileUpload::make('file')
+                        ->label('Excel failas (.xlsx)')
+                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+                        ->disk('local')->directory('city-imports')->required()
+                        ->helperText('Kiekvienas lapas — kategorija, stulpeliai „Žaidėjas N" / „Miestas N". Papildo TIK jau esančius žaidėjus (pagal vardą); jei Excel eilutėje miesto nėra — tas žaidėjas nekeičiamas.'),
+                ])
+                ->action(function (array $data) {
+                    $path = Storage::disk('local')->path($data['file']);
+                    try {
+                        $cities = PlayerCityImporter::citiesFromFile($path);
+                        $n = PlayerCityImporter::apply($cities);
+                    } catch (\Throwable $e) {
+                        Notification::make()->title('Klaida: ' . $e->getMessage())->danger()->send();
+
+                        return;
+                    } finally {
+                        Storage::disk('local')->delete($data['file']);
+                    }
+
+                    Notification::make()->title("Papildyta miestų: {$n} (rasta faile: " . count($cities) . ')')->success()->send();
                 }),
 
             Actions\Action::make('stockPhotos')
