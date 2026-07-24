@@ -314,6 +314,19 @@
     .h2h-has-bar .h2h-team-info.left { transform: scale(.9); transform-origin: bottom left; }
     .h2h-has-bar .h2h-team-info.right { transform: scale(.9); transform-origin: bottom right; }
 
+    /* No-photos mode: the info card IS the content — wider, centred vertically,
+       bigger type, since it no longer sits as a caption over a player photo. */
+    .h2h-noimg .h2h-team-info { width: 40vw; bottom: auto; top: 50%; transform: translateY(-50%);
+        padding: 34px 42px; background: rgba(0,0,0,.86); }
+    .h2h-noimg .h2h-team-rating .val { font-size: 56px; }
+    .h2h-noimg .h2h-row { padding: 16px 0; }
+    .h2h-noimg .h2h-rn { font-size: 46px; }
+    .h2h-noimg .h2h-rsub { font-size: 28px; margin-top: 8px; }
+    .h2h-noimg .h2h-flag { height: 30px; }
+    .h2h-noimg.h2h-has-bar .h2h-team-info { top: 46%; }
+    .h2h-noimg.h2h-has-bar .h2h-team-info.left,
+    .h2h-noimg.h2h-has-bar .h2h-team-info.right { transform: translateY(-50%) scale(.92); }
+
     /* ── Rezultatas (live scoreboard) ────────────────────────── */
     .sco-card { position: fixed; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.3);
         border-top: 3px solid var(--ov-accent); border-radius: .5em; overflow: hidden;
@@ -729,6 +742,7 @@
             return;
         }
 
+        const showPhotos = h.show_photos !== false;
         const zoom = h.animate ? 'h2h-zoom' : '';
         const player = (p, i) => `<div class="h2h-player p${i}"><div class="h2h-imgwrap"><img class="${zoom}" src="${p.photo}" alt=""></div></div>`;
         const side = (players, cls) => `<div class="h2h-side h2h-${cls}">${(players || []).map(player).join('')}</div>`;
@@ -786,9 +800,11 @@
 
         const L = h.layout || {};
         const styleVars = `--h2h-size:${L.size ?? 96}vh;--h2h-edge:${L.edge ?? 0}vw;--h2h-gap:${L.gap ?? 0}vw;--h2h-overlap:${L.overlap ?? 24}vw`;
+        if (!showPhotos) stageCls += ' h2h-noimg';
+        const sides = showPhotos ? (side(h.team1, 'left') + side(h.team2, 'right')) : '';
 
         host.innerHTML = `<div class="${stageCls}" style="${styleVars}">${window.__h2hBgHtml(h.bg)}${header}`
-            + side(h.team1, 'left') + side(h.team2, 'right')
+            + sides
             + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
             + `<div class="h2h-center"><div class="h2h-vs">${vs}</div><div class="h2h-cslot"></div></div>`
             + centerSponsor + barHtml

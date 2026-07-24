@@ -52,6 +52,29 @@ class H2hTest extends TestCase
             ->assertJsonPath('h2h.center.court', 'Kortas 2');
     }
 
+    public function test_h2h_show_photos_defaults_true_and_can_be_disabled(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 99, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+
+        $withDefault = Overlay::create([
+            'name' => 'H1', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata']],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99],
+        ]);
+        $this->getJson("/overlay/{$withDefault->token}/data")
+            ->assertJsonPath('h2h.show_photos', true);
+
+        $noPhotos = Overlay::create([
+            'name' => 'H2', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata', 'h2h_show_photos' => false]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99],
+        ]);
+        $this->getJson("/overlay/{$noPhotos->token}/data")
+            ->assertJsonPath('h2h.show_photos', false);
+    }
+
     public function test_h2h_shows_live_score_when_enabled(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
