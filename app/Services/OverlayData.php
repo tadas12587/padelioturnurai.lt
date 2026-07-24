@@ -577,6 +577,7 @@ class OverlayData
                 'in_progress' => ! empty($m['in_progress']),
             ],
             'show'        => $window['h2h_center'] ?? ['time', 'score', 'court'],
+            'show_photos' => (bool) ($window['h2h_show_photos'] ?? true),
             'custom_text' => $window['h2h_text'] ?? 'VS',
             'animate'     => (bool) ($window['h2h_animate'] ?? true),
             'sponsors'    => ! empty($window['h2h_show_sponsors']) ? $this->resolveSponsors($window) : [],
