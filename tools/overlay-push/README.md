@@ -43,4 +43,4 @@ paskutinę gautą būseną).
 | `SITE_URL`        | `https://padelioturnyrai.lt` | Tavo svetainės adresas             |
 | `INGEST_TOKEN`    | —                            | Slaptas raktas (kaip serverio .env)|
 | `TOURNAMENT_ID`   | `10424`                      | Tournated turnyro ID               |
-| `POLL_INTERVAL_MS`| `20000`                      | Kas kiek ms siųsti                 |
+| `POLL_INTERVAL_MS`| `120000`                     | Kas kiek ms siųsti (grafikas/rezultatai; sunkūs duomenys ~2x rečiau) |
