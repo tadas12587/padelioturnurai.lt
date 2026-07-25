@@ -220,6 +220,24 @@ function parseScore(score) {
   return { sets, sw1, sw2, g1, g2 };
 }
 
+// Sanity-fix: Tournated's raw score string isn't always guaranteed to be
+// ordered the same way as our team1/team2 (or entry1/entry2) — sometimes the
+// two sides' numbers come out swapped (winner shown with fewer sets/games).
+// The winner itself is always known reliably from the winner ID, independent
+// of the score string, so use it to detect and correct a swap. `entry1Won`
+// is true/false when known, or null/undefined when there's no reliable
+// winner to check against (leave the score untouched in that case).
+function orientScore(sc, entry1Won) {
+  if (entry1Won == null) return sc;
+  const winnerSets = entry1Won ? sc.sw1 : sc.sw2;
+  const loserSets = entry1Won ? sc.sw2 : sc.sw1;
+  if (winnerSets >= loserSets) return sc;
+  return {
+    sets: sc.sets.map(([a, b]) => [b, a]),
+    sw1: sc.sw2, sw2: sc.sw1, g1: sc.g2, g2: sc.g1,
+  };
+}
+
 // ── Grupių lentelės iš matches (kai „groups" grąžina tuščią) ──
 // Standartinis padel rikiavimas: 1) pergalės, 2) tarpusavis, 3) setų sk., 4) geimų sk.
 function buildGroupsFromMatches(matches, categoryId) {
@@ -248,11 +266,12 @@ function buildGroupsFromMatches(matches, categoryId) {
       if (e1 == null || e2 == null) continue;
       const A = st[String(e1)], B = st[String(e2)];
       if (!A || !B) continue;
-      const sc = parseScore(m.score);
+      const entry1Won = m.winner_entry_id === e1 ? true : (m.winner_entry_id === e2 ? false : null);
+      const sc = orientScore(parseScore(m.score), entry1Won);
       A.sw += sc.sw1; A.sl += sc.sw2; A.gw += sc.g1; A.gl += sc.g2;
       B.sw += sc.sw2; B.sl += sc.sw1; B.gw += sc.g2; B.gl += sc.g1;
-      if (m.winner_entry_id === e1) { A.w++; A.h2h[String(e2)] = (A.h2h[String(e2)] || 0) + 1; }
-      else if (m.winner_entry_id === e2) { B.w++; B.h2h[String(e1)] = (B.h2h[String(e1)] || 0) + 1; }
+      if (entry1Won === true) { A.w++; A.h2h[String(e2)] = (A.h2h[String(e2)] || 0) + 1; }
+      else if (entry1Won === false) { B.w++; B.h2h[String(e1)] = (B.h2h[String(e1)] || 0) + 1; }
     }
 
     const rows = Object.values(st).sort((a, b) => {
@@ -320,7 +339,8 @@ function buildBracketsFromMatches(matches, categoryId) {
     return String(r || '');
   };
   const toMatch = (m) => {
-    const sc = parseScore(m.score);
+    const entry1Won = m.winner === 1 ? true : (m.winner === 2 ? false : null);
+    const sc = orientScore(parseScore(m.score), entry1Won);
     return {
       team1: (m.team1 || []).join(' / '), team2: (m.team2 || []).join(' / '),
       sets1: sc.sets.map((s) => s[0]).join(' '), sets2: sc.sets.map((s) => s[1]).join(' '),
@@ -379,25 +399,20 @@ function extractBracket(draw) {
   const titleByCount = { 16: '1/16 finalis', 8: '1/8 finalis', 4: 'Ketvirtfinaliai', 2: 'Pusfinaliai', 1: 'Finalas' };
   const pairName = (t) => (t.users || [])
     .map((u) => `${u.user?.name || ''} ${u.user?.surname || ''}`.trim()).filter(Boolean).join(' / ');
-  const parseSets = (score) => {
-    const s1 = [], s2 = [];
-    (score || '').trim().split(/\s+/).filter(Boolean).forEach((tok) => {
-      const parts = tok.replace(/[\[\]]/g, '').split(':');
-      if (parts.length === 2) { s1.push(parts[0]); s2.push(parts[1]); }
-    });
-    return [s1.join(' '), s2.join(' ')];
-  };
   const matchOf = (seed) => {
     const teams = seed.teams || [];
-    const [sets1, sets2] = parseSets(seed.addScore && seed.addScore.addScore);
     let winner = null;
     if (seed.winner && teams[0] && seed.winner.id === teams[0].id) winner = 1;
     else if (seed.winner && teams[1] && seed.winner.id === teams[1].id) winner = 2;
+    const entry1Won = winner === 1 ? true : (winner === 2 ? false : null);
+    const sc = orientScore(parseScore(seed.addScore && seed.addScore.addScore), entry1Won);
     const court = (seed.court && seed.court.name) || (typeof seed.court === 'string' ? seed.court : null);
     return {
       team1: teams[0] ? pairName(teams[0]) : '',
       team2: teams[1] ? pairName(teams[1]) : '',
-      sets1, sets2, winner,
+      sets1: sc.sets.map((s) => s[0]).join(' '),
+      sets2: sc.sets.map((s) => s[1]).join(' '),
+      winner,
       court: court || null,
       time: seed.time || null,
     };
