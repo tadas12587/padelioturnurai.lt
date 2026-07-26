@@ -16,37 +16,46 @@ class TournamentScore extends Model
 
     protected $casts = ['state' => 'array'];
 
-    /** @return array<string,mixed> current score state for the window (or []) */
-    public static function stateFor(?string $tid, ?string $windowId = null): array
-    {
-        if ($tid === null || $tid === '') {
-            return [];
-        }
-
-        $row = static::query()->where('tournament_external_id', $tid)->where('window_id', $windowId)->first();
-        if ($row) {
-            return $row->state ?? [];
-        }
-
-        // Legacy row from before scores were scoped per window — only as a
-        // one-time read fallback so an in-progress match doesn't just vanish.
-        return static::query()->where('tournament_external_id', $tid)->whereNull('window_id')->value('state') ?? [];
-    }
-
-    public static function matchFor(?string $tid, ?string $windowId = null): ?string
+    /** One query for the window-scoped row, falling back to the legacy
+     *  (pre-window-scoping) row only if nothing window-scoped exists yet. */
+    private static function rowFor(?string $tid, ?string $windowId): ?self
     {
         if ($tid === null || $tid === '') {
             return null;
         }
 
-        $row = static::query()->where('tournament_external_id', $tid)->where('window_id', $windowId)->first();
-        if ($row) {
-            return $row->match_id === null ? null : (string) $row->match_id;
-        }
+        return static::query()->where('tournament_external_id', $tid)->where('window_id', $windowId)->first()
+            ?? static::query()->where('tournament_external_id', $tid)->whereNull('window_id')->first();
+    }
 
-        $v = static::query()->where('tournament_external_id', $tid)->whereNull('window_id')->value('match_id');
+    /** @return array<string,mixed> current score state for the window (or []) */
+    public static function stateFor(?string $tid, ?string $windowId = null): array
+    {
+        return static::rowFor($tid, $windowId)?->state ?? [];
+    }
+
+    public static function matchFor(?string $tid, ?string $windowId = null): ?string
+    {
+        $v = static::rowFor($tid, $windowId)?->match_id;
 
         return $v === null ? null : (string) $v;
+    }
+
+    /**
+     * State + match_id in a single query — for call sites that need both (a
+     * point/game update reads the current state AND keeps the current match),
+     * so they don't fetch the same row twice.
+     *
+     * @return array{state:array<string,mixed>,match_id:?string}
+     */
+    public static function bothFor(?string $tid, ?string $windowId = null): array
+    {
+        $row = static::rowFor($tid, $windowId);
+
+        return [
+            'state'    => $row?->state ?? [],
+            'match_id' => $row?->match_id === null ? null : (string) $row->match_id,
+        ];
     }
 
     /** Persist the score for one window + which match it belongs to. */

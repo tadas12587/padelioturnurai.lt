@@ -21,9 +21,21 @@ class ScoreControlPage extends Page
     public ?string $windowId = null;
     public string $search = '';
 
+    private ?Overlay $overlayCache = null;
+
+    /** Memoised for the request — this is called many times per render
+     *  (tid(), currentWindow(), matches(), isLive() all go through it), and
+     *  Overlay carries potentially large JSON columns (windows, bracket_data). */
     public function selectedOverlay(): ?Overlay
     {
-        return $this->overlayId ? Overlay::find($this->overlayId) : null;
+        if (! $this->overlayId) {
+            return null;
+        }
+        if ($this->overlayCache === null || $this->overlayCache->id !== $this->overlayId) {
+            $this->overlayCache = Overlay::find($this->overlayId);
+        }
+
+        return $this->overlayCache;
     }
 
     /** @return array<int,string> */
@@ -102,23 +114,26 @@ class ScoreControlPage extends Page
         $overlay = Overlay::findOrFail($this->overlayId);
         $overlay->state = $fn(array_merge(Overlay::defaultState(), $overlay->state ?? []));
         $overlay->save();
+        $this->overlayCache = $overlay; // keep selectedOverlay()'s memoised copy in sync
     }
 
-    /** Mutate this window's score. Pass $matchId to also set it. */
+    /**
+     * Mutate this window's score. Pass $matchId to also set it. One query for
+     * the current row (state + match_id together) instead of two.
+     */
     private function saveScore(callable $fn, string $matchId = '__keep__'): void
     {
         $tid = $this->tid();
         if ($tid === '' || ! $this->windowId) {
             return;
         }
-        $score = $fn(TournamentScore::stateFor($tid, $this->windowId));
-        $mid = $matchId === '__keep__' ? TournamentScore::matchFor($tid, $this->windowId) : $matchId;
+        $both = TournamentScore::bothFor($tid, $this->windowId);
+        $score = $fn($both['state']);
+        if (empty($score)) {
+            return; // nothing to persist (e.g. a point tapped before any match is loaded)
+        }
+        $mid = $matchId === '__keep__' ? $both['match_id'] : $matchId;
         TournamentScore::put($tid, $score, $mid, $this->windowId);
-    }
-
-    private function hasScore(): bool
-    {
-        return ! empty(TournamentScore::stateFor($this->tid(), $this->windowId));
     }
 
     private function engine(): ScoreEngine
@@ -169,18 +184,18 @@ class ScoreControlPage extends Page
 
     public function point(int $team): void
     {
-        if (! $this->overlayId || ! $this->hasScore()) {
+        if (! $this->overlayId) {
             return;
         }
-        $this->saveScore(fn ($score) => $this->engine()->point($this->config(), $score ?: [], $team));
+        $this->saveScore(fn ($score) => empty($score) ? $score : $this->engine()->point($this->config(), $score, $team));
     }
 
     public function game(int $team): void
     {
-        if (! $this->overlayId || ! $this->hasScore()) {
+        if (! $this->overlayId) {
             return;
         }
-        $this->saveScore(fn ($score) => $this->engine()->game($this->config(), $score ?: [], $team));
+        $this->saveScore(fn ($score) => empty($score) ? $score : $this->engine()->game($this->config(), $score, $team));
     }
 
     public function undo(): void

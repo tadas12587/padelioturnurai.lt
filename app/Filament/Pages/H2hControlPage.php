@@ -21,9 +21,19 @@ class H2hControlPage extends Page
     public ?string $windowId = null;
     public string $search = '';
 
+    private ?Overlay $overlayCache = null;
+
+    /** Memoised for the request — called many times per render. */
     public function selectedOverlay(): ?Overlay
     {
-        return $this->overlayId ? Overlay::find($this->overlayId) : null;
+        if (! $this->overlayId) {
+            return null;
+        }
+        if ($this->overlayCache === null || $this->overlayCache->id !== $this->overlayId) {
+            $this->overlayCache = Overlay::find($this->overlayId);
+        }
+
+        return $this->overlayCache;
     }
 
     /** @return array<int,string> */
@@ -107,6 +117,7 @@ class H2hControlPage extends Page
         $state = Overlay::showWindow($state, $this->windowId);
         $overlay->state = $state;
         $overlay->save();
+        $this->overlayCache = $overlay;
 
         Notification::make()->title('▶ Rodoma')->success()->send();
     }
@@ -118,6 +129,7 @@ class H2hControlPage extends Page
         $state = $this->windowId ? Overlay::hideWindow($state, $this->windowId) : Overlay::hideAll($state);
         $overlay->state = $state;
         $overlay->save();
+        $this->overlayCache = $overlay;
 
         Notification::make()->title('■ Sustabdyta')->send();
     }
@@ -156,8 +168,9 @@ class H2hControlPage extends Page
                 $scoreTid = $tid;
             }
             $scoreWindowId = $scoreWindow['id'] ?? null;
-            $sharedScore = TournamentScore::stateFor($scoreTid, $scoreWindowId);
-            $sameMatch = (string) (TournamentScore::matchFor($scoreTid, $scoreWindowId) ?? '') === (string) $matchId;
+            $both = TournamentScore::bothFor($scoreTid, $scoreWindowId);
+            $sharedScore = $both['state'];
+            $sameMatch = (string) ($both['match_id'] ?? '') === (string) $matchId;
             if (! $sameMatch || empty($sharedScore['teams'])) {
                 $m = collect(app(OverlayData::class)->matches($tid))
                     ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId);
@@ -171,6 +184,7 @@ class H2hControlPage extends Page
 
         $overlay->state = $state;
         $overlay->save();
+        $this->overlayCache = $overlay;
 
         Notification::make()
             ->title($on ? '✔ Centre: rezultatas (0:0). Taškus vesk „Rezultatas" valdyme.' : 'Centre: laikas / kortas')
