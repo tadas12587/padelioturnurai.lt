@@ -406,6 +406,7 @@ class OverlayResource extends Resource
                                 ->helperText('Kai abi komandos pasiekia tiek geimų — tiebreak. „iki 6"→6, „iki 9"→8.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
                             TextInput::make('score_sets_to_win')->label('Laimėtų setų (mačui)')->numeric()->default(2)->minValue(1)
+                                ->helperText('Mačas baigiasi, kai komanda laimi TIEK setų (ne kai sužaista tiek setų). Pvz. „2" = mačas tęsiasi, kol kas nors laimi 2 setus — esant 1:1 žaidžiamas lemiamas setas (žr. „Lemiamas setas" žemiau).')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
                             Toggle::make('score_tiebreak')->label('Tiebreak sete')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
