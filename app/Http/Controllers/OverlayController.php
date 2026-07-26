@@ -48,8 +48,9 @@ class OverlayController extends Controller
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
         $tid = (string) $overlay->tournament_external_id;
         $wid = (string) $window['id'];
-        $score = TournamentScore::stateFor($tid, $wid);   // scoped to this score window
-        $matchId = TournamentScore::matchFor($tid, $wid);
+        $both = TournamentScore::bothFor($tid, $wid);      // scoped to this score window, one query
+        $score = $both['state'];
+        $matchId = $both['match_id'];
         $config = $engine->config($window);
         $findMatch = fn ($id) => collect($data->matches($tid))->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $id);
 
@@ -287,8 +288,9 @@ class OverlayController extends Controller
             }
             $payload['draw']['category'] = $catName;
         } elseif ($type === 'score') {
-            $scoreState = TournamentScore::stateFor($tid, (string) $window['id']);
-            $matchId = TournamentScore::matchFor($tid, (string) $window['id']);
+            $both = TournamentScore::bothFor($tid, (string) $window['id']);
+            $scoreState = $both['state'];
+            $matchId = $both['match_id'];
             $m = collect($data->matches($tid))
                 ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId) ?? [];
             $payload['score'] = $data->resolveScore($window, $scoreState, $m, $data->scoreConfig($window), $base['flags'] ?? []);
