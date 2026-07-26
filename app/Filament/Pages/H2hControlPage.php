@@ -130,19 +130,20 @@ class H2hControlPage extends Page
 
                 return;
             }
-            // Auto-load the shared (tournament-scoped) scorer with the same pair,
+            // Auto-load this overlay's own score window with the same pair,
             // unless it is already on this match.
             $tid = (string) $overlay->tournament_external_id;
-            $sharedScore = TournamentScore::stateFor($tid);
-            $sameMatch = (string) (TournamentScore::matchFor($tid) ?? '') === (string) $matchId;
+            $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
+            $scoreWindowId = $scoreWindow['id'] ?? null;
+            $sharedScore = TournamentScore::stateFor($tid, $scoreWindowId);
+            $sameMatch = (string) (TournamentScore::matchFor($tid, $scoreWindowId) ?? '') === (string) $matchId;
             if (! $sameMatch || empty($sharedScore['teams'])) {
                 $m = collect(app(OverlayData::class)->matches($tid))
                     ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId);
                 if ($m) {
                     $engine = app(ScoreEngine::class);
-                    $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
                     $newScore = $engine->init($engine->config($scoreWindow), [$m['team1'] ?? [], $m['team2'] ?? []]);
-                    TournamentScore::put($tid, $newScore, $matchId);
+                    TournamentScore::put($tid, $newScore, $matchId, $scoreWindowId);
                 }
             }
         }

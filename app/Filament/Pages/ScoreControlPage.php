@@ -57,21 +57,21 @@ class ScoreControlPage extends Page
         return null;
     }
 
-    /** The tournament whose (shared) scoreboard we drive. */
+    /** The tournament this scoreboard belongs to. */
     private function tid(): string
     {
         return (string) ($this->selectedOverlay()?->tournament_external_id ?? '');
     }
 
-    /** @return array<string,mixed> shared score for the whole tournament */
+    /** @return array<string,mixed> score state for the selected window */
     public function scoreState(): array
     {
-        return TournamentScore::stateFor($this->tid());
+        return TournamentScore::stateFor($this->tid(), $this->windowId);
     }
 
     public function activeMatchId()
     {
-        return TournamentScore::matchFor($this->tid());
+        return TournamentScore::matchFor($this->tid(), $this->windowId);
     }
 
     /** Fixtures for the overlay's tournament. @return list<array<string,mixed>> */
@@ -104,21 +104,21 @@ class ScoreControlPage extends Page
         $overlay->save();
     }
 
-    /** Mutate the tournament's shared score. Pass $matchId to also set it. */
+    /** Mutate this window's score. Pass $matchId to also set it. */
     private function saveScore(callable $fn, string $matchId = '__keep__'): void
     {
         $tid = $this->tid();
-        if ($tid === '') {
+        if ($tid === '' || ! $this->windowId) {
             return;
         }
-        $score = $fn(TournamentScore::stateFor($tid));
-        $mid = $matchId === '__keep__' ? TournamentScore::matchFor($tid) : $matchId;
-        TournamentScore::put($tid, $score, $mid);
+        $score = $fn(TournamentScore::stateFor($tid, $this->windowId));
+        $mid = $matchId === '__keep__' ? TournamentScore::matchFor($tid, $this->windowId) : $matchId;
+        TournamentScore::put($tid, $score, $mid, $this->windowId);
     }
 
     private function hasScore(): bool
     {
-        return ! empty(TournamentScore::stateFor($this->tid()));
+        return ! empty(TournamentScore::stateFor($this->tid(), $this->windowId));
     }
 
     private function engine(): ScoreEngine
