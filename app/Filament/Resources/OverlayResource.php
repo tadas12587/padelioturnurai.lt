@@ -347,6 +347,12 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
                             TextInput::make('h2h_text')->label('Centro tekstas (kai „VS / tekstas")')->default('VS')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Select::make('h2h_score_ref')
+                                ->label('Kurio rezultato langą rodyti centre (Live rezultatas)')
+                                ->options(fn () => \App\Models\Overlay::scoreWindowOptions())
+                                ->searchable()->nullable()
+                                ->helperText('Kiekvienas rezultato langas dabar nepriklausomas (net kitame overlay — pvz. kito korto). Palikus tuščią — naudojamas pirmas šio paties overlay rezultato langas.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
                             Toggle::make('h2h_show_photos')->label('Rodyti žaidėjų nuotraukas')->default(true)->live()
                                 ->helperText('Išjungus — nuotraukų vietoje rodomas tik info blokas (vardas, vėliava, šalis/miestas, reitingas), per visą plotį.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
