@@ -50,6 +50,18 @@ class H2hControlPage extends Page
         return $this->selectedOverlay()?->state['h2h_match_id'] ?? null;
     }
 
+    /** @return array<string,mixed>|null the selected H2H window's own config */
+    private function currentWindow(): ?array
+    {
+        foreach ($this->selectedOverlay()?->windows ?? [] as $w) {
+            if (($w['id'] ?? null) === $this->windowId) {
+                return $w;
+            }
+        }
+
+        return null;
+    }
+
     /** Fixtures (matches) for the overlay's tournament, filtered by search. @return list<array<string,mixed>> */
     public function matches(): array
     {
@@ -130,20 +142,29 @@ class H2hControlPage extends Page
 
                 return;
             }
-            // Auto-load this overlay's own score window with the same pair,
-            // unless it is already on this match.
+            // Auto-load the chosen score window with the same pair, unless it is
+            // already on this match. The score window may live in a different
+            // overlay (h2h_score_ref) — falls back to this overlay's own first
+            // score window when nothing is explicitly picked.
             $tid = (string) $overlay->tournament_external_id;
-            $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
+            $ref = Overlay::resolveWindowRef($this->currentWindow()['h2h_score_ref'] ?? null);
+            if ($ref) {
+                $scoreWindow = $ref['window'];
+                $scoreTid = (string) $ref['overlay']->tournament_external_id;
+            } else {
+                $scoreWindow = collect($overlay->windows ?? [])->firstWhere('type', 'score') ?? [];
+                $scoreTid = $tid;
+            }
             $scoreWindowId = $scoreWindow['id'] ?? null;
-            $sharedScore = TournamentScore::stateFor($tid, $scoreWindowId);
-            $sameMatch = (string) (TournamentScore::matchFor($tid, $scoreWindowId) ?? '') === (string) $matchId;
+            $sharedScore = TournamentScore::stateFor($scoreTid, $scoreWindowId);
+            $sameMatch = (string) (TournamentScore::matchFor($scoreTid, $scoreWindowId) ?? '') === (string) $matchId;
             if (! $sameMatch || empty($sharedScore['teams'])) {
                 $m = collect(app(OverlayData::class)->matches($tid))
                     ->first(fn ($x) => (string) ($x['id'] ?? '') === (string) $matchId);
                 if ($m) {
                     $engine = app(ScoreEngine::class);
                     $newScore = $engine->init($engine->config($scoreWindow), [$m['team1'] ?? [], $m['team2'] ?? []]);
-                    TournamentScore::put($tid, $newScore, $matchId, $scoreWindowId);
+                    TournamentScore::put($scoreTid, $newScore, $matchId, $scoreWindowId);
                 }
             }
         }

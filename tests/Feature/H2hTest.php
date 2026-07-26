@@ -99,6 +99,34 @@ class H2hTest extends TestCase
             ->assertJsonPath('h2h.live_score.teams.0.point', '40');
     }
 
+    public function test_h2h_shows_live_score_from_a_score_window_in_another_overlay(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 99, 'category' => 'X', 'team1' => ['A B'], 'team2' => ['C D']]],
+        ]]);
+        $courtOverlay = Overlay::create([
+            'name' => 'Kortas 2', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'court2-score', 'type' => 'score', 'name' => 'Rez', 'score_deuce_mode' => 'star']],
+            'state' => ['active_window_id' => null, 'next_match' => ''],
+        ]);
+        $h2hOverlay = Overlay::create([
+            'name' => 'H', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            // no score-type window of its own — must reach into $courtOverlay via h2h_score_ref.
+            'windows' => [['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata',
+                'h2h_score_ref' => "{$courtOverlay->id}:court2-score"]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99, 'h2h_show_score' => true],
+        ]);
+        \App\Models\TournamentScore::put('10424', ['teams' => [['A B'], ['C D']], 'sets' => [], 'games' => [3, 2], 'points' => [3, 1],
+            'adv' => null, 'star_stage' => 0, 'tiebreak' => false, 'super_tiebreak' => false, 'tb' => [0, 0], 'server_team' => 0,
+            'status' => 'playing', 'winner' => null], 99, 'court2-score');
+
+        $this->getJson("/overlay/{$h2hOverlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('h2h.live_score.found', true)
+            ->assertJsonPath('h2h.live_score.teams.0.games', 3)
+            ->assertJsonPath('h2h.live_score.teams.0.point', '40');
+    }
+
     public function test_h2h_returns_animated_background_config(): void
     {
         OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
@@ -145,6 +173,33 @@ class H2hTest extends TestCase
             ->assertOk()
             ->assertJsonPath('h2h.live_score.found', true)
             ->assertJsonPath('h2h.live_score.teams.0.games', 0);
+    }
+
+    public function test_toggle_score_auto_loads_a_score_window_in_another_overlay(): void
+    {
+        OverlaySnapshot::create(['tournament_external_id' => '10424', 'payload' => [
+            'matches' => [['id' => 99, 'team1' => ['A B'], 'team2' => ['C D'], 'category' => 'X']],
+        ]]);
+        $courtOverlay = Overlay::create([
+            'name' => 'Kortas 2', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'court2-score', 'type' => 'score', 'name' => 'Rez']],
+            'state' => ['active_window_id' => null, 'next_match' => ''],
+        ]);
+        $h2hOverlay = Overlay::create([
+            'name' => 'H', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'h2h', 'name' => 'Akistata',
+                'h2h_score_ref' => "{$courtOverlay->id}:court2-score"]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => '', 'h2h_match_id' => 99],
+        ]);
+
+        \Livewire\Livewire::test(\App\Filament\Pages\H2hControlPage::class)
+            ->set('overlayId', $h2hOverlay->id)->set('windowId', 'w1')
+            ->call('toggleScore');
+
+        // Written into the OTHER overlay's score window, not a window-less
+        // (legacy) row and not any window of the h2h overlay itself (it has none).
+        $this->assertSame('99', \App\Models\TournamentScore::matchFor('10424', 'court2-score'));
+        $this->assertSame([['A B'], ['C D']], \App\Models\TournamentScore::stateFor('10424', 'court2-score')['teams']);
     }
 
     public function test_load_people_upserts_rows_with_gender(): void
