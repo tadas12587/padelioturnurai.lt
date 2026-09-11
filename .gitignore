@@ -22,3 +22,15 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+/tools/overlay-push/dist/
+
+# Local Tournated auth token (secret, never commit)
+tools/overlay-push/.token
+
+# Local Tournated API key + ingest token for schedule-push.js (secret, never commit)
+tools/overlay-push/.api-key
+tools/overlay-push/.ingest-token
+
+# Local Claude Code permission approvals (can capture secrets typed in commands)
+.claude/settings.local.json

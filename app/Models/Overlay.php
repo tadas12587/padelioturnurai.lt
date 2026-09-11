@@ -19,6 +19,51 @@ class Overlay extends Model
         'windows'      => 'array',
     ];
 
+    /**
+     * "overlayId:windowId" => "Overlay — Window" for every score-type window
+     * across ALL overlays, so an H2H window can point at a score window that
+     * lives in a different overlay (e.g. a separate court's board).
+     *
+     * @return array<string,string>
+     */
+    public static function scoreWindowOptions(): array
+    {
+        $out = [];
+        foreach (static::orderBy('name')->get(['id', 'name', 'windows']) as $o) {
+            foreach ($o->windows ?? [] as $w) {
+                if (($w['type'] ?? null) === 'score') {
+                    $out["{$o->id}:{$w['id']}"] = "{$o->name} — " . ($w['name'] ?? $w['id']);
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Resolve an "overlayId:windowId" ref (as produced by scoreWindowOptions)
+     * into the target overlay + its window config. Null if empty/invalid.
+     *
+     * @return array{overlay:Overlay,window:array<string,mixed>}|null
+     */
+    public static function resolveWindowRef(?string $ref): ?array
+    {
+        if (! $ref || ! str_contains($ref, ':')) {
+            return null;
+        }
+        [$oid, $wid] = explode(':', $ref, 2);
+        $overlay = static::find((int) $oid);
+        if (! $overlay) {
+            return null;
+        }
+        $window = collect($overlay->windows ?? [])->firstWhere('id', $wid);
+        if (! $window) {
+            return null;
+        }
+
+        return ['overlay' => $overlay, 'window' => $window];
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Overlay $overlay) {
@@ -44,6 +89,7 @@ class Overlay extends Model
             'logo'            => null,
             'position'        => 'bottom-left',
             'visible_columns' => ['place', 'name', 'points', 'wins', 'losses'],
+            'show_flags'      => true,
         ];
     }
 
@@ -76,5 +122,57 @@ class Overlay extends Model
     public function getRouteKeyName(): string
     {
         return 'token';
+    }
+
+    // ── Active windows (multiple can be shown at once) ──────────────
+    // Stored as state['active_window_ids'] (list). Legacy single
+    // state['active_window_id'] is still honoured for old records.
+
+    /** @return list<string> */
+    public static function activeIds(array $state): array
+    {
+        if (array_key_exists('active_window_ids', $state) && is_array($state['active_window_ids'])) {
+            return array_values(array_filter(array_map('strval', $state['active_window_ids'])));
+        }
+        $single = $state['active_window_id'] ?? null;
+
+        return $single ? [(string) $single] : [];
+    }
+
+    public static function isShown(array $state, string $id): bool
+    {
+        return in_array($id, static::activeIds($state), true);
+    }
+
+    /** @param  list<string>  $ids */
+    public static function withActive(array $state, array $ids): array
+    {
+        $state['active_window_ids'] = array_values(array_filter(array_map('strval', $ids)));
+        unset($state['active_window_id']); // migrated to the list form
+
+        return $state;
+    }
+
+    public static function showWindow(array $state, string $id): array
+    {
+        $ids = static::activeIds($state);
+        if (! in_array($id, $ids, true)) {
+            $ids[] = $id;
+        }
+
+        return static::withActive($state, $ids);
+    }
+
+    public static function hideWindow(array $state, string $id): array
+    {
+        return static::withActive($state, array_values(array_filter(
+            static::activeIds($state),
+            fn ($x) => $x !== $id,
+        )));
+    }
+
+    public static function hideAll(array $state): array
+    {
+        return static::withActive($state, []);
     }
 }

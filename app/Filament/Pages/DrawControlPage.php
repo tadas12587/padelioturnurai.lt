@@ -220,8 +220,7 @@ class DrawControlPage extends Page
     public function play(): void
     {
         $overlay = Overlay::findOrFail($this->overlayId);
-        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = $this->windowId;
+        $state = Overlay::showWindow(array_merge(Overlay::defaultState(), $overlay->state ?? []), $this->windowId);
         $overlay->state = $state;
         $overlay->save();
         Notification::make()->title('▶ Rodoma')->success()->send();
@@ -231,24 +230,36 @@ class DrawControlPage extends Page
     {
         $overlay = Overlay::findOrFail($this->overlayId);
         $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = null;
+        $state = $this->windowId ? Overlay::hideWindow($state, $this->windowId) : Overlay::hideAll($state);
         $overlay->state = $state;
         $overlay->save();
         Notification::make()->title('■ Sustabdyta')->send();
     }
 
-    /** Remaining (unplaced) teams, filtered by search. @return list<array<string,mixed>> */
+    /** Remaining (unplaced) teams, filtered by an accent-insensitive search. @return list<array<string,mixed>> */
     public function remainingTeams(): array
     {
         $s = $this->drawState();
         $placed = array_values(array_filter($s['slots'] ?? [], fn ($t) => $t !== null));
+        $needle = $this->fold($this->search);
         $teams = array_filter(
             $s['teams'] ?? [],
             fn ($t) => ! in_array($t['id'], $placed, true)
-                && ($this->search === '' || stripos($t['name'] ?? '', $this->search) !== false),
+                && ($needle === '' || str_contains($this->fold($t['name'] ?? ''), $needle)),
         );
 
         return array_values($teams);
+    }
+
+    /** Lowercase and strip Lithuanian/Polish diacritics so "seskauskas" matches "Šeškauskas". */
+    private function fold(string $s): string
+    {
+        $map = [
+            'ą' => 'a', 'č' => 'c', 'ę' => 'e', 'ė' => 'e', 'į' => 'i', 'š' => 's', 'ų' => 'u', 'ū' => 'u', 'ž' => 'z',
+            'ł' => 'l', 'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z', 'ń' => 'n', 'ć' => 'c',
+        ];
+
+        return strtr(mb_strtolower($s), $map);
     }
 
     /** All teams in the pool (for the editable list). @return list<array<string,mixed>> */
@@ -263,6 +274,21 @@ class DrawControlPage extends Page
         $window = $this->currentWindow();
 
         return $window ? app(DrawEngine::class)->layout($window) : [];
+    }
+
+    /** Is this draw window currently shown in OBS? */
+    public function isLive(): bool
+    {
+        return Overlay::isShown($this->selectedOverlay()?->state ?? [], (string) $this->windowId);
+    }
+
+    /** Draw progress: placed slots / total slots. @return array{placed:int,total:int} */
+    public function progress(): array
+    {
+        $slots = $this->drawState()['slots'] ?? [];
+        $placed = count(array_filter($slots, fn ($v) => $v !== null));
+
+        return ['placed' => $placed, 'total' => count($slots)];
     }
 
     /** Team name for a placed slot value (for the board preview). */

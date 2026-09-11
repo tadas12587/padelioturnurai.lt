@@ -7,6 +7,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\OverlayController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\RegistrationInterestController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,15 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 // declared before the /overlay/{overlay} wildcard so it isn't treated as a token.
 Route::get('/overlay/wanted', [OverlayController::class, 'wanted'])->name('overlay.wanted');
 
+// Simplified control panel (OBS browser dock) — token-authorised, CSRF-exempt.
+// Declared before the /overlay/{overlay} wildcard so "control" isn't a token.
+Route::get('/overlay/{overlay}/control',  [OverlayController::class, 'control'])->name('overlay.control');
+Route::post('/overlay/{overlay}/control', [OverlayController::class, 'controlAction'])->name('overlay.control.action');
+
+// Standalone mobile scoreboard control (token-authorised, CSRF-exempt).
+Route::get('/overlay/{overlay}/score',  [OverlayController::class, 'scoreControl'])->name('overlay.score');
+Route::post('/overlay/{overlay}/score', [OverlayController::class, 'scoreAction'])->name('overlay.score.action');
+
 // Broadcast overlays (public, polled by OBS browser sources)
 Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
 Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');
@@ -27,6 +37,13 @@ Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name(
 // Snapshot ingest — external bridge pushes Tournated data here (token-protected,
 // CSRF-exempt; see bootstrap/app.php).
 Route::post('/overlay/ingest', [OverlayController::class, 'ingest'])->name('overlay.ingest');
+
+// Public schedule / results / group-tables page (for participants & guests).
+// Fed the same way as overlays: an external bridge pushes Tournated data in
+// (production host can't reach api.tournated.com — see docs/overlays.md).
+Route::post('/grafikas/ingest', [ScheduleController::class, 'ingest'])->name('schedule.ingest');
+Route::get('/grafikas/{tournament}/data', [ScheduleController::class, 'data'])->name('schedule.data');
+Route::get('/grafikas/{tournament}', [ScheduleController::class, 'show'])->name('schedule.show');
 
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])

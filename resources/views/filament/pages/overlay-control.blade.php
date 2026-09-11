@@ -27,23 +27,29 @@
                 </x-filament::button>
             </div>
 
-            {{-- Windows --}}
-            @php $activeId = $this->activeWindowId(); @endphp
+            {{-- Windows — kelis galima rodyti vienu metu --}}
             <div class="space-y-2">
-                <div class="text-sm font-medium">Langai</div>
+                <div class="text-sm font-medium">Langai <span class="text-xs text-gray-400">(kelis galima rodyti vienu metu)</span></div>
                 @forelse($overlay->windows ?? [] as $w)
+                    @php $shown = $this->isShown($w['id'] ?? ''); @endphp
                     <div class="flex items-center justify-between gap-3 p-3 rounded-lg border
-                        {{ ($w['id'] ?? null) === $activeId ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10' : 'border-gray-200 dark:border-gray-700' }}">
+                        {{ $shown ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10' : 'border-gray-200 dark:border-gray-700' }}">
                         <div class="flex items-center gap-2">
                             <span class="font-medium">{{ $w['name'] ?? 'Langas' }}</span>
-                            <span class="text-xs text-gray-400">{{ ($w['type'] ?? 'groups') === 'bracket' ? 'Bracketas' : 'Grupės' }}</span>
-                            @if(($w['id'] ?? null) === $activeId)
+                            <span class="text-xs text-gray-400">{{ $w['type'] ?? 'groups' }}</span>
+                            @if($shown)
                                 <span class="text-xs font-bold text-primary-600 dark:text-primary-400">● GYVAI</span>
                             @endif
                         </div>
-                        <x-filament::button size="sm" wire:click="play('{{ $w['id'] }}')" icon="heroicon-o-play">
-                            Rodyti
-                        </x-filament::button>
+                        @if($shown)
+                            <x-filament::button size="sm" color="gray" wire:click="hide('{{ $w['id'] }}')" icon="heroicon-o-eye-slash">
+                                Slėpti
+                            </x-filament::button>
+                        @else
+                            <x-filament::button size="sm" wire:click="play('{{ $w['id'] }}')" icon="heroicon-o-play">
+                                Rodyti
+                            </x-filament::button>
+                        @endif
                     </div>
                 @empty
                     <div class="text-sm text-gray-500">Šis overlay neturi langų. Sukurk juos overlay redagavimo lange.</div>

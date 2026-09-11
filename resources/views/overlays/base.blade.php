@@ -75,7 +75,30 @@
             }
         }
 
-        function render(d) { @yield('render_fn_body') }
+        // render one window's payload. keep=true means "don't wipe the other
+        // windows' hosts" — used when compositing several windows at once.
+        function render(d, keep) { @yield('render_fn_body') }
+
+        const STAGE_TYPES = ['groups', 'group_standings', 'standings', 'bracket', 'schedule', 'results', 'next_match'];
+        const removeHost = (id) => { const e = document.getElementById(id); if (e) e.remove(); };
+        // Animate the score card out (if it declares an animation) before removing
+        // its host; falls back to an instant remove. Guarded so repeated polls
+        // during the ~0.5s exit don't restart it.
+        function exitScore() {
+            const host = document.getElementById('ov-score');
+            if (!host) return;
+            const card = host.firstElementChild;
+            if (!card || !card.dataset.anim || card.dataset.anim === 'none') { removeHost('ov-score'); return; }
+            if (host.dataset.exiting === '1') return;
+            host.dataset.exiting = '1';
+            card.classList.remove('sco-in');
+            card.classList.add('sco-out');
+            // header_reveal exits in two stages, so it needs a little longer.
+            const dur = card.dataset.anim === 'header_reveal' ? 820 : 540;
+            host.__exitTimer = setTimeout(() => removeHost('ov-score'), dur);
+        }
+        window.__exitScore = exitScore;
+        let lastSigs = {}, stageShown = false;
 
         function playIntro() {
             stage.classList.add('intro');
@@ -84,45 +107,92 @@
             introTimer = setTimeout(() => stage.classList.remove('intro'), 1100);
         }
 
+        function hideEverything() {
+            if (stageShown) { stage.classList.remove('in'); stageShown = false; }
+            scrim.style.opacity = 0;
+            exitScore();
+            ['ov-ticker', 'draw-reveal-host', 'ov-draw', 'ov-spons', 'ov-h2h', 'ov-pw'].forEach(removeHost);
+            clearInterval(window.__drawSpons); clearInterval(window.__spTimer);
+            window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
+            stage.innerHTML = '';
+            lastSigs = {}; shown = false; currentWindow = null;
+        }
+
+        function windowSig(w) {
+            // exclude the H2H live score — the centre is patched separately below
+            const h2 = w.h2h ? Object.assign({}, w.h2h, { live_score: null }) : w.h2h;
+            return JSON.stringify({ t: w.window_type, g: w.groups, b: w.bracket, it: w.items,
+                sc: w.schedule, sv: w.schedule_variant, nm: w.next_match, dr: w.draw, h2: h2,
+                sc2: w.score, v: w.variant, cp: w.corner_position, csz: w.corner_size,
+                pw: [w.main_logo, w.main_position, w.main_size, w.main_size_num, w.main_dx, w.main_dy, w.main_bg,
+                    w.tile_size, w.gap, w.layout_variant, w.bg_pattern, w.animate, w.anim_speed,
+                    w.title, w.title_position, w.title_size, w.title_size_num, w.title_dx, w.title_dy, w.title_bg],
+                tt: w.tournament_title, ti: w.title, lg: w.logo, c: w.columns });
+        }
+
         async function tick() {
             try {
                 const res = await fetch(DATA_URL, { cache: 'no-store' });
                 const d = await res.json();
 
-                if (!d.visible) {
-                    if (shown) { stage.classList.remove('in'); shown = false; currentWindow = null; }
-                    scrim.style.opacity = 0;
-                    const t = document.getElementById('ov-ticker'); if (t) t.remove();
-                    const rv = document.getElementById('draw-reveal-host'); if (rv) rv.remove();
-                    const dh = document.getElementById('ov-draw'); if (dh) dh.remove();
-                    return d;
-                }
+                // Prefer the multi-window list; fall back to the flat shape.
+                const wins = (d.windows && d.windows.length) ? d.windows : (d.visible ? [d] : []);
+                if (!wins.length) { hideEverything(); return d; }
 
                 setColors(d.colors);
-                applyScrim(d);
+                // scrim: on if any window enables it (take the strongest)
+                const scr = wins.map(w => w.scrim).filter(s => s && s.enabled)
+                    .sort((a, b) => (b.opacity || 0) - (a.opacity || 0))[0];
+                applyScrim({ colors: d.colors, scrim: scr });
                 root.className = 'pos-' + (d.position || 'bottom-left');
 
-                const sig = JSON.stringify({ w: d.window_id, g: d.groups, b: d.bracket,
-                    it: d.items, sc: d.schedule, sv: d.schedule_variant, nm: d.next_match,
-                    dr: d.draw, v: d.variant, tt: d.tournament_title, ti: d.title, lg: d.logo, c: d.columns });
-
-                if (!shown) {
-                    render(d); playIntro(); shown = true; currentWindow = d.window_id; lastSig = sig;
-                } else if (d.window_id !== currentWindow) {
-                    stage.classList.remove('in'); currentWindow = d.window_id; lastSig = sig;
-                    setTimeout(() => { render(d); playIntro(); }, 420);
-                } else if (sig !== lastSig) {
-                    lastSig = sig; render(d);
+                // Reconcile: drop hosts for window types no longer active.
+                const types = new Set(wins.map(w => w.window_type || 'groups'));
+                if (!types.has('sponsors')) { removeHost('ov-spons'); clearInterval(window.__spTimer); }
+                if (!types.has('h2h')) removeHost('ov-h2h');
+                if (!types.has('score')) exitScore();
+                if (!types.has('photowall')) removeHost('ov-pw');
+                if (!types.has('draw')) {
+                    removeHost('ov-draw'); removeHost('draw-reveal-host');
+                    clearInterval(window.__drawSpons);
+                    window.__drawPoolRects = undefined; window.__drawHandledKey = undefined;
                 }
+                if (!types.has('results')) removeHost('ov-ticker');
+                const hasStage = wins.some(w => STAGE_TYPES.includes(w.window_type || 'groups'));
+                if (!hasStage && stageShown) { stage.innerHTML = ''; stage.classList.remove('in'); stageShown = false; }
+
+                // Render each active window additively.
+                const present = {};
+                wins.forEach((w) => {
+                    const id = w.window_id || (w.window_type || 'x');
+                    present[id] = 1;
+                    const sig = windowSig(w);
+                    if (lastSigs[id] !== sig) {
+                        render(w, true);
+                        lastSigs[id] = sig;
+                        if (STAGE_TYPES.includes(w.window_type || 'groups')) {
+                            if (!stageShown) { playIntro(); stageShown = true; }
+                        }
+                    }
+                    if ((w.window_type) === 'h2h' && window.__updH2hCenter) window.__updH2hCenter(w.h2h || {});
+                });
+                Object.keys(lastSigs).forEach(k => { if (!present[k]) delete lastSigs[k]; });
+                shown = true;
                 return d;
             } catch (e) { /* keep last good frame */ return null; }
         }
 
-        // Self-scheduling poll: the draw window refreshes faster so the live
+        // Self-scheduling poll: a draw window refreshes faster so the live
         // reveal feels snappy; everything else stays on POLL_MS.
         let pollTimer = null;
         function schedule(d) {
-            const ms = (d && d.window_type === 'draw') ? 1000 : POLL_MS;
+            const wins = (d && d.windows) ? d.windows : (d ? [d] : []);
+            const types = wins.map(w => w.window_type);
+            // Draw reveal needs to feel instant; schedule/scores/brackets update
+            // often during play, so poll them faster than static windows.
+            const ms = types.includes('draw') ? 500
+                : types.some(t => ['schedule', 'score', 'results', 'bracket', 'h2h', 'groups'].includes(t)) ? 1200
+                : POLL_MS;
             clearTimeout(pollTimer);
             pollTimer = setTimeout(loop, ms);
         }

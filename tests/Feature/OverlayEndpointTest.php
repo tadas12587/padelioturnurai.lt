@@ -241,6 +241,122 @@ class OverlayEndpointTest extends TestCase
             ->assertJsonPath('draw.current.slot', 'A1');
     }
 
+    public function test_control_action_play_and_stop(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'C', 'type' => 'group_standings',
+            'windows' => [['id' => 'w1', 'type' => 'groups', 'name' => 'W1']],
+            'state' => ['active_window_id' => null, 'next_match' => ''],
+        ]);
+
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w1'])
+            ->assertOk()->assertJson(['active_window_ids' => ['w1']]);
+        $this->assertSame(['w1'], Overlay::activeIds($overlay->fresh()->state));
+
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'stop'])
+            ->assertOk()->assertJson(['active_window_ids' => []]);
+        $this->assertSame([], Overlay::activeIds($overlay->fresh()->state));
+    }
+
+    public function test_sponsor_window_pulls_images_from_a_gallery(): void
+    {
+        $gallery = \App\Models\Gallery::create(['name' => 'Turnyro rėmėjai', 'images' => ['galleries/a.png', 'galleries/b.png']]);
+        $overlay = Overlay::create([
+            'name' => 'S', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'sponsors', 'name' => 'Rėmėjai', 'variant' => 'bar', 'gallery_ids' => [$gallery->id]]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('window_type', 'sponsors')
+            ->assertJsonCount(2, 'items');
+    }
+
+    public function test_partial_ingest_keeps_existing_title_and_categories(): void
+    {
+        config(['services.overlay.ingest_token' => 'secret']);
+        OverlaySnapshot::create(['tournament_external_id' => '10931', 'payload' => [
+            'title' => 'Padel Open', 'categories' => [['id' => 1]], 'matches' => [['id' => 1]],
+            'groups_by_category' => ['1' => [['id' => 9]]],
+        ]]);
+
+        // bridge could only fetch matches (upstream tournament query down)
+        $this->withHeader('X-Overlay-Token', 'secret')
+            ->postJson('/overlay/ingest', [
+                'tournament_id' => '10931', 'partial' => true,
+                'matches' => [['id' => 1], ['id' => 2]],
+            ])->assertOk();
+
+        $payload = OverlaySnapshot::where('tournament_external_id', '10931')->value('payload');
+        $this->assertSame('Padel Open', $payload['title']);            // kept
+        $this->assertSame([['id' => 1]], $payload['categories']);      // kept
+        $this->assertSame(['1' => [['id' => 9]]], $payload['groups_by_category']); // kept
+        $this->assertCount(2, $payload['matches']);                    // replaced
+    }
+
+    public function test_photowall_window_returns_wall_config(): void
+    {
+        $gallery = \App\Models\Gallery::create(['name' => 'Rėmėjai', 'images' => ['galleries/a.png', 'galleries/b.png']]);
+        $overlay = Overlay::create([
+            'name' => 'PW', 'type' => 'group_standings', 'tournament_external_id' => '10424',
+            'windows' => [['id' => 'w1', 'type' => 'photowall', 'name' => 'Foto sienelė',
+                'gallery_ids' => [$gallery->id], 'pw_main_position' => 'top-left', 'pw_main_size' => 'xl',
+                'pw_tile_size' => 'l', 'pw_gap' => 'wide', 'pw_title' => 'Padel Open 2026', 'pw_title_position' => 'bottom-center',
+                'pw_layout' => 'grid', 'pw_bg_pattern' => 'checker', 'pw_animate' => 'slide', 'pw_title_bg' => true,
+                'pw_anim_speed' => 8, 'pw_main_size_num' => 26.5, 'pw_main_dx' => -4, 'pw_title_dy' => 3]],
+            'state' => ['active_window_id' => 'w1', 'next_match' => ''],
+        ]);
+
+        $this->getJson("/overlay/{$overlay->token}/data")
+            ->assertOk()
+            ->assertJsonPath('window_type', 'photowall')
+            ->assertJsonCount(2, 'items')
+            ->assertJsonPath('main_position', 'top-left')
+            ->assertJsonPath('tile_size', 'l')
+            ->assertJsonPath('title', 'Padel Open 2026')
+            ->assertJsonPath('title_position', 'bottom-center')
+            ->assertJsonPath('layout_variant', 'grid')
+            ->assertJsonPath('bg_pattern', 'checker')
+            ->assertJsonPath('animate', 'slide')
+            ->assertJsonPath('title_bg', true)
+            ->assertJsonPath('anim_speed', 8)
+            ->assertJsonPath('main_size_num', 26.5)
+            ->assertJsonPath('main_dx', -4)
+            ->assertJsonPath('title_dy', 3);
+    }
+
+    public function test_control_dock_play_is_an_exclusive_switch(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'C', 'type' => 'group_standings',
+            'windows' => [['id' => 'w1', 'type' => 'groups', 'name' => 'W1'], ['id' => 'w2', 'type' => 'bracket', 'name' => 'W2']],
+            'state' => ['active_window_ids' => ['w1'], 'next_match' => ''],
+        ]);
+
+        // playing another window switches: old off, new on
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w2'])
+            ->assertOk()->assertJson(['active_window_ids' => ['w2']]);
+        $this->assertSame(['w2'], Overlay::activeIds($overlay->fresh()->state));
+
+        // add=1 keeps the current set and adds
+        $this->postJson("/overlay/{$overlay->token}/control", ['action' => 'play', 'window_id' => 'w1', 'add' => 1])
+            ->assertOk();
+        $ids = Overlay::activeIds($overlay->fresh()->state);
+        sort($ids);
+        $this->assertSame(['w1', 'w2'], $ids);
+    }
+
+    public function test_control_page_renders_windows(): void
+    {
+        $overlay = Overlay::create([
+            'name' => 'C', 'type' => 'group_standings',
+            'windows' => [['id' => 'w1', 'type' => 'groups', 'name' => 'Grupės A']],
+        ]);
+
+        $this->get("/overlay/{$overlay->token}/control")->assertOk()->assertSee('Grupės A');
+    }
+
     public function test_wanted_rejects_without_token(): void
     {
         config(['services.overlay.ingest_token' => 'secret']);

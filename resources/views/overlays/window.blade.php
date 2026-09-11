@@ -35,7 +35,13 @@
     tbody td { padding: 9px 14px; font-size: 17px; text-align: right; color: var(--ov-text); font-variant-numeric: tabular-nums; }
     tbody td.col-place { width: 48px; text-align: left; }
     tbody td.col-name { text-align: left; font-weight: 500; line-height: 1.2; padding-right: 10px; }
-    tbody td.col-name .pl { display: block; }
+    tbody td.col-name .pl { display: flex; align-items: center; }
+    /* country flag shown next to a player name across every overlay */
+    .ov-flag { height: .82em; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.35);
+        margin-right: .42em; vertical-align: -0.1em; flex: none; }
+    .ov-pl { display: inline-flex; align-items: center; }
+    .ov-pn { white-space: nowrap; }
+    .ov-slash { opacity: .45; margin: 0 .4em; }
     tbody tr + tr td { border-top: 1px solid rgba(127,127,127,.14); }
     tbody tr:nth-child(even) { background: rgba(127,127,127,.08); }
     tbody tr.leader { background: rgba(127,127,127,.12); box-shadow: inset 3px 0 0 var(--ov-accent); }
@@ -174,17 +180,22 @@
     /* ── Sponsors ────────────────────────────────────────────── */
     .sp-item { opacity: 0; transition: opacity .6s ease, transform .6s cubic-bezier(.16,1,.3,1); }
     .sp-item.show { opacity: 1; }
-    .spons.corner { position: relative; width: 240px; height: 120px; background: var(--ov-bg);
-        border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px;
+    /* Corner bug — sized ~2:1 for 800×400 logos, minimal filler around the image. */
+    .spons.corner { position: fixed; width: 360px; height: 188px; background: var(--ov-bg);
+        border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 10px;
         box-shadow: 0 20px 45px -20px rgba(0,0,0,.75); }
-    .spons.corner .sp-item { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 18px; transform: scale(.96); }
+    .spons.corner .sp-item { position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center; transform: scale(.96); }
     .spons.corner .sp-item.show { transform: none; }
-    .spons.corner img { width: 200px; height: 84px; object-fit: contain; }
-    .spons.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 92px; background: var(--ov-bg);
-        border-top: 3px solid var(--ov-accent); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.6); }
-    .spons.bar .sp-item { position: absolute; inset: 0; display: flex; align-items: center; gap: 22px; padding: 0 48px; transform: translateY(12px); }
-    .spons.bar .sp-item.show { transform: none; }
-    .spons.bar img { width: 160px; height: 64px; object-fit: contain; flex: none; }
+    .spons.corner img { width: 100%; height: 100%; object-fit: contain; }
+    .sp-pos-top-left { top: 40px; left: 40px; }
+    .sp-pos-top-right { top: 40px; right: 40px; }
+    .sp-pos-bottom-left { bottom: 40px; left: 40px; }
+    .sp-pos-bottom-right { bottom: 40px; right: 40px; }
+    .spons.bar { position: fixed; left: 0; right: 0; bottom: 0; height: 96px; background: var(--ov-bg);
+        border-top: 3px solid var(--ov-accent); box-shadow: 0 -10px 30px -12px rgba(0,0,0,.6); overflow: hidden; }
+    .spons.bar .sp-track { align-items: center; height: 100%; }
+    .spons.bar .sp-cell { display: flex; align-items: center; gap: 18px; padding: 0 44px; height: 100%; }
+    .spons.bar img { height: 60px; width: auto; object-fit: contain; }
     .spons.bar .meta { display: flex; flex-direction: column; }
     .spons.bar .nm { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: 22px; color: var(--ov-text); }
     .spons.bar .url { font-family: 'Barlow',sans-serif; font-size: 16px; color: var(--ov-accent); }
@@ -195,43 +206,340 @@
     .spons.full img { width: min(640px, 60vw); height: min(360px, 52vh); object-fit: contain; filter: drop-shadow(0 12px 40px rgba(0,0,0,.5)); }
     .spons.full .nm { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; font-size: 34px; color: var(--ov-text); }
 
+    /* ── Akistata (Head to Head) ─────────────────────────────── */
+    /* Colours follow the overlay theme: sides tinted with the accent. */
+    .h2h-stage { position: fixed; inset: 0; overflow: hidden; background: var(--ov-bg);
+        background: linear-gradient(90deg,
+            color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 0%, var(--ov-bg) 36%,
+            var(--ov-bg) 64%, color-mix(in srgb, var(--ov-accent) 22%, var(--ov-bg)) 100%); }
+    /* subtle, slow accent glow drifting in the background (not distracting) */
+    .h2h-stage::before, .h2h-stage::after { content: ''; position: absolute; inset: -25%; z-index: 0; pointer-events: none;
+        background: radial-gradient(closest-side, color-mix(in srgb, var(--ov-accent) 42%, transparent), transparent 72%); opacity: .8; }
+    .h2h-stage::before { animation: h2hGlowA 26s ease-in-out infinite alternate; }
+    .h2h-stage::after  { animation: h2hGlowB 34s ease-in-out infinite alternate; }
+    @keyframes h2hGlowA { from { transform: translate(-16%,-10%) scale(1); } to { transform: translate(10%,8%) scale(1.25); } }
+    @keyframes h2hGlowB { from { transform: translate(18%,12%) scale(1.1); } to { transform: translate(-12%,-6%) scale(1.3); } }
+    /* animated background: colour-mixing blobs + multiplied floating image */
+    .h2h-bg { position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+    .h2h-blob { position: absolute; border-radius: 50%; filter: blur(46px); mix-blend-mode: screen;
+        animation: h2hDrift var(--d,18s) ease-in-out infinite; animation-delay: var(--dl,0s); }
+    @keyframes h2hDrift { 0% { transform: translate(0,0) scale(1); }
+        33% { transform: translate(var(--dx,40px),var(--dy,-30px)) scale(1.15); }
+        66% { transform: translate(calc(var(--dx,40px) * -.6),calc(var(--dy,-30px) * .7)) scale(.9); }
+        100% { transform: translate(0,0) scale(1); } }
+    .h2h-particle { position: absolute; will-change: transform; object-fit: contain;
+        animation: h2hFloat var(--d,14s) ease-in-out infinite; animation-delay: var(--dl,0s); }
+    @keyframes h2hFloat { 0% { transform: translate(0,0) rotate(0); }
+        50% { transform: translate(var(--dx,30px),var(--dy,-40px)) rotate(var(--rot,40deg)); }
+        100% { transform: translate(0,0) rotate(0); } }
+    .h2h-empty { display: flex; align-items: center; justify-content: center;
+        font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .12em; font-size: 30px; color: var(--ov-muted); }
+    /* tournament header (logo + name + category) — like other overlays */
+    .h2h-header { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 5;
+        display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .h2h-header .hrow { display: flex; align-items: center; gap: 14px; }
+    .h2h-header img { height: 56px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 7px rgba(0,0,0,.6)); }
+    .h2h-header .tt { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        font-size: 30px; color: var(--ov-text); text-shadow: 0 2px 10px rgba(0,0,0,.7); }
+    .h2h-header .cat { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 24px; letter-spacing: .12em; text-transform: uppercase;
+        color: var(--ov-accent); text-shadow: 0 2px 10px rgba(0,0,0,.7);
+        background: rgba(0,0,0,.4); padding: 3px 14px; border-radius: 8px; }
+    /* Players: equal size, shown close (bottom crops), slightly overlapping. */
+    .h2h-side { position: absolute; bottom: 0; display: flex; align-items: flex-end; height: 100vh; z-index: 1; }
+    .h2h-left { left: var(--h2h-edge, 0vw); transform: translateX(calc(-1 * var(--h2h-gap, 0vw))); }
+    .h2h-right { right: var(--h2h-edge, 0vw); flex-direction: row-reverse; transform: translateX(var(--h2h-gap, 0vw)); }
+    /* No side clipping — only the bottom may crop (via the stage's overflow). */
+    .h2h-player { position: relative; display: flex; align-items: flex-end; }
+    .h2h-imgwrap { display: flex; align-items: flex-end; }
+    /* Each player capped in width so a pair fits side-by-side on its own half
+       (keeps both teammates together, leaves a clear gap between the two teams). */
+    .h2h-imgwrap img { height: var(--h2h-size, 96vh); width: auto; max-width: 44vw; display: block; margin-bottom: -6vh; image-rendering: auto;
+        /* Non-destructive: tight dark shadows hug the alpha edge to absorb a thin
+           white cut-out fringe (keeps full image quality + GIF animation). */
+        filter: drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 0 1.2px rgba(0,0,0,.85)) drop-shadow(0 16px 30px rgba(0,0,0,.5)); }
+    /* Teammates overlap heavily so the bigger photos still fit on their side. */
+    .h2h-left .p1 { margin-left: calc(-1 * var(--h2h-overlap, 24vw)); }
+    .h2h-right .p1 { margin-right: calc(-1 * var(--h2h-overlap, 24vw)); }
+    @keyframes h2hZoom { from { transform: scale(1); } to { transform: scale(1.05); } }
+    .h2h-zoom { animation: h2hZoom 22s ease-in-out infinite alternate; transform-origin: bottom center; }
+    /* per-team info card (fixed size, readable from a distance) */
+    .h2h-team-info { position: absolute; bottom: 3.5vh; z-index: 4; width: 34vw; background: rgba(0,0,0,.82);
+        border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent); border-radius: 12px; padding: 14px 22px; }
+    .h2h-team-info.left { left: 2vw; }
+    .h2h-team-info.right { right: 2vw; text-align: right; }
+    .h2h-team-rating { display: flex; align-items: baseline; gap: 12px; padding-bottom: 8px; margin-bottom: 6px;
+        border-bottom: 1px solid rgba(255,255,255,.18); }
+    .h2h-team-info.right .h2h-team-rating { justify-content: flex-end; }
+    .h2h-team-rating .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 14px; color: var(--ov-muted); }
+    .h2h-team-rating .val { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; line-height: 1; color: var(--ov-accent); }
+    .h2h-row { padding: 8px 0; }
+    .h2h-row + .h2h-row { border-top: 1px solid rgba(255,255,255,.14); }
+    .h2h-rn { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .03em;
+        font-size: 33px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h2h-rsub { display: flex; gap: 18px; align-items: center; margin-top: 5px; font-family: 'Barlow',sans-serif; font-size: 24px; white-space: nowrap; }
+    .h2h-team-info.right .h2h-rsub { justify-content: flex-end; }
+    .h2h-rt { color: var(--ov-accent); font-weight: 700; }
+    .h2h-rc { display: inline-flex; align-items: center; gap: 8px; color: var(--ov-text); }
+    .h2h-flag { height: 24px; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); }
+    /* centre */
+    .h2h-center { position: absolute; left: 50%; top: 44%; transform: translate(-50%,-50%); text-align: center; z-index: 5; }
+    .h2h-vs { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 78px; line-height: 1; color: var(--ov-accent);
+        text-shadow: 0 3px 18px rgba(0,0,0,.8); }
+    .h2h-cbox { margin-top: 16px; background: rgba(0,0,0,.62); border: 1px solid color-mix(in srgb, var(--ov-accent) 60%, transparent);
+        border-radius: 12px; padding: 12px 30px; }
+    .h2h-score, .h2h-time { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 44px; letter-spacing: .04em; color: var(--ov-text); }
+    .h2h-court { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 22px; color: var(--ov-text);
+        letter-spacing: .08em; text-transform: uppercase; margin-top: 7px; }
+    /* centre slot: swaps between the live score card and the scheduled time,
+       with a fade+lift whenever the mode changes */
+    .h2h-cslot { display: inline-block; }
+    .h2h-cfade { animation: h2hCFade .45s ease both; }
+    @keyframes h2hCFade { from { opacity: 0; transform: translateY(10px) scale(.95); } to { opacity: 1; transform: none; } }
+    /* the standalone score card, embedded (centred) inside the H2H centre */
+    .sco-card.sco-inline { position: static; width: min(40vw, 640px); font-size: clamp(15px, 1.5vw, 26px);
+        margin: 16px auto 0; display: inline-block; text-align: left;
+        box-shadow: 0 .6em 1.6em -.4em rgba(0,0,0,.85); }
+    /* centre sponsor (between the teams) — shows only when set */
+    .h2h-sponsor { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); z-index: 4; text-align: center;
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
+        background: rgba(0,0,0,.55); border: 1px solid color-mix(in srgb, var(--ov-accent) 45%, transparent);
+        border-radius: 14px; padding: 20px 40px; }
+    .h2h-sponsor img { height: 132px; width: auto; max-width: 40vw; object-fit: contain; }
+    .h2h-sponsor .txt { font-family: 'Oswald',sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: .04em;
+        font-size: 44px; color: var(--ov-text); text-shadow: 0 2px 8px rgba(0,0,0,.8); }
+    .h2h-has-bar .h2h-sponsor { bottom: 18vh; }
+    /* with the sponsor bar: cards rise above it and shrink slightly */
+    .h2h-has-bar .spons.bar { z-index: 6; }
+    .h2h-has-bar .h2h-team-info { bottom: 13vh; }
+    .h2h-has-bar .h2h-team-info.left { transform: scale(.9); transform-origin: bottom left; }
+    .h2h-has-bar .h2h-team-info.right { transform: scale(.9); transform-origin: bottom right; }
+
+    /* No-photos mode: the info card IS the content — centred vertically, bigger
+       type, since it no longer sits as a caption over a player photo. Capped at
+       27vw (with the 2vw edge offset) so it never reaches the centre score/VS
+       card at any common canvas width — that card sits above it (z-index 5)
+       and would otherwise cut it off. */
+    .h2h-noimg .h2h-team-info { width: 27vw; bottom: auto; top: 50%; transform: translateY(-50%);
+        padding: 30px 34px; background: rgba(0,0,0,.86); }
+    .h2h-noimg .h2h-team-rating .val { font-size: 48px; }
+    .h2h-noimg .h2h-row { padding: 14px 0; }
+    .h2h-noimg .h2h-rn { font-size: 40px; }
+    .h2h-noimg .h2h-rsub { font-size: 25px; margin-top: 7px; }
+    .h2h-noimg .h2h-flag { height: 27px; }
+    .h2h-noimg.h2h-has-bar .h2h-team-info { top: 46%; }
+    .h2h-noimg.h2h-has-bar .h2h-team-info.left,
+    .h2h-noimg.h2h-has-bar .h2h-team-info.right { transform: translateY(-50%) scale(.92); }
+
+    /* ── Rezultatas (live scoreboard) ────────────────────────── */
+    .sco-card { position: fixed; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.3);
+        border-top: 3px solid var(--ov-accent); border-radius: .5em; overflow: hidden;
+        box-shadow: 0 .6em 1.4em -.5em rgba(0,0,0,.8); font-family: 'Barlow',sans-serif; }
+    .sco-top-left { top: 40px; left: 40px; }
+    .sco-top-center { top: 40px; left: 50%; transform: translateX(-50%); }
+    .sco-top-right { top: 40px; right: 40px; }
+    .sco-bottom-left { bottom: 40px; left: 40px; }
+    .sco-bottom-center { bottom: 40px; left: 50%; transform: translateX(-50%); }
+    .sco-bottom-right { bottom: 40px; right: 40px; }
+    .sco-head { display: flex; align-items: center; justify-content: space-between; gap: 1em;
+        padding: .45em .9em; font-family: 'Oswald',sans-serif; position: relative; z-index: 2;
+        /* opaque so the result can hide behind it during the reveal animation */
+        background: linear-gradient(rgba(127,127,127,.14), rgba(127,127,127,.14)), var(--ov-bg); }
+    .sco-level { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: .95em; color: var(--ov-accent); }
+    .sco-meta { font-size: .72em; letter-spacing: .05em; text-transform: uppercase; color: var(--ov-muted); white-space: nowrap; }
+    .sco-row { display: flex; align-items: center; gap: .6em; padding: .5em .9em; }
+    .sco-row + .sco-row { border-top: 1px solid rgba(127,127,127,.16); }
+    .sco-row.win { background: rgba(127,127,127,.1); }
+    .sco-dot { width: .5em; height: .5em; border-radius: 50%; background: transparent; flex: none; }
+    .sco-row.serve .sco-dot { background: var(--ov-accent); box-shadow: 0 0 .5em var(--ov-accent); }
+    .sco-name { flex: 1; min-width: 0; font-size: 1em; font-weight: 500; color: var(--ov-text);
+        display: flex; flex-direction: column; gap: 2px; line-height: 1.12; }
+    .sco-name .sco-pl { display: flex; align-items: center; min-width: 0; }
+    .sco-name .sco-pl .ov-pn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sco-name .sco-name-1 { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sco-set { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; color: var(--ov-muted); font-size: 1em; }
+    .sco-games { width: 1.3em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; color: var(--ov-text); font-size: 1.05em; }
+    .sco-point { width: 2em; text-align: center; font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 1.15em; color: var(--ov-accent); }
+
+    /* ── Score entrance / exit animations ──────────────────────── */
+    .sco-card { --sco-cx: 0; }              /* corners: no horizontal centering offset */
+    .sco-side-center { --sco-cx: -50%; }    /* top/bottom-center keep translateX(-50%) */
+    .sco-body { position: relative; z-index: 1; }
+    /* Whole-card entrances (slide / fade / pop). Direction follows the corner. */
+    .sco-in.sco-anim-slide.sco-side-right  { animation: scoInR .55s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-slide.sco-side-left   { animation: scoInL .55s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-slide.sco-side-center { animation: scoInUp .5s ease both; }
+    .sco-in.sco-anim-fade { animation: scoInUp .5s ease both; }
+    .sco-in.sco-anim-pop  { animation: scoInPop .5s cubic-bezier(.2,1.3,.35,1) both; }
+    /* Two-stage: header flies in from the side, then the result slides down from behind it. */
+    .sco-in.sco-anim-header_reveal.sco-side-right  .sco-head { animation: scoHeadR .5s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-header_reveal.sco-side-left   .sco-head { animation: scoHeadL .5s cubic-bezier(.16,1,.3,1) both; }
+    .sco-in.sco-anim-header_reveal.sco-side-center .sco-head { animation: scoHeadUp .45s ease both; }
+    .sco-in.sco-anim-header_reveal .sco-body { animation: scoBodyDown .5s cubic-bezier(.16,1,.3,1) both; animation-delay: .42s; }
+    @keyframes scoInR  { from { opacity: 0; transform: translateX(calc(var(--sco-cx,0) + 115%)); } to { opacity: 1; transform: translateX(var(--sco-cx,0)); } }
+    @keyframes scoInL  { from { opacity: 0; transform: translateX(calc(var(--sco-cx,0) - 115%)); } to { opacity: 1; transform: translateX(var(--sco-cx,0)); } }
+    @keyframes scoInUp { from { opacity: 0; transform: translate(var(--sco-cx,0), 16px); } to { opacity: 1; transform: translate(var(--sco-cx,0), 0); } }
+    @keyframes scoInPop{ from { opacity: 0; transform: translateX(var(--sco-cx,0)) scale(.84); } to { opacity: 1; transform: translateX(var(--sco-cx,0)) scale(1); } }
+    @keyframes scoHeadR  { from { opacity: 0; transform: translateX(115%); } to { opacity: 1; transform: none; } }
+    @keyframes scoHeadL  { from { opacity: 0; transform: translateX(-115%); } to { opacity: 1; transform: none; } }
+    @keyframes scoHeadUp { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+    @keyframes scoBodyDown { from { opacity: 0; transform: translateY(-100%); } to { opacity: 1; transform: none; } }
+    /* Exit — slide / fade / pop: the whole card leaves the way it came. */
+    .sco-out.sco-anim-slide.sco-side-right, .sco-out.sco-anim-pop.sco-side-right { animation: scoOutR .5s ease both; }
+    .sco-out.sco-anim-slide.sco-side-left,  .sco-out.sco-anim-pop.sco-side-left  { animation: scoOutL .5s ease both; }
+    .sco-out.sco-anim-slide.sco-side-center { animation: scoOutDown .42s ease both; }
+    .sco-out.sco-anim-fade { animation: scoOutDown .42s ease both; }
+    .sco-out.sco-anim-pop.sco-side-center { animation: scoOutPop .42s ease both; }
+    @keyframes scoOutR    { from { opacity: 1; transform: translateX(var(--sco-cx,0)); } to { opacity: 0; transform: translateX(calc(var(--sco-cx,0) + 115%)); } }
+    @keyframes scoOutL    { from { opacity: 1; transform: translateX(var(--sco-cx,0)); } to { opacity: 0; transform: translateX(calc(var(--sco-cx,0) - 115%)); } }
+    @keyframes scoOutDown { from { opacity: 1; transform: translate(var(--sco-cx,0), 0); } to { opacity: 0; transform: translate(var(--sco-cx,0), 14px); } }
+    @keyframes scoOutPop  { from { opacity: 1; transform: translateX(var(--sco-cx,0)) scale(1); } to { opacity: 0; transform: translateX(var(--sco-cx,0)) scale(.84); } }
+    /* Exit — header_reveal: exact reverse of the entrance. The result retracts up
+       behind the header, then the header flies back out to its side. */
+    .sco-out.sco-anim-header_reveal .sco-body { animation: scoBodyUp .4s cubic-bezier(.5,0,.9,.4) both; }
+    .sco-out.sco-anim-header_reveal.sco-side-right  .sco-head { animation: scoHeadOutR .45s cubic-bezier(.5,0,.9,.4) both; animation-delay: .32s; }
+    .sco-out.sco-anim-header_reveal.sco-side-left   .sco-head { animation: scoHeadOutL .45s cubic-bezier(.5,0,.9,.4) both; animation-delay: .32s; }
+    .sco-out.sco-anim-header_reveal.sco-side-center .sco-head { animation: scoHeadOutUp .4s ease both; animation-delay: .32s; }
+    @keyframes scoBodyUp    { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-100%); } }
+    @keyframes scoHeadOutR  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(115%); } }
+    @keyframes scoHeadOutL  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-115%); } }
+    @keyframes scoHeadOutUp { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-12px); } }
+    @media (prefers-reduced-motion: reduce) { .sco-in, .sco-out, .sco-in .sco-head, .sco-in .sco-body,
+        .sco-out .sco-head, .sco-out .sco-body { animation: none !important; } }
+    .sco-card.tb .sco-games { color: var(--ov-accent); }
+
+    /* ── Foto sienelė (step-and-repeat) ─────────────────────────── */
+    .pw-stage { position: fixed; inset: 0; overflow: hidden; background: var(--ov-bg); }
+    /* 2-colour checkerboard from theme colours (good with the strict grid) */
+    .pw-stage.pw-checker { background-color: var(--ov-bg);
+        --pw-c2: color-mix(in srgb, var(--ov-accent) 16%, var(--ov-bg));
+        background-image:
+            linear-gradient(45deg, var(--pw-c2) 25%, transparent 25% 75%, var(--pw-c2) 75%),
+            linear-gradient(45deg, var(--pw-c2) 25%, transparent 25% 75%, var(--pw-c2) 75%);
+        background-size: var(--pw-csz, 200px) var(--pw-csz-y, var(--pw-csz, 200px));
+        background-position: 0 0, calc(var(--pw-csz, 200px) / 2) calc(var(--pw-csz-y, var(--pw-csz, 200px)) / 2); }
+    .pw-wall { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        display: flex; flex-direction: column; align-items: center; }
+    .pw-wall.pw-diag { transform: translate(-50%, -50%) rotate(-18deg); }
+    .pw-row { display: flex; justify-content: center; align-items: center; flex: none; will-change: transform; }
+    /* tile hugs the logo height (no forced square) so vertical gaps stay tight */
+    .pw-tile { display: flex; align-items: center; justify-content: center; flex: none; }
+    .pw-tile img { max-width: 100%; width: auto; height: auto; object-fit: contain; opacity: .9;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,.25)); }
+    /* alternating rows drift sideways and back (ping-pong) */
+    @keyframes pwSlideA { 0%, 100% { transform: translateX(calc(var(--pw-move,60px) * -1)); } 50% { transform: translateX(var(--pw-move,60px)); } }
+    @keyframes pwSlideB { 0%, 100% { transform: translateX(var(--pw-move,60px)); } 50% { transform: translateX(calc(var(--pw-move,60px) * -1)); } }
+    /* branding placed on the wall (logo + free-text title) */
+    .pw-el { position: absolute; z-index: 3; display: flex; align-items: center; }
+    .pw-el.pw-front { z-index: 4; } /* tournament logo sits above the title text */
+    .pw-logo-wrap { display: flex; align-items: center; justify-content: center; }
+    .pw-logo { max-width: 62vw; height: auto; filter: drop-shadow(0 8px 26px rgba(0,0,0,.55)); }
+    .pw-title { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+        color: var(--ov-text); line-height: 1.05; text-align: center;
+        text-shadow: 0 2px 12px rgba(0,0,0,.7), 0 0 2px color-mix(in srgb, var(--ov-accent) 60%, transparent); }
+    /* solid backing panel so branding covers the tiled logos behind it */
+    .pw-panel { background: var(--ov-bg); border: 2px solid color-mix(in srgb, var(--ov-accent) 55%, transparent);
+        border-radius: 16px; box-shadow: 0 12px 44px rgba(0,0,0,.55); }
+    .pw-logo-wrap.pw-panel { padding: 2.2vw 2.6vw; }
+    .pw-title.pw-panel { padding: .45em .9em; text-shadow: none; }
+    .pw-pos-center        { inset: 0; justify-content: center; }
+    .pw-pos-top-center    { top: 5vh; left: 0; right: 0; justify-content: center; }
+    .pw-pos-bottom-center { bottom: 5vh; left: 0; right: 0; justify-content: center; }
+    .pw-pos-top-left      { top: 5vh; left: 4vw; }
+    .pw-pos-top-right     { top: 5vh; right: 4vw; }
+    .pw-pos-bottom-left   { bottom: 5vh; left: 4vw; }
+    .pw-pos-bottom-right  { bottom: 5vh; right: 4vw; }
+
     /* ── Draw (burtai) ───────────────────────────────────────── */
-    .draw-stage { position: fixed; inset: 0; padding: 28px 34px; display: flex; flex-direction: column; }
-    .draw-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .draw-head .left { display: flex; align-items: center; gap: 12px; }
-    .draw-head img { height: 46px; width: auto; object-fit: contain; }
-    .draw-head .tt { font-family: 'Oswald',sans-serif; font-weight: 700; font-size: 22px; color: var(--ov-text); line-height: 1.1; }
-    .draw-head .cat { font-size: 13px; color: var(--ov-muted); }
-    .draw-head .badge { font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 26px; color: var(--ov-accent); }
-    .draw-head .pot { font-family: 'Oswald',sans-serif; font-size: 12px; font-weight: 600; color: #0A0A0F; background: var(--ov-accent); padding: 3px 10px; border-radius: 6px; margin-left: 12px; }
-    .draw-body { flex: 1; display: flex; gap: 18px; min-height: 0; }
-    .draw-grid { flex: 1; display: grid; gap: 12px; align-content: start; }
-    .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 3px solid var(--ov-accent); border-radius: 8px; padding: 8px 12px; }
-    .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 14px; color: var(--ov-accent); margin-bottom: 6px; }
-    .dg-slot { display: flex; gap: 8px; font-size: 15px; padding: 5px 0; border-top: 1px solid rgba(127,127,127,.14); }
+    /* Sizes tuned for a 1920×1080 broadcast viewed on TV / phone livestream:
+       body names ~28px (TV min 24–28), big group title ~46px, ~5% safe margin. */
+    .draw-stage { position: fixed; inset: 0; padding: 48px 64px; display: flex; flex-direction: column; }
+    .draw-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+    .draw-head .left { display: flex; align-items: center; gap: 18px; }
+    .draw-head img { height: 70px; width: auto; object-fit: contain; filter: drop-shadow(0 2px 7px rgba(0,0,0,.6)); }
+    .draw-head .tt { font-family: 'Oswald',sans-serif; font-weight: 700; text-transform: uppercase; font-size: 46px;
+        color: var(--ov-text); line-height: 1.04; text-shadow: 0 2px 10px rgba(0,0,0,.6); }
+    .draw-head .cat { font-family: 'Oswald',sans-serif; font-weight: 500; letter-spacing: .04em; font-size: 24px;
+        color: var(--ov-muted); text-shadow: 0 1px 6px rgba(0,0,0,.6); }
+    .draw-head .badge { font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .12em; font-size: 42px;
+        color: var(--ov-accent); text-shadow: 0 2px 10px rgba(0,0,0,.6); white-space: nowrap; }
+    .draw-body { flex: 1; display: flex; gap: 30px; min-height: 0; }
+    .draw-fit { flex: 1; min-width: 0; transform-origin: top center; }
+    .draw-grid { display: grid; gap: 18px; align-content: start; }
+    .dg-card { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-top: 4px solid var(--ov-accent); border-radius: 10px; padding: 14px 20px; }
+    .dg-card .gname { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .1em; font-size: 24px; color: var(--ov-accent); margin-bottom: 8px; }
+    .dg-slot { display: flex; align-items: flex-start; gap: 14px; font-size: 26px; padding: 10px 0; border-top: 1px solid rgba(127,127,127,.14); line-height: 1.15; }
     .dg-slot:first-of-type { border-top: 0; }
-    .dg-slot .pos { color: var(--ov-muted); width: 18px; }
-    .dg-slot.empty .nm { color: #5a5a66; }
-    .dg-slot.just-in { animation: drawIn .6s cubic-bezier(.16,1,.3,1) both; }
-    @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); background: var(--ov-accent); } to { opacity: 1; transform: none; } }
-    .db-pairs { flex: 1; display: grid; gap: 10px; align-content: start; }
-    .db-pair { background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28); border-left: 3px solid var(--ov-accent); border-radius: 6px; }
-    .db-pair .dg-slot { padding: 7px 12px; }
-    .draw-pool { width: 240px; flex: none; }
-    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: var(--ov-muted); margin-bottom: 8px; }
-    .draw-pool .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .draw-pool .chip { font-size: 12px; background: rgba(127,127,127,.16); padding: 4px 9px; border-radius: 12px; color: var(--ov-text); }
+    .dg-slot .pos { color: var(--ov-muted); min-width: 30px; flex: none; padding-top: 4px; }
+    .dg-slot .nm { font-weight: 500; }
+    .dg-slot.empty .nm { color: #5a5a66; font-style: italic; }
+    .dg-slot.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
+    /* one member per line, flag on the left */
+    .dg-slot .nm, .dteam .nm { display: flex; flex-direction: column; gap: 3px; }
+    .dg-slot .pl, .dteam .pl, .draw-pool .chip .pl { display: flex; align-items: center; gap: 11px; }
+    .dg-slot .pl .fl, .dteam .pl .fl, .draw-pool .chip .pl .fl { height: .8em; width: auto; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.4); flex: none; }
+    .dg-slot .pl .fl-x, .dteam .pl .fl-x, .draw-pool .chip .pl .fl-x { width: 1.15em; flex: none; }   /* keep names aligned when no flag */
+    .dg-slot .pl .pn, .dteam .pl .pn, .draw-pool .chip .pl .pn { white-space: nowrap; }
+    /* main sponsor logo in a free corner */
+    .draw-mainspons { position: absolute; z-index: 6; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .draw-mainspons .draw-ms-lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .1em; font-size: 15px; color: var(--ov-muted); }
+    .draw-mainspons img { object-fit: contain; filter: drop-shadow(0 6px 22px rgba(0,0,0,.55)); }
+    .draw-ms-top-right { top: 40px; right: 52px; }
+    .draw-ms-top-left { top: 40px; left: 52px; }
+    .draw-ms-bottom-right { bottom: 40px; right: 52px; }
+    .draw-ms-bottom-left { bottom: 40px; left: 52px; }
+    .draw-ms-sz-s img { height: 92px; }
+    .draw-ms-sz-m img { height: 150px; }
+    .draw-ms-sz-l img { height: 224px; }
+    .dg-slot.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes drawIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    /* bracket draw: first-round seeding sheet (match cards in a grid) */
+    .draw-bracket { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-flow: column;
+        gap: 13px 32px; align-content: start; }
+    .dmatch { display: flex; align-items: center; gap: 12px; }
+    .dmatch-no { font-family: 'Oswald',sans-serif; font-weight: 600; font-size: 24px; color: var(--ov-muted);
+        min-width: 30px; text-align: right; flex: none; }
+    .dmatch-card { flex: 1; background: var(--ov-bg); border: 1px solid rgba(127,127,127,.28);
+        border-left: 4px solid var(--ov-accent); border-radius: 10px; overflow: hidden;
+        box-shadow: 0 14px 32px -20px rgba(0,0,0,.7); }
+    .dteam { display: flex; align-items: center; gap: 14px; padding: 11px 18px; font-size: 26px; color: var(--ov-text); line-height: 1.12; }
+    .dteam + .dteam { border-top: 1px solid rgba(127,127,127,.16); }
+    .dteam .pos { font-family: 'Oswald',sans-serif; font-size: 18px; color: var(--ov-muted); min-width: 24px; text-align: center; flex: none; }
+    .dteam .nm { font-weight: 500; }
+    .dteam.empty .nm { color: #5a5a66; font-style: italic; }
+    .dteam.bye .nm { color: #C9A84C; font-style: italic; opacity: .85; }
+    .dteam.just-in { animation: drawIn .55s cubic-bezier(.16,1,.3,1) both; }
+    .draw-pool { flex: none; min-height: 0; max-width: 640px; display: flex; flex-direction: column; }
+    .draw-pool .lbl { font-family: 'Oswald',sans-serif; text-transform: uppercase; letter-spacing: .08em; font-size: 18px; color: var(--ov-muted); margin-bottom: 12px; flex: none; }
+    /* Auto-columns: chips fill a column top→bottom, then wrap into a new column
+       when the column is full (bounded by the available height above the ad bar). */
+    .draw-pool .chips-fit { flex: 1; min-height: 0; transform-origin: top left; }
+    .draw-pool .chips { display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start;
+        gap: 8px 14px; height: 100%; }
+    .draw-pool .chip { width: 236px; font-size: 19px; background: rgba(127,127,127,.16); padding: 8px 13px; border-radius: 14px; color: var(--ov-text);
+        display: flex; flex-direction: column; gap: 4px; line-height: 1.1; }
     .draw-reveal { position: fixed; left: 50%; top: 56%; transform: translate(-50%,-50%); background: var(--ov-accent); color: #0A0A0F; padding: 12px 26px; border-radius: 10px; text-align: center; box-shadow: 0 20px 50px -18px rgba(0,0,0,.7); }
     .draw-reveal .k { font-family: 'Oswald',sans-serif; font-weight: 600; letter-spacing: .14em; font-size: 11px; opacity: .7; }
     .draw-reveal .nm { font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 22px; margin-top: 3px; }
     .draw-reveal .to { font-size: 12px; margin-top: 2px; }
-    .draw-spons { display: flex; align-items: center; gap: 14px; margin-top: 14px; }
-    .draw-spons img { height: 30px; width: auto; object-fit: contain; opacity: .9; }
-    .draw-done { color: var(--ov-accent); font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .14em; }
-    .draw-corner-bottom-right .draw-spons { padding-right: 32%; }
-    .draw-corner-bottom-left  .draw-spons { padding-left: 32%; }
-    .draw-corner-bottom-right .draw-pool,
-    .draw-corner-bottom-left  .draw-pool { margin-bottom: 22%; }
+    .draw-spons { margin-top: 14px; overflow: hidden; }
+    .sp-track { display: flex; width: max-content; animation-name: spMarquee; animation-timing-function: linear; animation-iteration-count: infinite; }
+    @keyframes spMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    .sp-tile { width: 180px; height: 72px; flex: none; margin-right: 14px; display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,.06); border: 1px solid rgba(127,127,127,.22); border-radius: 8px; padding: 10px; }
+    .sp-tile img { max-width: 100%; max-height: 100%; object-fit: contain; }
+    .draw-done { margin-left: 12px; color: var(--ov-accent); font-family: 'Oswald',sans-serif; font-weight: 700; letter-spacing: .14em; }
+    /* Flying clone: travels from a "Liko traukti" chip to its slot. */
+    .draw-fly { position: fixed; z-index: 9999; pointer-events: none; will-change: transform;
+        padding: 8px 16px; border-radius: 10px; background: var(--ov-accent); color: #0A0A0F;
+        font-family: 'Barlow',sans-serif; font-weight: 700; font-size: 24px; white-space: nowrap;
+        box-shadow: 0 16px 40px -10px rgba(0,0,0,.7); }
+    /* Reserve a wide band on the camera side for the live video feed. */
+    .draw-corner-bottom-right .draw-head, .draw-corner-top-right .draw-head,
+    .draw-corner-bottom-right .draw-body, .draw-corner-top-right .draw-body,
+    .draw-corner-bottom-right .draw-spons, .draw-corner-top-right .draw-spons { padding-right: 30%; }
+    .draw-corner-bottom-left .draw-head, .draw-corner-top-left .draw-head,
+    .draw-corner-bottom-left .draw-body, .draw-corner-top-left .draw-body,
+    .draw-corner-bottom-left .draw-spons, .draw-corner-top-left .draw-spons { padding-left: 30%; }
 
 @endsection
 
@@ -239,34 +547,180 @@
     // The results ticker lives on <body> (outside the positioned/transformed
     // containers) so it can pin to the real screen bottom. Clear it each render;
     // the results branch re-creates it.
-    { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
-    if ((d.window_type || 'groups') !== 'draw') {
-        const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
-        const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
-        window.__drawLastSlot = undefined;
+    if (!keep) { const _t = document.getElementById('ov-ticker'); if (_t) _t.remove(); }
+
+    // Country flags from scraped players (personKey -> flag URL). Mirrors the
+    // PHP personKey: lowercase, strip LT/PL diacritics, trim. Used across every
+    // overlay so any "Vardas Pavardė" gets its flag by name.
+    window.__FLAGS = d.flags || {};
+    window.__SHOW_FLAGS = d.show_flags !== false;
+    const __LTM = { 'ą':'a','č':'c','ę':'e','ė':'e','į':'i','š':'s','ų':'u','ū':'u','ž':'z','ł':'l','ó':'o','ś':'s','ź':'z','ż':'z','ń':'n','ć':'c' };
+    window.__pkey = (s) => String(s || '').toLowerCase().replace(/[ąčęėįšųūžłóśźżńć]/g, (c) => __LTM[c] || c).trim();
+    window.__flag = (name) => { const f = window.__FLAGS[window.__pkey(name)]; return f ? `<img class="ov-flag" src="${f}" alt="">` : ''; };
+    // "P1 / P2" -> per-player flag + name spans (one line).
+    window.__teamFlags = (team) => String(team || '').split(/\s*\/\s*/).filter(Boolean)
+        .map((n) => `<span class="ov-pl">${window.__flag(n)}<span class="ov-pn">${n}</span></span>`).join('<span class="ov-slash">/</span>') || String(team || '');
+
+    // Shared scoreboard card markup, used by both the standalone "Rezultatas"
+    // window and the Head-to-Head centre (same look, format and data).
+    window.__scoreCardHtml = function (sc, inline, entrance) {
+        if (!sc || !sc.found) return '';
+        const nSets = Math.max((sc.teams[0].sets || []).length, (sc.teams[1].sets || []).length);
+        const row = (tm) => {
+            let cells = '';
+            for (let i = 0; i < nSets; i++) cells += `<span class="sco-set">${(tm.sets && tm.sets[i] != null) ? tm.sets[i] : ''}</span>`;
+            cells += `<span class="sco-games">${tm.games}</span><span class="sco-point">${tm.point}</span>`;
+            // Flags on: one player per line (flag + abbreviated name) so both
+            // partners stay readable even with a long surname. Flags off: the
+            // original compact single-line team name.
+            const nameHtml = (window.__SHOW_FLAGS && tm.players && tm.players.length)
+                ? tm.players.map((p) => `<span class="sco-pl">${p.flag ? `<img class="ov-flag" src="${p.flag}" alt="">` : ''}<span class="ov-pn">${p.name}</span></span>`).join('')
+                : `<span class="sco-name-1">${tm.name}</span>`;
+            return `<div class="sco-row${tm.serving ? ' serve' : ''}${tm.winner ? ' win' : ''}"><span class="sco-dot"></span><span class="sco-name">${nameHtml}</span>${cells}</div>`;
+        };
+        const meta = [sc.court, sc.round].filter(Boolean).join(' · ');
+        const head = (sc.level || meta)
+            ? `<div class="sco-head">${sc.level ? `<span class="sco-level">${sc.level}</span>` : '<span></span>'}${meta ? `<span class="sco-meta">${meta}</span>` : ''}</div>`
+            : '';
+        const width = sc.width || 520;
+        const cls = inline ? 'sco-inline' : ('sco-' + (sc.position || 'top-left'));
+        const style = inline ? '' : ` style="width:${width}px;font-size:${Math.round(width / 26)}px"`;
+        const body = `<div class="sco-body">${row(sc.teams[0])}${row(sc.teams[1])}</div>`;
+        // Entrance/exit animation for the standalone card. The TYPE + direction
+        // classes are always present so exit knows how to leave; the "sco-in"
+        // trigger is only added on first appearance (entrance=true).
+        let a = (!inline && sc.anim && sc.anim !== 'none') ? sc.anim : 'none';
+        if (a === 'header_reveal' && !head) a = 'slide'; // no header to fly → slide whole card
+        const side = /right/.test(sc.position || '') ? 'right' : (/left/.test(sc.position || '') ? 'left' : 'center');
+        const animCls = a === 'none' ? '' : ` sco-anim-${a} sco-side-${side}${entrance ? ' sco-in' : ''}`;
+        const animData = a === 'none' ? '' : ` data-anim="${a}" data-side="${side}"`;
+        return `<div class="sco-card ${cls}${sc.tiebreak ? ' tb' : ''}${animCls}"${style}${animData}>${head}${body}</div>`;
+    };
+
+    // Shrink any player name that would still overflow its line (e.g. a long
+    // double-barrelled surname) so both partners always stay fully visible.
+    window.__fitScoreNames = function (root) {
+        (root || document).querySelectorAll('.sco-name .ov-pn').forEach((el) => {
+            el.style.fontSize = '';
+            const cw = el.clientWidth, sw = el.scrollWidth;
+            if (sw > cw + 1 && cw > 0) {
+                const cur = parseFloat(getComputedStyle(el).fontSize) || 16;
+                el.style.fontSize = Math.max(9, Math.floor(cur * cw / sw)) + 'px';
+            }
+        });
+    };
+
+    // Animated H2H background: colour-mixing blobs (gradient) and/or a
+    // multiplied, slowly floating image. Built once per board render.
+    window.__h2hBgHtml = function (bg) {
+        if (!bg || !bg.mode || bg.mode === 'none') return '';
+        const R = (a, b) => a + Math.random() * (b - a);
+        const cols = ['var(--ov-accent)', '#2f6f8f', '#c0533a', '#8b5cf6'];
+        const k = bg.intensity === 'bold' ? 1.35 : bg.intensity === 'medium' ? 1 : 0.7; // opacity factor
+        const spd = bg.speed && bg.speed > 0 ? bg.speed : (bg.intensity === 'bold' ? 1.2 : bg.intensity === 'medium' ? 1 : 0.8);
+        let inner = '';
+        if (bg.mode === 'gradient' || bg.mode === 'image') {
+            for (let i = 0; i < 5; i++) {
+                const s = R(34, 60);
+                inner += `<div class="h2h-blob" style="width:${s}%;height:${s}%;left:${R(-12, 70)}%;top:${R(-12, 60)}%;`
+                    + `background:${cols[i % cols.length]};opacity:${(0.75 * k).toFixed(2)};`
+                    + `--dx:${R(-90, 90)}px;--dy:${R(-70, 70)}px;--d:${(R(16, 26) / spd).toFixed(1)}s;--dl:${(-R(0, 8)).toFixed(1)}s"></div>`;
+            }
+        }
+        if (bg.mode === 'image' && bg.image) {
+            const n = bg.count && bg.count > 0 ? bg.count
+                : (bg.intensity === 'bold' ? 22 : bg.intensity === 'medium' ? 15 : 10);
+            for (let i = 0; i < n; i++) {
+                const sz = R(3, 9);
+                inner += `<img class="h2h-particle" src="${bg.image}" alt="" style="width:${sz.toFixed(1)}vw;left:${R(-2, 96)}%;top:${R(-2, 92)}%;`
+                    + `opacity:${(R(0.35, 0.85) * k).toFixed(2)};filter:blur(${sz < 4 ? R(0, 1.4).toFixed(1) : 0}px);`
+                    + `--dx:${R(-70, 70)}px;--dy:${R(-90, 90)}px;--rot:${R(-120, 120)}deg;--d:${(R(11, 21) / spd).toFixed(1)}s;--dl:${(-R(0, 10)).toFixed(1)}s">`;
+            }
+        }
+        return `<div class="h2h-bg">${inner}</div>`;
+    };
+
+    // Patch only the H2H centre (score card ⇄ scheduled time/court) so the score
+    // updates live without re-rendering the whole board, and fades on mode switch.
+    window.__updH2hCenter = function (h) {
+        const slot = document.querySelector('#ov-h2h .h2h-cslot');
+        if (!slot) return;
+        h = h || {};
+        const show = h.show || [];
+        const c = h.center || {};
+        let mode = 'none', inner = '';
+        if (h.live_score && h.live_score.found) {
+            mode = 'score';
+            inner = window.__scoreCardHtml(h.live_score, true);
+        } else {
+            let main = '';
+            if (show.includes('time') && (c.time || c.date)) main = `<div class="h2h-time">${[c.date, c.time].filter(Boolean).join(' ')}</div>`;
+            const courtLine = show.includes('court') ? [c.court, c.round].filter(Boolean).join(' · ') : '';
+            if (main || courtLine) { mode = 'time'; inner = `<div class="h2h-cbox">${main}${courtLine ? `<div class="h2h-court">${courtLine}</div>` : ''}</div>`; }
+        }
+        if (slot.__html === inner) return;
+        const modeChanged = slot.dataset.mode !== mode;
+        slot.dataset.mode = mode;
+        slot.__html = inner;
+        slot.innerHTML = inner;
+        if (modeChanged) { slot.classList.remove('h2h-cfade'); void slot.offsetWidth; slot.classList.add('h2h-cfade'); }
+    };
+
+    // When compositing (keep), the caller reconciles sibling hosts; skip here.
+    if (!keep) {
+        if ((d.window_type || 'groups') !== 'sponsors') { const _s = document.getElementById('ov-spons'); if (_s) _s.remove(); clearInterval(window.__spTimer); }
+        if ((d.window_type || 'groups') !== 'h2h') { const _h = document.getElementById('ov-h2h'); if (_h) _h.remove(); }
+        if ((d.window_type || 'groups') !== 'score') { if (window.__exitScore) window.__exitScore(); else { const _sc = document.getElementById('ov-score'); if (_sc) _sc.remove(); } }
+        if ((d.window_type || 'groups') !== 'photowall') { const _pw = document.getElementById('ov-pw'); if (_pw) _pw.remove(); }
+        if ((d.window_type || 'groups') !== 'draw') {
+            const _r = document.getElementById('draw-reveal-host'); if (_r) _r.remove();
+            const _d = document.getElementById('ov-draw'); if (_d) _d.remove();
+            clearInterval(window.__drawSpons);
+            window.__drawLastSlot = undefined;
+            window.__drawPoolRects = undefined;
+            window.__drawHandledKey = undefined;
+        }
     }
 
     if ((d.window_type || 'groups') === 'sponsors') {
         clearInterval(window.__spTimer);
         const items = d.items || [];
-        if (!items.length) { stage.innerHTML = ''; return; }
+        // Sponsors are position:fixed → live on <body> (outside #stage's
+        // will-change:transform) so they pin to the screen, not the overlay box.
+        const host = document.getElementById('ov-spons') || (() => {
+            const h = document.createElement('div'); h.id = 'ov-spons'; document.body.appendChild(h); return h;
+        })();
+        if (!items.length) { if (!keep) stage.innerHTML = ''; host.remove(); return; }
         const variant = d.variant || 'corner';
+        if (!keep) stage.innerHTML = '';
 
-        const itemHtml = (it, i) => {
-            if (variant === 'bar') {
+        // Bottom bar — continuous marquee sliding to the side (like the draw strip).
+        if (variant === 'bar') {
+            const cell = (it) => {
                 const meta = (it.name || it.url)
                     ? `<div class="meta">${it.name ? `<span class="nm">${it.name}</span>` : ''}${it.url ? `<span class="url">${it.url}</span>` : ''}</div>`
                     : '';
-                return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt="">${meta}</div>`;
-            }
-            // fullscreen and corner: logo only (name/url shown only in the bar)
-            return `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt=""></div>`;
-        };
+                return `<div class="sp-cell"><img src="${it.logo}" alt="">${meta}</div>`;
+            };
+            const set = items.map(cell).join('');
+            const secs = Math.max(items.length, 4) * (d.rotate_seconds || 5);
+            host.innerHTML = `<div class="spons bar"><div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div></div>`;
+            return;
+        }
 
-        const cls = variant === 'bar' ? 'bar' : (variant === 'fullscreen' ? 'full' : 'corner');
-        stage.innerHTML = `<div class="spons ${cls}">${items.map(itemHtml).join('')}</div>`;
+        // Corner / fullscreen — cross-fade between logos.
+        const itemHtml = (it, i) => `<div class="sp-item${i === 0 ? ' show' : ''}"><img src="${it.logo}" alt=""></div>`;
+        const cls = variant === 'fullscreen' ? 'full' : 'corner';
+        let posCls = '', sizeStyle = '';
+        if (variant === 'corner') {
+            posCls = ' sp-pos-' + (d.corner_position || 'bottom-right');
+            const sizes = { s: [280, 148], m: [360, 188], l: [460, 240], xl: [560, 292] };
+            const [w, h] = sizes[d.corner_size || 'm'] || sizes.m;
+            sizeStyle = ` style="width:${w}px;height:${h}px"`;
+        }
+        host.innerHTML = `<div class="spons ${cls}${posCls}"${sizeStyle}>${items.map(itemHtml).join('')}</div>`;
 
-        const els = stage.querySelectorAll('.sp-item');
+        const els = host.querySelectorAll('.sp-item');
         if (els.length > 1) {
             let i = 0;
             window.__spTimer = setInterval(() => {
@@ -274,6 +728,193 @@
                 i = (i + 1) % els.length;
                 els[i].classList.add('show');
             }, (d.rotate_seconds || 6) * 1000);
+        }
+        return;
+    }
+
+    // ── Akistata (Head to Head) ─────────────────────────────────
+    if ((d.window_type || 'groups') === 'h2h') {
+        const h = d.h2h || {};
+        const host = document.getElementById('ov-h2h') || (() => {
+            const el = document.createElement('div'); el.id = 'ov-h2h'; document.body.appendChild(el); return el;
+        })();
+        if (!keep) stage.innerHTML = '';
+
+        if (!h.found) {
+            host.innerHTML = '<div class="h2h-stage h2h-empty">Pasirink rungtynes</div>';
+            return;
+        }
+
+        const showPhotos = h.show_photos !== false;
+        const zoom = h.animate ? 'h2h-zoom' : '';
+        const player = (p, i) => `<div class="h2h-player p${i}"><div class="h2h-imgwrap"><img class="${zoom}" src="${p.photo}" alt=""></div></div>`;
+        const side = (players, cls) => `<div class="h2h-side h2h-${cls}">${(players || []).map(player).join('')}</div>`;
+
+        const infoRow = (p) => {
+            const rating = [p.rating_type, p.rating_points].filter(Boolean).join(' ');
+            const flagUrl = p.flag || window.__FLAGS[window.__pkey(p.name)] || '';
+            const flag = flagUrl ? `<img class="h2h-flag" src="${flagUrl}" alt="">` : '';
+            // "Šalis, Miestas" — country and city in one span, same color/font/size.
+            const place = [p.country || '', p.city || ''].filter(Boolean).join(', ');
+            const sub = [
+                rating ? `<span class="h2h-rt">${rating}</span>` : '',
+                (place || flag) ? `<span class="h2h-rc">${flag}${place}</span>` : '',
+            ].filter(Boolean).join('');
+            return `<div class="h2h-row"><div class="h2h-rn">${p.name}</div>${sub ? `<div class="h2h-rsub">${sub}</div>` : ''}</div>`;
+        };
+        const teamRating = (players) => {
+            const nums = (players || []).map((p) => parseFloat(String(p.rating_points || '').replace(',', '.'))).filter((n) => !isNaN(n));
+            if (!nums.length) return null;
+            const sum = nums.reduce((a, b) => a + b, 0);
+            return Number.isInteger(sum) ? String(sum) : sum.toFixed(1);
+        };
+        const teamInfo = (players, cls) => {
+            const tr = teamRating(players);
+            const head = tr ? `<div class="h2h-team-rating"><span class="lbl">Komandos reitingas</span><span class="val">${tr}</span></div>` : '';
+            return `<div class="h2h-team-info ${cls}">${head}${(players || []).map(infoRow).join('')}</div>`;
+        };
+
+        const show = h.show || [];
+        const vs = show.includes('vs') ? (h.custom_text || 'VS') : 'VS';
+
+        // Tournament logo + name (like the other overlays).
+        const tt = d.tournament_title || d.title || '';
+        const header = `<div class="h2h-header"><div class="hrow">${d.logo ? `<img src="${d.logo}" alt="">` : ''}${tt ? `<span class="tt">${tt}</span>` : ''}</div>${h.category ? `<span class="cat">${h.category}</span>` : ''}</div>`;
+
+        // Optional second layer: a scrolling sponsor bar at the bottom.
+        const sponsors = h.sponsors || [];
+        let barHtml = '', stageCls = 'h2h-stage';
+        if (sponsors.length) {
+            stageCls += ' h2h-has-bar';
+            const cell = (it) => {
+                const meta = (it.name || it.url) ? `<div class="meta">${it.name ? `<span class="nm">${it.name}</span>` : ''}${it.url ? `<span class="url">${it.url}</span>` : ''}</div>` : '';
+                return `<div class="sp-cell"><img src="${it.logo}" alt="">${meta}</div>`;
+            };
+            const set = sponsors.map(cell).join('');
+            const secs = Math.max(sponsors.length, 4) * (h.rotate_seconds || 5);
+            barHtml = `<div class="spons bar"><div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div></div>`;
+        }
+
+        // Optional centre sponsor (logo + text) in the gap between the teams.
+        const sp = h.sponsor || {};
+        const centerSponsor = (sp.logo || sp.text)
+            ? `<div class="h2h-sponsor">${sp.logo ? `<img src="${sp.logo}" alt="">` : ''}${sp.text ? `<div class="txt">${sp.text}</div>` : ''}</div>`
+            : '';
+
+        const L = h.layout || {};
+        const styleVars = `--h2h-size:${L.size ?? 96}vh;--h2h-edge:${L.edge ?? 0}vw;--h2h-gap:${L.gap ?? 0}vw;--h2h-overlap:${L.overlap ?? 24}vw`;
+        if (!showPhotos) stageCls += ' h2h-noimg';
+        const sides = showPhotos ? (side(h.team1, 'left') + side(h.team2, 'right')) : '';
+
+        host.innerHTML = `<div class="${stageCls}" style="${styleVars}">${window.__h2hBgHtml(h.bg)}${header}`
+            + sides
+            + teamInfo(h.team1, 'left') + teamInfo(h.team2, 'right')
+            + `<div class="h2h-center"><div class="h2h-vs">${vs}</div><div class="h2h-cslot"></div></div>`
+            + centerSponsor + barHtml
+            + `</div>`;
+        window.__updH2hCenter(h);
+        window.__fitScoreNames(host);
+        return;
+    }
+
+    // ── Rezultatas (live scoreboard) ────────────────────────────
+    if ((d.window_type || 'groups') === 'score') {
+        const sc = d.score || {};
+        const host = document.getElementById('ov-score') || (() => {
+            const el = document.createElement('div'); el.id = 'ov-score'; document.body.appendChild(el); return el;
+        })();
+        if (!keep) stage.innerHTML = '';
+        if (!sc.found) {
+            // Animate out (if a card is present) rather than clearing instantly.
+            if (host.firstElementChild && window.__exitScore) window.__exitScore(); else host.innerHTML = '';
+            host.dataset.shown = '';
+            return;
+        }
+        // Cancel a pending exit if the card came back before it finished leaving.
+        if (host.dataset.exiting === '1') { clearTimeout(host.__exitTimer); host.dataset.exiting = ''; }
+        const firstShow = host.dataset.shown !== '1';
+        host.innerHTML = window.__scoreCardHtml(sc, false, firstShow);
+        host.dataset.shown = '1';
+        window.__fitScoreNames(host);
+        return;
+    }
+
+    // ── Foto sienelė (step-and-repeat sponsor wall) ─────────────
+    if ((d.window_type || 'groups') === 'photowall') {
+        const host = document.getElementById('ov-pw') || (() => {
+            const el = document.createElement('div'); el.id = 'ov-pw'; document.body.appendChild(el); return el;
+        })();
+        if (!keep) stage.innerHTML = '';
+
+        const logos = (d.items || []).map((x) => x.logo).filter(Boolean);
+        const layout = d.layout_variant || 'brick';
+        const anim = d.animate || 'none';
+        const CELL = ({ s: 90, m: 130, l: 180, xl: 240 })[d.tile_size || 'm'] || 130;
+        // Base gap from the preset; optional exact per-axis overrides (px).
+        const gBase = Math.round(CELL * (({ tight: 0.18, normal: 0.4, wide: 0.75 })[d.gap || 'normal'] ?? 0.4));
+        const gapX = (d.gap_x_num > 0) ? Math.round(d.gap_x_num) : gBase;
+        const gapY = (d.gap_y_num > 0) ? Math.round(d.gap_y_num) : gBase;
+        const stepX = CELL + gapX, stepY = CELL + gapY;
+        const W = window.innerWidth || 1920, H = window.innerHeight || 1080;
+        const buf = layout === 'diagonal' ? 6 : (anim === 'slide' ? 4 : 2);
+        const cols = Math.ceil(W / stepX) + buf, rows = Math.ceil(H / stepY) + buf;
+        // speed is a 1..100 slider; map to a duration (3s fast … 240s barely moving)
+        const sp = Math.max(1, Math.min(100, (d.anim_speed && d.anim_speed > 0) ? d.anim_speed : 35));
+        const dur = (3 + ((100 - sp) / 99) * (240 - 3)).toFixed(1);
+
+        // Fill the whole wall edge-to-edge; logos cycle so each sponsor appears
+        // roughly the same number of times (counts differ by at most one). Tiles
+        // are CELL wide but only as tall as the logo (capped at CELL), so the
+        // vertical spacing the viewer sees is exactly the gap, not square padding.
+        const rowInner = (n) => {
+            let out = '', idx = 0;
+            for (let r = 0; r < n; r++) {
+                let cells = '';
+                for (let c = 0; c < cols + 1; c++) {
+                    cells += `<div class="pw-tile" style="width:${CELL}px"><img src="${logos[idx++ % logos.length]}" style="max-height:${CELL}px" alt=""></div>`;
+                }
+                const off = (layout === 'brick' && r % 2) ? `margin-left:${-Math.round(stepX / 2)}px;` : '';
+                const move = anim === 'slide' ? `--pw-move:${stepX}px;animation:pwSlide${r % 2 ? 'B' : 'A'} ${dur}s ease-in-out infinite;` : '';
+                out += `<div class="pw-row" style="gap:${gapX}px;margin-bottom:${gapY}px;${off}${move}">${cells}</div>`;
+            }
+            return out;
+        };
+        const wall = logos.length ? rowInner(rows) : '';
+        const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const off = (dx, dy) => (dx || dy) ? `transform:translate(${dx || 0}vw,${dy || 0}vh);` : '';
+        const MAIN = (d.main_size_num > 0) ? d.main_size_num : (({ s: 14, m: 22, l: 32, xl: 44 })[d.main_size || 'l'] || 32);
+        const main = d.main_logo
+            ? `<div class="pw-el pw-front pw-pos-${d.main_position || 'center'}" style="${off(d.main_dx, d.main_dy)}"><div class="pw-logo-wrap${d.main_bg ? ' pw-panel' : ''}"><img class="pw-logo" src="${d.main_logo}" style="width:${MAIN}vw" alt=""></div></div>`
+            : '';
+        const TSZ = (d.title_size_num > 0) ? d.title_size_num : (({ s: 3, m: 4.5, l: 6, xl: 8 })[d.title_size || 'm'] || 4.5);
+        const title = d.title
+            ? `<div class="pw-el pw-pos-${d.title_position || 'bottom-center'}" style="${off(d.title_dx, d.title_dy)}"><div class="pw-title${d.title_bg ? ' pw-panel' : ''}" style="font-size:${TSZ}vw">${esc(d.title)}</div></div>`
+            : '';
+
+        const stageCls = 'pw-stage' + (d.bg_pattern === 'checker' ? ' pw-checker' : '');
+        const stageStyle = d.bg_pattern === 'checker' ? `--pw-csz:${stepX * 2}px;--pw-csz-y:${stepY * 2}px` : '';
+        const wallCls = 'pw-wall' + (layout === 'diagonal' ? ' pw-diag' : '');
+        host.innerHTML = `<div class="${stageCls}" style="${stageStyle}"><div class="${wallCls}">${wall}</div>${main}${title}</div>`;
+
+        // Real row height is only known after layout (logos hug their height). If
+        // the wall doesn't reach the bottom, add rows. offsetHeight ignores the
+        // diagonal rotation, so this stays correct for every layout. Guard against
+        // images not being laid out yet (height ~0 would ask for endless rows):
+        // skip until they have size, and re-measure once the first one loads.
+        if (logos.length) {
+            const wallEl = host.querySelector('.pw-wall');
+            const adjust = () => {
+                const firstRow = wallEl && wallEl.querySelector('.pw-row');
+                if (!firstRow) return;
+                const rh = firstRow.offsetHeight;
+                if (rh <= 8) return;
+                const realStep = rh + gapY;
+                const need = Math.min(rows * 6 + buf, Math.ceil(H / realStep) + buf);
+                if (need > wallEl.querySelectorAll('.pw-row').length) wallEl.innerHTML = rowInner(need);
+            };
+            adjust(); // exact when the logos are already cached
+            const probe = wallEl && wallEl.querySelector('.pw-tile img');
+            if (probe && !probe.complete) probe.addEventListener('load', adjust, { once: true });
         }
         return;
     }
@@ -294,7 +935,7 @@
         const setCells = (sets) => (sets || '').trim().split(/\s+/).filter(Boolean)
             .map((g) => `<span class="g">${g}</span>`).join('');
         const team = (name, sets, win) =>
-            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name || 'TBD'}</span><span class="sets">${setCells(sets)}</span></div>`;
+            `<div class="team ${win ? 'win' : ''}"><span class="nm">${name ? window.__teamFlags(name) : 'TBD'}</span><span class="sets">${setCells(sets)}</span></div>`;
         const courtLine = (m) => (m.court || m.time)
             ? `<div class="mt">${[m.court, m.time].filter(Boolean).join(' · ')}</div>` : '';
         const matchBox = (m) =>
@@ -372,7 +1013,9 @@
     if ((d.window_type || 'groups') === 'schedule') {
         const sc = d.schedule || {};
         const variant = d.schedule_variant || 'by_court';
-        const pair = (t) => (t && t.length) ? t.join(' / ') : 'TBD';
+        const pair = (t) => (t && t.length)
+            ? t.map((n) => `<span class="ov-pl">${window.__flag(n)}<span class="ov-pn">${n}</span></span>`).join('<span class="ov-slash">/</span>')
+            : 'TBD';
         const teams = (m) =>
             `<div class="sc-teams"><span class="${m.winner === 1 ? 'win' : ''}">${pair(m.team1)}</span>`
           + `<span class="${m.winner === 2 ? 'win' : ''}">${pair(m.team2)}</span></div>`;
@@ -451,79 +1094,168 @@
         const dr = d.draw || {};
         const slots = dr.slots || {};
         const nameAt = (k) => (slots[k] && slots[k].name) || null;
-        const curSlot = dr.current && dr.current.slot;
-
-        const slotRow = (k, pos) => {
+        // Each team on two lines — one member per line, country flag on the left.
+        const playersHtml = (t) => {
+            if (t && t.players && t.players.length) {
+                return t.players.map((p) =>
+                    `<span class="pl">${p.flag ? `<img class="fl" src="${p.flag}" alt="">` : '<span class="fl-x"></span>'}<span class="pn">${p.name}</span></span>`
+                ).join('');
+            }
+            return `<span class="pl"><span class="pn">${(t && t.name) || '—'}</span></span>`;
+        };
+        const nmHtml = (k) => slots[k] ? playersHtml(slots[k]) : '<span class="pl empty"><span class="pn">—</span></span>';
+        // A placement is "new" if its (slot|team) hasn't been handled yet. New
+        // placements that still have a source chip in the pool fly from it to the
+        // slot; the rest (e.g. BYE) just slide in.
+        const cur = dr.current;
+        const curKey = cur ? (cur.slot + '|' + cur.team_id) : null;
+        const isNew = !!(curKey && curKey !== window.__drawHandledKey);
+        const prevPoolRects = window.__drawPoolRects || {};
+        const willFly = !!(isNew && cur.team_id && cur.team_id !== 'BYE' && prevPoolRects[cur.team_id]);
+        const animSlot = (isNew && !willFly) ? cur.slot : null;
+        const cellClass = (k) => {
             const nm = nameAt(k);
-            const justIn = (k === curSlot) ? ' just-in' : '';
-            return `<div class="dg-slot ${nm ? '' : 'empty'}${justIn}"><span class="pos">${pos}</span><span class="nm">${nm || '—'}</span></div>`;
+            return [nm ? '' : 'empty', nm === 'BYE' ? 'bye' : '', k === animSlot ? 'just-in' : ''].filter(Boolean).join(' ');
         };
 
-        let bodyHtml = '';
+        // Numbering goes DOWN the first column then the second (column-major):
+        // 2 columns, rows = ceil(n/2), grid-auto-flow:column → 1..4 | 5..8.
+        let boardHtml = '';
         if (dr.format === 'bracket') {
-            bodyHtml = '<div class="db-pairs">';
-            for (const pair of (dr.board || [])) {
-                bodyHtml += `<div class="db-pair">${slotRow(pair[0], '')}${slotRow(pair[1], '')}</div>`;
-            }
-            bodyHtml += '</div>';
+            const teamRow = (k) => `<div class="dteam ${cellClass(k)}" data-slot="${k}"><span class="pos">${k}</span><span class="nm">${nmHtml(k)}</span></div>`;
+            const pairs = dr.board || [];
+            const rows = Math.max(1, Math.ceil(pairs.length / 2));
+            boardHtml = `<div class="draw-bracket" style="grid-template-rows:repeat(${rows},auto)">`;
+            pairs.forEach((pair, i) => {
+                boardHtml += `<div class="dmatch"><div class="dmatch-no">${i + 1}</div>`
+                    + `<div class="dmatch-card">${teamRow(pair[0])}${teamRow(pair[1])}</div></div>`;
+            });
+            boardHtml += '</div>';
         } else {
             const groups = dr.board || [];
-            const cols = groups.length <= 2 ? groups.length : (groups.length <= 6 ? 3 : 4);
-            bodyHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols || 1},1fr)">`;
+            const cols = Math.min(2, groups.length || 1);
+            const rows = Math.max(1, Math.ceil((groups.length || 1) / cols));
+            boardHtml = `<div class="draw-grid" style="grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},auto);grid-auto-flow:column">`;
             for (const g of groups) {
-                bodyHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
-                g.slots.forEach((k, i) => { bodyHtml += slotRow(k, (i + 1) + '.'); });
-                bodyHtml += '</div>';
+                boardHtml += `<div class="dg-card"><div class="gname">Grupė ${g.label}</div>`;
+                g.slots.forEach((k, i) => {
+                    boardHtml += `<div class="dg-slot ${cellClass(k)}" data-slot="${k}"><span class="pos">${i + 1}.</span><span class="nm">${nmHtml(k)}</span></div>`;
+                });
+                boardHtml += '</div>';
             }
-            bodyHtml += '</div>';
+            boardHtml += '</div>';
         }
+        const bodyHtml = `<div class="draw-fit">${boardHtml}</div>`;
 
-        const pool = (dr.pool || []).map((t) => `<span class="chip">${t.name}</span>`).join('');
-        const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips">${pool}</div></div>`;
+        const pool = (dr.pool || []).map((t) => `<span class="chip" data-team="${t.id}">${playersHtml(t)}</span>`).join('');
+        const poolHtml = `<div class="draw-pool"><div class="lbl">Liko traukti (${(dr.pool || []).length})</div><div class="chips-fit"><div class="chips">${pool}</div></div></div>`;
 
         const logo = dr.show_tournament && d.logo ? `<img src="${d.logo}" alt="">` : '';
-        const tt = dr.show_tournament ? (d.tournament_title || d.title || '') : '';
-        const headHtml = `<div class="draw-head"><div class="left">${logo}<div><div class="tt">${tt}</div><div class="cat">Burtai</div></div></div>`
-            + `<div><span class="badge">BURTAI</span>${dr.status !== 'done' ? `<span class="pot">Krepšelis ${dr.active_pot}</span>` : '<span class="draw-done">Baigta</span>'}</div></div>`;
+        const tname = d.tournament_title || d.title || '';
+        const group = dr.category || '';
+        const headHtml = `<div class="draw-head"><div class="left">${logo}<div>`
+            + `${tname ? `<div class="cat">${tname}</div>` : ''}`
+            + `${group ? `<div class="tt">${group}</div>` : ''}</div></div>`
+            + `${dr.status === 'done' ? '<div><span class="draw-done">Baigta</span></div>' : ''}</div>`;
 
-        const sponsors = (dr.sponsors || []).map((s) => `<img src="${s.logo}" alt="">`).join('');
-        const sponsHtml = sponsors ? `<div class="draw-spons">${sponsors}</div>` : '';
+        const allSponsors = dr.sponsors || [];
+        const sponsHtml = allSponsors.length ? '<div class="draw-spons" id="draw-spons"></div>' : '';
+
+        // One main sponsor logo, in a chosen free corner.
+        const msHtml = dr.main_sponsor
+            ? `<div class="draw-mainspons draw-ms-${dr.main_sponsor_position || 'top-right'} draw-ms-sz-${dr.main_sponsor_size || 'm'}"><div class="draw-ms-lbl">Grupės rėmėjas</div><img src="${dr.main_sponsor}" alt=""></div>`
+            : '';
 
         // The board is position:fixed, so it must live on <body> (outside #stage,
         // whose will-change:transform would otherwise become its containing block
         // and collapse it to a tiny box). Same trick as the results ticker.
-        stage.innerHTML = '';
+        if (!keep) stage.innerHTML = '';
         const drawHost = document.getElementById('ov-draw') || (() => {
             const h = document.createElement('div'); h.id = 'ov-draw'; document.body.appendChild(h); return h;
         })();
-        drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}</div>`;
+        drawHost.innerHTML = `<div class="draw-stage draw-corner-${dr.camera_corner || 'bottom-right'}">${headHtml}<div class="draw-body">${bodyHtml}${poolHtml}</div>${sponsHtml}${msHtml}</div>`;
 
-        // Reveal roulette: cycle remaining names ~2s then land on the current pick.
-        clearInterval(window.__drawRoulette);
-        const reveal = document.getElementById('draw-reveal-host') || (() => {
-            const h = document.createElement('div'); h.id = 'draw-reveal-host'; document.body.appendChild(h); return h;
-        })();
-        const cur = dr.current;
-        const prev = window.__drawLastSlot;
-        if (cur && cur.slot !== prev) {
-            window.__drawLastSlot = cur.slot;
-            const names = (dr.pool || []).map((t) => t.name).concat([cur.name]);
-            let i = 0, ticks = 0;
-            reveal.innerHTML = `<div class="draw-reveal"><div class="k">TRAUKIAMA…</div><div class="nm" id="rl-nm">${cur.name}</div><div class="to" id="rl-to"></div></div>`;
-            const nmEl = document.getElementById('rl-nm'), toEl = document.getElementById('rl-to');
-            window.__drawRoulette = setInterval(() => {
-                ticks++;
-                if (ticks < 16 && names.length > 1) { nmEl.textContent = names[i % names.length]; i++; }
-                else {
-                    clearInterval(window.__drawRoulette);
-                    nmEl.textContent = cur.name;
-                    toEl.textContent = '→ ' + cur.slot;
-                    setTimeout(() => { reveal.innerHTML = ''; }, 1800);
-                }
-            }, 110);
-        } else if (!cur) {
-            reveal.innerHTML = '';
+        // Shrink the board to fit the available height so a full draw never
+        // clips. Done synchronously (before the fly) so slot rects stay correct.
+        const fitEl = drawHost.querySelector('.draw-fit');
+        const bodyEl = drawHost.querySelector('.draw-body');
+        if (fitEl && bodyEl) {
+            fitEl.style.transform = 'none';
+            const avail = bodyEl.clientHeight;
+            const natural = fitEl.scrollHeight;
+            if (natural > avail && avail > 0) {
+                fitEl.style.transform = `scale(${Math.max(0.5, avail / natural)})`;
+            }
         }
+
+        // Pool auto-columns are bounded in height by CSS (flex column-wrap); if the
+        // wrapped columns still overrun the pool width, scale the whole block down.
+        const chipsFit = drawHost.querySelector('.draw-pool .chips-fit');
+        const chipsEl = drawHost.querySelector('.draw-pool .chips');
+        if (chipsFit && chipsEl) {
+            chipsFit.style.transform = 'none';
+            const availW = chipsFit.clientWidth;
+            const naturalW = chipsEl.scrollWidth;
+            if (naturalW > availW && availW > 0) {
+                chipsFit.style.transform = `scale(${Math.max(0.5, availW / naturalW)})`;
+            }
+        }
+
+        // Sponsors: continuous marquee — equal tiles slide one-by-one to the
+        // side, so the strip is always full. The set is duplicated so the loop
+        // (translateX -50%) is seamless.
+        clearInterval(window.__drawSpons);
+        const spEl = document.getElementById('draw-spons');
+        if (spEl && allSponsors.length) {
+            const tile = (s) => `<div class="sp-tile"><img src="${s.logo}" alt=""></div>`;
+            const set = allSponsors.map(tile).join('');
+            const secs = Math.max(allSponsors.length, 4) * (dr.rotate_seconds || 5);
+            spEl.innerHTML = `<div class="sp-track" style="animation-duration:${secs}s">${set}${set}</div>`;
+        }
+
+        // Clone the pool chip and arc it to the assigned slot, then reveal it.
+        const flyTeam = (name, src, targetEl) => {
+            const dst = targetEl.getBoundingClientRect();
+            const nmEl = targetEl.querySelector('.nm');
+            if (nmEl) nmEl.style.visibility = 'hidden';
+            const fly = document.createElement('div');
+            fly.className = 'draw-fly';
+            fly.textContent = name;
+            fly.style.left = (src.left + src.width / 2) + 'px';
+            fly.style.top = (src.top + src.height / 2) + 'px';
+            document.body.appendChild(fly);
+            const tx = (dst.left + dst.width / 2) - (src.left + src.width / 2);
+            const ty = (dst.top + dst.height / 2) - (src.top + src.height / 2);
+            const anim = fly.animate([
+                { transform: 'translate(-50%,-50%) translate(0,0) scale(1)', opacity: 1, offset: 0 },
+                { transform: `translate(-50%,-50%) translate(${tx * 0.5}px, ${ty * 0.5 - 48}px) scale(1.16)`, opacity: 1, offset: 0.55 },
+                { transform: `translate(-50%,-50%) translate(${tx}px, ${ty}px) scale(1)`, opacity: 1, offset: 1 },
+            ], { duration: 720, easing: 'cubic-bezier(.45,0,.2,1)' });
+            anim.onfinish = () => {
+                fly.remove();
+                if (nmEl) nmEl.style.visibility = '';
+                targetEl.classList.add('just-in');
+            };
+        };
+
+        // Fly the just-placed team from its pool chip to the assigned slot.
+        if (isNew) {
+            if (willFly) {
+                const targetEl = drawHost.querySelector(`[data-slot="${cur.slot}"]`);
+                if (targetEl) flyTeam(cur.name, prevPoolRects[cur.team_id], targetEl);
+            }
+            window.__drawHandledKey = curKey;
+        }
+
+        // Capture current pool-chip positions so the next placement can fly from
+        // where its chip actually sat (it's gone from the pool by then).
+        const poolRects = {};
+        drawHost.querySelectorAll('.chip[data-team]').forEach((el) => {
+            poolRects[el.getAttribute('data-team')] = el.getBoundingClientRect();
+        });
+        window.__drawPoolRects = poolRects;
+        window.__drawLastSlot = dr.current ? dr.current.slot : undefined;
+        const _rv = document.getElementById('draw-reveal-host'); if (_rv) _rv.remove();
         return;
     }
 
@@ -550,7 +1282,7 @@
                     html += `<td class="col-place"><span class="rank${m}">${r.place ?? '–'}</span></td>`;
                 } else if (c === 'name') {
                     const players = String(r.name || '').split(' / ');
-                    html += `<td class="col-name">${players.map(p => `<span class="pl">${p}</span>`).join('')}</td>`;
+                    html += `<td class="col-name">${players.map(p => `<span class="pl">${window.__flag(p)}<span class="ov-pn">${p}</span></span>`).join('')}</td>`;
                 } else {
                     const v = (r[c] === null || r[c] === undefined) ? '–' : r[c];
                     html += `<td class="col-${c}">${v}</td>`;

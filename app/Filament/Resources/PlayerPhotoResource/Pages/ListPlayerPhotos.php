@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Filament\Resources\PlayerPhotoResource\Pages;
+
+use App\Filament\Resources\PlayerPhotoResource;
+use App\Models\PlayerPhoto;
+use App\Models\Setting;
+use App\Services\PlayerCityImporter;
+use Filament\Actions;
+use Filament\Forms;
+use Filament\Notifications\Notification;
+use Filament\Resources\Pages\ListRecords;
+use Illuminate\Support\Facades\Storage;
+
+class ListPlayerPhotos extends ListRecords
+{
+    protected static string $resource = PlayerPhotoResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('loadPeople')
+                ->label('Užkrauti dalyvius')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->form([
+                    Forms\Components\Select::make('tid')
+                        ->label('Turnyras')
+                        ->options(fn () => PlayerPhotoResource::tournamentOptions())
+                        ->searchable()->required(),
+                ])
+                ->action(function (array $data) {
+                    $n = PlayerPhotoResource::loadPeople($data['tid']);
+                    Notification::make()->title("Užkrauta žmonių: {$n}")->success()->send();
+                }),
+
+            Actions\Action::make('importCities')
+                ->label('Importuoti miestus (Excel)')
+                ->icon('heroicon-o-map-pin')
+                ->color('gray')
+                ->form([
+                    Forms\Components\FileUpload::make('file')
+                        ->label('Excel failas (.xlsx)')
+                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+                        ->disk('local')->directory('city-imports')->required()
+                        ->helperText('Kiekvienas lapas — kategorija, stulpeliai „Žaidėjas N" / „Miestas N". Papildo TIK jau esančius žaidėjus (pagal vardą); jei Excel eilutėje miesto nėra — tas žaidėjas nekeičiamas.'),
+                ])
+                ->action(function (array $data) {
+                    $path = Storage::disk('local')->path($data['file']);
+                    try {
+                        $cities = PlayerCityImporter::citiesFromFile($path);
+                        $n = PlayerCityImporter::apply($cities);
+                    } catch (\Throwable $e) {
+                        Notification::make()->title('Klaida: ' . $e->getMessage())->danger()->send();
+
+                        return;
+                    } finally {
+                        Storage::disk('local')->delete($data['file']);
+                    }
+
+                    Notification::make()->title("Papildyta miestų: {$n} (rasta faile: " . count($cities) . ')')->success()->send();
+                }),
+
+            Actions\Action::make('stockPhotos')
+                ->label('Stock nuotraukos')
+                ->icon('heroicon-o-photo')
+                ->color('gray')
+                ->fillForm(fn () => [
+                    'male'   => Setting::get('h2h_stock_male'),
+                    'female' => Setting::get('h2h_stock_female'),
+                ])
+                ->form([
+                    Forms\Components\FileUpload::make('male')->label('Vyro stock (GIF/PNG)')
+                        ->acceptedFileTypes(['image/gif', 'image/png', 'image/webp'])
+                        ->disk('public')->directory('player-photos'),
+                    Forms\Components\FileUpload::make('female')->label('Moters stock (GIF/PNG)')
+                        ->acceptedFileTypes(['image/gif', 'image/png', 'image/webp'])
+                        ->disk('public')->directory('player-photos'),
+                ])
+                ->action(function (array $data) {
+                    Setting::set('h2h_stock_male', $data['male'] ?? null);
+                    Setting::set('h2h_stock_female', $data['female'] ?? null);
+                    Notification::make()->title('Stock nuotraukos išsaugotos')->success()->send();
+                }),
+
+            Actions\Action::make('deleteAll')
+                ->label('Ištrinti visus')
+                ->icon('heroicon-o-trash')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('Ištrinti visus žaidėjus?')
+                ->modalDescription('Bus pašalinti VISI žaidėjų įrašai. Po to paspausk „Užkrauti dalyvius" — jie bus importuoti iš naujo pagal Tournated ID.')
+                ->action(function () {
+                    $n = PlayerPhoto::query()->count();
+                    PlayerPhoto::query()->delete();
+                    Notification::make()->title("Ištrinta žaidėjų: {$n}")->success()->send();
+                }),
+
+            Actions\CreateAction::make(),
+        ];
+    }
+}

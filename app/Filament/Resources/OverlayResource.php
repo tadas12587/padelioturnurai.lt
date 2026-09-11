@@ -87,6 +87,11 @@ class OverlayResource extends Resource
                         ])
                         ->default('bottom-left'),
 
+                    Toggle::make('config.show_flags')
+                        ->label('Rodyti šalių vėliavas')
+                        ->helperText('Įjungus — prie žaidėjų vardų rodomos vėliavos (grupės, bracket, tvarkaraštis, rezultatas, akistata). Išjungus — tik vardai, kaip anksčiau.')
+                        ->default(true),
+
                     CheckboxList::make('config.visible_columns')
                         ->label('Rodomi stulpeliai')
                         ->options([
@@ -113,7 +118,7 @@ class OverlayResource extends Resource
 
                             Select::make('type')
                                 ->label('Tipas')
-                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'sponsors' => 'Rėmėjai', 'schedule' => 'Tvarkaraštis'])
+                                ->options(['groups' => 'Grupės', 'bracket' => 'Brackets', 'draw' => 'Traukimas', 'h2h' => 'Akistata', 'score' => 'Rezultatas', 'sponsors' => 'Rėmėjai', 'photowall' => 'Foto sienelė', 'schedule' => 'Tvarkaraštis'])
                                 ->default('groups')
                                 ->live(),
 
@@ -309,12 +314,136 @@ class OverlayResource extends Resource
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
                             Toggle::make('show_tournament')->label('Rodyti turnyro logo + pavadinimą')->default(true)
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            FileUpload::make('draw_sponsor_logo')->label('Pagrindinis rėmėjas — logo (kampe)')
+                                ->image()->disk('public')->directory('overlay-sponsors')
+                                ->helperText('Vienas didelis rėmėjo logo laisvame kampe. Neįkėlus — nesimato.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('draw_sponsor_position')->label('Pagrindinio rėmėjo vieta')
+                                ->options(['top-right' => 'Viršus — dešinė', 'top-left' => 'Viršus — kairė', 'bottom-right' => 'Apačia — dešinė', 'bottom-left' => 'Apačia — kairė'])
+                                ->default('top-right')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('draw_sponsor_size')->label('Pagrindinio rėmėjo dydis')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis'])->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
                             Select::make('sponsor_ids')->label('Rėmėjai iš sąrašo')->multiple()
                                 ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            Select::make('gallery_ids')->label('Galerija (rėmėjai)')->multiple()
+                                ->options(fn () => \App\Models\Gallery::orderBy('name')->pluck('name', 'id'))
+                                ->helperText('Pasirink galeriją — jos nuotraukos rodomos automatiškai.')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
                             FileUpload::make('images')->label('Arba įkelk rėmėjų logotipus')
                                 ->image()->multiple()->reorderable()->disk('public')->directory('overlay-sponsors')
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+                            TextInput::make('rotate_seconds')->label('Rėmėjų slinkimo greitis (s/logo)')
+                                ->numeric()->default(5)->minValue(2)
+                                ->helperText('Juosta slenka po vieną logo; kuo didesnis skaičius, tuo lėčiau.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'draw'),
+
+                            CheckboxList::make('h2h_center')
+                                ->label('Ką rodyti centre')
+                                ->options(['time' => 'Rungtynių laikas', 'score' => 'Live rezultatas', 'court' => 'Kortas / etapas', 'vs' => 'VS / tekstas'])
+                                ->default(['time', 'score', 'court', 'vs'])->columns(2)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_text')->label('Centro tekstas (kai „VS / tekstas")')->default('VS')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Select::make('h2h_score_ref')
+                                ->label('Kurio rezultato langą rodyti centre (Live rezultatas)')
+                                ->options(fn () => \App\Models\Overlay::scoreWindowOptions())
+                                ->searchable()->nullable()
+                                ->helperText('Kiekvienas rezultato langas dabar nepriklausomas (net kitame overlay — pvz. kito korto). Palikus tuščią — naudojamas pirmas šio paties overlay rezultato langas.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Toggle::make('h2h_show_photos')->label('Rodyti žaidėjų nuotraukas')->default(true)->live()
+                                ->helperText('Išjungus — nuotraukų vietoje rodomas tik info blokas (vardas, vėliava, šalis/miestas, reitingas), per visą plotį.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Toggle::make('h2h_animate')->label('Lėta animacija (zoom link žiūrovo)')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_show_photos') ?? true)),
+                            TextInput::make('h2h_size')->label('Nuotraukų aukštis (% ekrano)')
+                                ->numeric()->default(96)->minValue(40)->maxValue(120)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_show_photos') ?? true)),
+                            TextInput::make('h2h_edge')->label('Atstumas nuo kraštų (vw)')
+                                ->numeric()->default(0)->minValue(0)->maxValue(30)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_overlap')->label('Persidengimas: komandos draugai (vw)')
+                                ->numeric()->default(24)->minValue(0)->maxValue(45)
+                                ->helperText('Kuo didesnis — tuo labiau persidengia tos pačios komandos žaidėjai.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_show_photos') ?? true)),
+                            TextInput::make('h2h_gap')->label('Tarpas tarp komandų (vw)')
+                                ->numeric()->default(0)->minValue(0)->maxValue(30)
+                                ->helperText('Pastumia komandas tolyn viena nuo kitos link kraštų.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Toggle::make('h2h_show_sponsors')->label('Rodyti rėmėjų juostą apačioje')->default(false)->live()
+                                ->helperText('Komandų lentelės pakyla ir truputį sumažėja. Rėmėjus pasirink žemiau.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            FileUpload::make('h2h_sponsor_logo')->label('Centrinis rėmėjas — logo (vidury)')
+                                ->acceptedFileTypes(['image/gif', 'image/png', 'image/webp', 'image/jpeg'])
+                                ->disk('public')->directory('overlay-sponsors')
+                                ->helperText('Įkėlus — matosi vidury tarp komandų; neįkėlus — nesimato.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            TextInput::make('h2h_sponsor_text')->label('Centrinis rėmėjas — tekstas')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+
+                            Select::make('h2h_bg_mode')->label('Fonas (animuotas)')
+                                ->options([
+                                    'none'     => 'Nėra (permatomas)',
+                                    'gradient' => 'Spalvų maišymas (temos spalvos)',
+                                    'image'    => 'Fonas + nuotrauka (daugybinama, skraido)',
+                                ])->default('none')->live()
+                                ->helperText('„Spalvų maišymas" — lėtai plaukiantys spalvų debesys. „Fonas + nuotrauka" — įkelta nuotrauka padauginama ir skraido.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h'),
+                            Select::make('h2h_bg_intensity')->label('Fono intensyvumas')
+                                ->options(['subtle' => 'Subtilus', 'medium' => 'Vidutinis', 'bold' => 'Ryškus'])->default('subtle')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') !== 'none'),
+                            FileUpload::make('h2h_bg_image')->label('Fono nuotrauka (PNG su permatomu fonu — geriausia)')
+                                ->acceptedFileTypes(['image/png', 'image/webp', 'image/gif', 'image/jpeg'])
+                                ->disk('public')->directory('overlay-h2h-bg')
+                                ->helperText('Pvz. apkirptas kamuoliukas ar logotipas. Sistema pati padaugins ir paskraidys.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') === 'image'),
+                            TextInput::make('h2h_bg_count')->label('Nuotraukų kiekis (nebūtina)')->numeric()->minValue(2)->maxValue(40)
+                                ->placeholder('Auto pagal intensyvumą')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') === 'image'),
+                            TextInput::make('h2h_bg_speed')->label('Greitis (0.5 lėtai … 2 greitai, nebūtina)')->numeric()->minValue(0.3)->maxValue(3)->step(0.1)
+                                ->placeholder('Auto')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'h2h' && ($get('h2h_bg_mode') ?? 'none') !== 'none'),
+
+                            TextInput::make('score_games_per_set')->label('Geimų sete')->numeric()->default(6)->minValue(1)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_tiebreak_at')->label('Tiebreak prie (geimų)')->numeric()->default(6)
+                                ->helperText('Kai abi komandos pasiekia tiek geimų — tiebreak. „iki 6"→6, „iki 9"→8.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_sets_to_win')->label('Laimėtų setų (mačui)')->numeric()->default(2)->minValue(1)
+                                ->helperText('Mačas baigiasi, kai komanda laimi TIEK setų (ne kai sužaista tiek setų). Pvz. „2" = mačas tęsiasi, kol kas nors laimi 2 setus — esant 1:1 žaidžiamas lemiamas setas (žr. „Lemiamas setas" žemiau).')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Toggle::make('score_tiebreak')->label('Tiebreak sete')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_tiebreak_to')->label('Tiebreak iki')->numeric()->default(7)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Toggle::make('score_super_tb')->label('Lemiamas setas – super tiebreak')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_super_tb_to')->label('Super tiebreak iki')->numeric()->default(10)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Select::make('score_deuce_mode')->label('Lygiosios (40–40)')
+                                ->options(['advantage' => 'Pranašumas', 'golden' => 'Auksinis taškas', 'star' => 'STAR'])->default('star')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Select::make('score_position')->label('Pozicija')
+                                ->options(['top-left' => 'Viršus — kairė', 'top-center' => 'Viršus — centras', 'top-right' => 'Viršus — dešinė',
+                                    'bottom-left' => 'Apačia — kairė', 'bottom-center' => 'Apačia — centras', 'bottom-right' => 'Apačia — dešinė'])
+                                ->default('top-left')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            TextInput::make('score_width')->label('Plotis (px)')->numeric()->default(520)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Select::make('score_anim')->label('Pasirodymo animacija')
+                                ->options([
+                                    'header_reveal' => 'Antraštė atskrenda, rezultatas išlenda (2 etapai)',
+                                    'slide'         => 'Įslenka iš šono',
+                                    'fade'          => 'Išnyra (fade + pakilimas)',
+                                    'pop'           => 'Pop (išsipučia)',
+                                    'none'          => 'Be animacijos',
+                                ])->default('header_reveal')
+                                ->helperText('Kryptis pagal poziciją: dešinėje — iš dešinės, kairėje — iš kairės.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
+                            Toggle::make('show_level')->label('Rodyti lygį / kategoriją')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'score'),
 
                             Select::make('variant')
                                 ->label('Variantas')
@@ -323,22 +452,112 @@ class OverlayResource extends Resource
                                     'bar'        => 'Apačios juosta',
                                     'fullscreen' => 'Per visą ekraną',
                                 ])
-                                ->default('corner')
+                                ->default('corner')->live()
                                 ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                            Select::make('corner_position')
+                                ->label('Kampas')
+                                ->options([
+                                    'top-left'     => 'Viršus — kairė',
+                                    'top-right'    => 'Viršus — dešinė',
+                                    'bottom-left'  => 'Apačia — kairė',
+                                    'bottom-right' => 'Apačia — dešinė',
+                                ])
+                                ->default('bottom-right')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors' && ($get('variant') ?? 'corner') === 'corner'),
+                            Select::make('corner_size')
+                                ->label('Dydis')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])
+                                ->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors' && ($get('variant') ?? 'corner') === 'corner'),
                             Select::make('sponsor_ids')
                                 ->label('Rėmėjai iš sąrašo')
                                 ->multiple()
                                 ->options(fn () => \App\Models\Sponsor::where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
+                            Select::make('gallery_ids')
+                                ->label('Galerija')
+                                ->multiple()
+                                ->options(fn () => \App\Models\Gallery::orderBy('name')->pluck('name', 'id'))
+                                ->helperText('Pasirink vieną ar kelias galerijas — jų nuotraukos rodomos automatiškai.')
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
                             FileUpload::make('images')
                                 ->label('Arba įkelk nuotraukas (masiškai)')
                                 ->image()->multiple()->reorderable()
                                 ->disk('public')->directory('overlay-sponsors')
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                                ->visible(fn (Forms\Get $get) => self::sponsorFieldsVisible($get)),
                             TextInput::make('rotate_seconds')
                                 ->label('Keitimo intervalas (s)')
                                 ->numeric()->default(6)->minValue(2)
-                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors'),
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'sponsors' || ($get('type') === 'h2h' && $get('h2h_show_sponsors'))),
+
+                            // ── Foto sienelė (step-and-repeat) ──
+                            Select::make('pw_tile_size')->label('Logotipų dydis sienoje')
+                                ->options(['s' => 'Maži', 'm' => 'Vidutiniai', 'l' => 'Dideli', 'xl' => 'Labai dideli'])->default('m')
+                                ->helperText('Rėmėjų logotipai kartojami per visą foną. Iš „Galerija" / „Rėmėjai iš sąrašo" / įkeltų nuotraukų.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_gap')->label('Tarpai tarp logotipų')
+                                ->options(['tight' => 'Maži', 'normal' => 'Vidutiniai', 'wide' => 'Dideli'])->default('normal')
+                                ->helperText('Bazinis tarpas. Žemiau gali tiksliai nurodyti horizontalų ir vertikalų atskirai.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_gap_x_num')->label('Tarpas horizontaliai (px, tiksliai)')->numeric()->minValue(0)->maxValue(400)->step(1)
+                                ->helperText('Palik tuščią — naudojamas bazinis tarpas.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_gap_y_num')->label('Tarpas vertikaliai (px, tiksliai)')->numeric()->minValue(0)->maxValue(400)->step(1)
+                                ->helperText('Palik tuščią — naudojamas bazinis tarpas.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_layout')->label('Išdėstymas')
+                                ->options(['brick' => 'Plytelės (paslinktos eilės)', 'grid' => 'Griežtas tinklelis', 'diagonal' => 'Įstrižas'])->default('brick')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_bg_pattern')->label('Fono raštas')
+                                ->options(['solid' => 'Vientisas (temos spalva)', 'checker' => 'Šachmatai (2 spalvos)'])->default('solid')
+                                ->helperText('Šachmatai gerai tinka su griežtu tinkleliu.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_animate')->label('Animacija')
+                                ->options(['none' => 'Nėra', 'slide' => 'Slinkimas į šonus (pirmyn–atgal)'])->default('none')->live()
+                                ->helperText('Gretimos eilės slenka į priešingas puses ir atgal.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_anim_speed')->label('Animacijos greitis')
+                                ->type('range')->default(35)
+                                ->extraInputAttributes(['min' => 1, 'max' => 100, 'step' => 1])
+                                ->helperText('Kairė — labai labai lėtai (vos matoma), dešinė — greitai.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall' && ($get('pw_animate') ?? 'none') === 'slide'),
+                            FileUpload::make('pw_main_logo')->label('Turnyro logo')
+                                ->image()->disk('public')->directory('overlay-photowall')
+                                ->helperText('Įkėlus — rodomas ant sienos pasirinktoje vietoje. Neįkėlus — imamas overlay turnyro logo.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_main_position')->label('Turnyro logo vieta')
+                                ->options(self::photowallPositions())->default('center')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_main_size')->label('Turnyro logo dydis (greitas)')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('l')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_main_size_num')->label('Logo dydis tiksliai (plotis, vw)')->numeric()->minValue(2)->maxValue(90)->step(0.5)
+                                ->placeholder('Auto (pagal „greitą" dydį)')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_main_dx')->label('Logo poslinkis X (vw, gali būti neigiamas / už krašto)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_main_dy')->label('Logo poslinkis Y (vh)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Toggle::make('pw_logo_bg')->label('Fonas po logo (uždengia logotipus)')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title')->label('Turnyro pavadinimas (laisva forma)')
+                                ->helperText('Nebūtina. Rodomas ant sienos pasirinktoje vietoje; spalva iš temos.')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_title_position')->label('Pavadinimo vieta')
+                                ->options(self::photowallPositions())->default('bottom-center')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Select::make('pw_title_size')->label('Pavadinimo dydis (greitas)')
+                                ->options(['s' => 'Mažas', 'm' => 'Vidutinis', 'l' => 'Didelis', 'xl' => 'Labai didelis'])->default('m')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title_size_num')->label('Pavadinimo dydis tiksliai (šrifto, vw)')->numeric()->minValue(1)->maxValue(20)->step(0.1)
+                                ->placeholder('Auto')
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title_dx')->label('Pavadinimo poslinkis X (vw, gali būti neigiamas / už krašto)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            TextInput::make('pw_title_dy')->label('Pavadinimo poslinkis Y (vh)')->numeric()->default(0)->minValue(-60)->maxValue(60)->step(0.5)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
+                            Toggle::make('pw_title_bg')->label('Fonas po pavadinimu (uždengia logotipus)')->default(true)
+                                ->visible(fn (Forms\Get $get) => ($get('type') ?? 'groups') === 'photowall'),
                         ])
                         ->collapsible()
                         ->itemLabel(fn (array $state) => $state['name'] ?? 'Langas')
@@ -346,6 +565,28 @@ class OverlayResource extends Resource
                         ->addActionLabel('Pridėti langą'),
                 ]),
         ]);
+    }
+
+    /** @return array<string,string> placement options for photo-wall logo/title. */
+    private static function photowallPositions(): array
+    {
+        return [
+            'center'        => 'Centre',
+            'top-center'    => 'Centre viršuje',
+            'top-left'      => 'Kairėje viršuje',
+            'top-right'     => 'Dešinėje viršuje',
+            'bottom-center' => 'Centre apačioje',
+            'bottom-left'   => 'Kairėje apačioje',
+            'bottom-right'  => 'Dešinėje apačioje',
+        ];
+    }
+
+    /** Sponsor source fields show for a sponsors/photowall window, or an h2h window with the bar on. */
+    private static function sponsorFieldsVisible(Forms\Get $get): bool
+    {
+        $type = $get('type') ?? 'groups';
+
+        return in_array($type, ['sponsors', 'photowall'], true) || ($type === 'h2h' && $get('h2h_show_sponsors'));
     }
 
     public static function table(Table $table): Table
@@ -361,22 +602,25 @@ class OverlayResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn ($state) => $state === 'bracket' ? 'Brackets' : 'Grupės'),
 
-                TextColumn::make('token')
-                    ->label('Token')
-                    ->copyable(),
+                TextColumn::make('obs_url')
+                    ->label('OBS URL')
+                    ->state(fn ($record) => url('/overlay/' . $record->token))
+                    ->copyable()->copyMessage('Nukopijuota!')->wrap()
+                    ->description('Įklijuok į OBS → Sources → Browser'),
+
+                TextColumn::make('control_url')
+                    ->label('Valdymas (OBS dock)')
+                    ->state(fn ($record) => url('/overlay/' . $record->token . '/control'))
+                    ->copyable()->copyMessage('Nukopijuota!')->wrap()
+                    ->description('Įklijuok į OBS → Docks → Custom Browser Docks'),
+
+                TextColumn::make('score_url')
+                    ->label('Rezultato valdymas (mob.)')
+                    ->state(fn ($record) => url('/overlay/' . $record->token . '/score'))
+                    ->copyable()->copyMessage('Nukopijuota!')->wrap()
+                    ->description('Atidaryk telefone/planšetėje (reikia „Rezultatas" lango)'),
             ])
             ->actions([
-                Tables\Actions\Action::make('copyUrl')
-                    ->label('OBS URL')
-                    ->icon('heroicon-o-clipboard')
-                    ->color('gray')
-                    ->action(function () {})
-                    ->extraAttributes(fn ($record) => [
-                        'x-on:click' => 'window.navigator.clipboard.writeText('
-                            . json_encode(url('/overlay/' . $record->token))
-                            . '); $tooltip(' . json_encode('Nukopijuota!') . ', { timeout: 1500 })',
-                    ]),
-
                 EditAction::make(),
 
                 DeleteAction::make(),

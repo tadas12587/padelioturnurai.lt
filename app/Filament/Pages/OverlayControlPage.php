@@ -27,31 +27,40 @@ class OverlayControlPage extends Page
         return Overlay::orderBy('name')->pluck('name', 'id')->all();
     }
 
-    public function activeWindowId(): ?string
+    /** @return list<string> */
+    public function activeWindowIds(): array
     {
-        return $this->selectedOverlay()?->state['active_window_id'] ?? null;
+        return Overlay::activeIds($this->selectedOverlay()?->state ?? []);
+    }
+
+    public function isShown(string $id): bool
+    {
+        return in_array($id, $this->activeWindowIds(), true);
+    }
+
+    private function mutate(callable $fn): void
+    {
+        $overlay = Overlay::findOrFail($this->overlayId);
+        $overlay->state = $fn(array_merge(Overlay::defaultState(), $overlay->state ?? []));
+        $overlay->save();
     }
 
     public function play(string $windowId): void
     {
-        $overlay = Overlay::findOrFail($this->overlayId);
-        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = $windowId;
-        $overlay->state = $state;
-        $overlay->save();
-
+        $this->mutate(fn ($state) => Overlay::showWindow($state, $windowId));
         Notification::make()->title('▶ Rodoma')->success()->send();
+    }
+
+    public function hide(string $windowId): void
+    {
+        $this->mutate(fn ($state) => Overlay::hideWindow($state, $windowId));
+        Notification::make()->title('■ Paslėpta')->send();
     }
 
     public function stop(): void
     {
-        $overlay = Overlay::findOrFail($this->overlayId);
-        $state = array_merge(Overlay::defaultState(), $overlay->state ?? []);
-        $state['active_window_id'] = null;
-        $overlay->state = $state;
-        $overlay->save();
-
-        Notification::make()->title('■ Sustabdyta')->send();
+        $this->mutate(fn ($state) => Overlay::hideAll($state));
+        Notification::make()->title('■ Sustabdyta viskas')->send();
     }
 
     public function setNextMatch(string $text): void
