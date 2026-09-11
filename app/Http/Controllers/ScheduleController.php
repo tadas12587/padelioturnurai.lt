@@ -128,6 +128,7 @@ class ScheduleController extends Controller
 
         return response()->json([
             'matches'   => $matches,
+            'groups'    => $payload['groups'] ?? [],
             'standings' => $payload['standings'] ?? [],
             'synced_at' => $payload['synced_at'] ?? null,
         ]);

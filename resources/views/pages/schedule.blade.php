@@ -170,7 +170,7 @@
 (function () {
   var TOURNAMENT_ID = @json($tournamentId);
   var DATA_URL = @json(route('schedule.data', $tournamentId));
-  var state = { matches: @json(array_values($matches)), syncedAt: @json($syncedAt) };
+  var state = { matches: @json(array_values($matches)), groups: @json(array_values($groups)), syncedAt: @json($syncedAt) };
 
   function esc(s) { return (s ?? '').toString().replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
 
@@ -261,13 +261,9 @@
     renderGrid(box, list);
   }
 
-  function renderStandings() {
-    var box = document.getElementById('standings-results');
-    var groups = {};
-    state.matches.forEach(function (m) {
-      if (!m.division) return;
-      groups[m.division] = groups[m.division] || {};
-      var g = groups[m.division];
+  function tallyMatches(matches) {
+    var g = {};
+    matches.forEach(function (m) {
       [1, 2].forEach(function (side) {
         var team = side === 1 ? m.team1 : m.team2;
         if (!team || !team.title) return;
@@ -287,20 +283,40 @@
         t2.setsWon += b > a ? 1 : 0; t2.setsLost += b < a ? 1 : 0;
       });
     });
+    return g;
+  }
 
-    var divisions = Object.keys(groups).sort();
-    if (!divisions.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbti lygiai.</p>'; return; }
+  function standingsTableHtml(title, tally) {
+    var rows = Object.keys(tally).map(function (club) { return Object.assign({ club: club }, tally[club]); });
+    if (!rows.length) return '';
+    rows.sort(function (a, b) { return b.wins - a.wins || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); });
+    var html = '<div class="division-block"><h3 class="division-title">' + esc(title) + '</h3>' +
+      '<table class="standings"><thead><tr><th>#</th><th>Klubas</th><th class="num">Žaista</th><th class="num">Laim.</th><th class="num">Pral.</th><th class="num">Setai</th></tr></thead><tbody>';
+    rows.forEach(function (r, i) {
+      html += '<tr><td>' + (i + 1) + '</td><td class="club">' + esc(r.club) + '</td><td class="num">' + r.played + '</td><td class="num">' + r.wins + '</td><td class="num">' + r.losses + '</td><td class="num">' + r.setsWon + '-' + r.setsLost + '</td></tr>';
+    });
+    return html + '</tbody></table></div>';
+  }
 
-    var html = '';
-    divisions.forEach(function (div) {
-      var rows = Object.keys(groups[div]).map(function (club) { return Object.assign({ club: club }, groups[div][club]); });
-      rows.sort(function (a, b) { return b.wins - a.wins || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); });
-      html += '<div class="division-block"><h3 class="division-title">' + esc(div) + '</h3>' +
-        '<table class="standings"><thead><tr><th>#</th><th>Klubas</th><th class="num">Žaista</th><th class="num">Laim.</th><th class="num">Pral.</th><th class="num">Setai</th></tr></thead><tbody>';
-      rows.forEach(function (r, i) {
-        html += '<tr><td>' + (i + 1) + '</td><td class="club">' + esc(r.club) + '</td><td class="num">' + r.played + '</td><td class="num">' + r.wins + '</td><td class="num">' + r.losses + '</td><td class="num">' + r.setsWon + '-' + r.setsLost + '</td></tr>';
-      });
-      html += '</tbody></table></div>';
+  function renderStandings() {
+    var box = document.getElementById('standings-results');
+    if (!state.matches.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbti mačai.</p>'; return; }
+
+    // Bendra (overall) lentelė — visos komandos, visi mačai, kaip Tournated
+    // pačios rodomas "Bendra" grupės vaizdas. Visada rodoma, nepriklausomai
+    // nuo to, ar mačai turi lygio (division) žymą.
+    var overallTitle = (state.groups && state.groups[0] && state.groups[0].name) || 'Bendra';
+    var html = standingsTableHtml(overallTitle, tallyMatches(state.matches));
+
+    // Jei mačai pažymėti lygiais (M TOP, V B- ir pan. — iš entry_lists Excel
+    // importo), papildomai rodome ir lentelę kiekvienam lygiui atskirai.
+    var byDivision = {};
+    state.matches.forEach(function (m) {
+      if (!m.division) return;
+      (byDivision[m.division] = byDivision[m.division] || []).push(m);
+    });
+    Object.keys(byDivision).sort().forEach(function (div) {
+      html += standingsTableHtml(div, tallyMatches(byDivision[div]));
     });
     box.innerHTML = html;
   }
@@ -345,6 +361,7 @@
   function refresh() {
     fetch(DATA_URL).then(function (r) { return r.json(); }).then(function (json) {
       state.matches = json.matches || [];
+      state.groups = json.groups || state.groups;
       state.syncedAt = json.synced_at;
       renderAll();
       var t = document.getElementById('synced-text');
