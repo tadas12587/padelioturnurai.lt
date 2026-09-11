@@ -1,0 +1,36 @@
+name: Grafikas sync
+
+# Periodiškai (ir rankiniu paleidimu) sinchronizuoja Tournated turnyro
+# tvarkaraštį/rezultatus į padelioturnyrai.lt viešą /grafikas/{id} puslapį.
+# Veikia GitHub-hostinamame runner'yje — nereikia jokio kompiuterio įjungto.
+#
+# Vienkartinis paruošimas (Settings → Secrets and variables → Actions):
+#   Secrets:   TOURNATED_API_KEY, INGEST_TOKEN
+#   Variables: TOURNAMENT_ID (pvz. 11532) — kitam turnyrui tiesiog pakeisk čia.
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      tournament_id:
+        description: 'Tournated turnyro ID (tuščia = naudoti Variables.TOURNAMENT_ID)'
+        required: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Sync one cycle
+        env:
+          TOURNATED_API_KEY: ${{ secrets.TOURNATED_API_KEY }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          TOURNAMENT_ID: ${{ github.event.inputs.tournament_id || vars.TOURNAMENT_ID }}
+          SITE_URL: https://padelioturnyrai.lt
+          ONCE: '1'
+        run: node tools/overlay-push/schedule-push.js

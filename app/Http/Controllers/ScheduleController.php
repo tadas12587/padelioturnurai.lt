@@ -35,13 +35,28 @@ class ScheduleController extends Controller
             'standings'     => 'array',
         ]);
 
+        // Merge incoming matches by match_id onto whatever is already stored,
+        // rather than replacing wholesale. Each push (e.g. a GitHub Actions
+        // run) is a fresh, stateless process that may only have refreshed a
+        // subset of matches (Tournated's /matches 502s per-match sometimes —
+        // see tools/overlay-push/schedule-push.js) — merging means a match
+        // that failed to refresh this time keeps its last known state instead
+        // of disappearing from the public page.
+        $existing = ScheduleSnapshot::where('tournament_external_id', $validated['tournament_id'])->value('payload') ?? [];
+        $byId = collect($existing['matches'] ?? [])->keyBy('match_id');
+        foreach ($validated['matches'] ?? [] as $m) {
+            if (isset($m['match_id'])) {
+                $byId->put($m['match_id'], $m);
+            }
+        }
+
         ScheduleSnapshot::updateOrCreate(
             ['tournament_external_id' => $validated['tournament_id']],
             ['payload' => [
-                'tournament' => $validated['tournament'] ?? [],
-                'matches'    => $validated['matches'] ?? [],
-                'groups'     => $validated['groups'] ?? [],
-                'standings'  => $validated['standings'] ?? [],
+                'tournament' => $validated['tournament'] ?? ($existing['tournament'] ?? []),
+                'matches'    => $byId->values()->all(),
+                'groups'     => ! empty($validated['groups']) ? $validated['groups'] : ($existing['groups'] ?? []),
+                'standings'  => ! empty($validated['standings']) ? $validated['standings'] : ($existing['standings'] ?? []),
                 'synced_at'  => now()->toIso8601String(),
             ]],
         );

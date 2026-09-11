@@ -188,12 +188,28 @@ async function cycle() {
   console.log(`✅ [${new Date().toLocaleTimeString()}] ${tournament.name} — ${allMatches.length} mačų (${played} sužaista), ${groups.length} grupių — ciklas truko ${secs}s`);
 }
 
+// ONCE=1 (arba --once) — vienas ciklas ir išeina, exit code 1 jei nepavyko.
+// Naudojama GitHub Actions cron workflow'e (.github/workflows/schedule-push.yml),
+// kur kiekvienas paleidimas yra švarus, be ilgai veikiančio proceso — nereikia
+// palikti jokio kompiuterio įjungto.
+const RUN_ONCE = process.env.ONCE === '1' || process.argv.includes('--once');
+
 async function main() {
   console.log('📅 Grafikas push paleistas');
   console.log(`   Turnyras: ${TOURNAMENT_ID}`);
   console.log(`   Svetainė: ${SITE_URL}`);
-  console.log(`   Tarpas tarp ciklų: ${POLL_INTERVAL_MS / 1000}s (kiekvienas ciklas pats gali užtrukti kelias minutes — API pusėje kiekvieno mačo pilnas įrašas imamas atskirai, nes Tournated /matches?view=full nestabilus daugiau nei 1 mačui vienu atsakymu)\n`);
+  if (RUN_ONCE) {
+    console.log('   Režimas: vienas ciklas (ONCE)\n');
+    try {
+      await cycle();
+    } catch (e) {
+      console.error(`⚠️  Klaida: ${e.message}`);
+      process.exit(1);
+    }
+    return;
+  }
 
+  console.log(`   Tarpas tarp ciklų: ${POLL_INTERVAL_MS / 1000}s (kiekvienas ciklas pats gali užtrukti kelias minutes — API pusėje kiekvieno mačo pilnas įrašas imamas atskirai, nes Tournated /matches?view=full nestabilus daugiau nei 1 mačui vienu atsakymu)\n`);
   for (;;) {
     try {
       await cycle();
