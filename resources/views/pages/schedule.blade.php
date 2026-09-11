@@ -217,7 +217,7 @@
   }
   .nav-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    background: none; border: none; color: var(--ink-soft); font-family: var(--sans);
+    background: none; border: none; color: #fff; font-family: var(--sans);
     font-size: 0.67rem; font-weight: 600; padding: 7px 2px; cursor: pointer; border-radius: 12px;
   }
   .nav-btn svg { width: 22px; height: 22px; stroke-width: 2.2; }
