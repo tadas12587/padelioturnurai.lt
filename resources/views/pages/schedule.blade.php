@@ -126,11 +126,10 @@
   .pill.active { color: var(--ball-ink); background: var(--ball); border-color: var(--ball); }
 
   .club-chip {
-    display: flex; align-items: center; gap: 7px; font-family: var(--display); font-size: 0.82rem;
+    display: flex; align-items: center; gap: 8px; font-family: var(--display); font-size: 0.82rem;
     font-weight: 600; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
-    padding: 7px 14px 7px 8px; cursor: pointer; color: var(--ink-soft);
+    padding: 6px 14px 6px 6px; cursor: pointer; color: var(--ink-soft);
   }
-  .club-chip .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; }
   .club-chip.active { color: var(--ink); background: var(--surface-2); border-color: var(--chip-c, var(--ink-soft)); }
 
   /* ---------- match card ---------- */
@@ -192,7 +191,6 @@
     width: 18px; text-align: center; flex: none;
   }
   .standing-rank.top { color: var(--ball); }
-  .standing-row .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
   .standing-club { flex: 1; min-width: 0; font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .standing-stats {
     display: flex; gap: 10px; font-family: var(--display); font-size: 0.78rem; color: var(--ink-soft);
@@ -312,11 +310,7 @@
 
   {{-- Klubai --}}
   <div data-panel="klubai">
-    <div class="club-chips" id="club-chips">
-      @foreach($clubList as $c)
-        <button class="club-chip @if($loop->first) active @endif" data-club="{{ $c }}"><span class="dot"></span>{{ $c }}</button>
-      @endforeach
-    </div>
+    <div class="club-chips" id="club-chips"></div>
     <div id="club-results"></div>
   </div>
 
@@ -335,6 +329,7 @@
   var TOURNAMENT_ID = @json($tournamentId);
   var DATA_URL = @json(route('schedule.data', $tournamentId));
   var TOURNAMENT_DATE = @json($tDate);
+  var CLUB_LIST = @json($clubList->values());
   var state = { matches: @json(array_values($matches)), groups: @json(array_values($groups)), syncedAt: @json($syncedAt) };
 
   var CLUB_COLORS = ['#E9805C', '#E06FA3', '#A578E0', '#E0A34A', '#5FC98A', '#6FA8E0'];
@@ -444,8 +439,16 @@
     renderGrid(document.getElementById('grid-results'), list);
   }
 
-  var activeClub = document.querySelector('#club-chips .club-chip.active');
-  activeClub = activeClub ? activeClub.dataset.club : null;
+  var activeClub = null;
+  function renderClubChips() {
+    var box = document.getElementById('club-chips');
+    if (activeClub === null || CLUB_LIST.indexOf(activeClub) === -1) activeClub = CLUB_LIST[0] || null;
+    box.innerHTML = CLUB_LIST.map(function (c) {
+      var active = c === activeClub;
+      return '<button class="club-chip' + (active ? ' active' : '') + '" data-club="' + esc(c) + '"' +
+        (active ? ' style="--chip-c:' + clubColor(c) + '"' : '') + '>' + clubBadge(c, 22) + esc(c) + '</button>';
+    }).join('');
+  }
   function renderKlubai() {
     if (!activeClub) { document.getElementById('club-results').innerHTML = '<p class="empty">Pasirink klubą.</p>'; return; }
     var list = state.matches.filter(function (m) {
@@ -501,7 +504,7 @@
       html += '' +
         '<div class="standing-row">' +
           '<span class="standing-rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
-          '<span class="dot" style="background:' + clubColor(r.club) + '"></span>' +
+          clubBadge(r.club, 26) +
           '<span class="standing-club">' + esc(r.club) + '</span>' +
           '<span class="standing-stats">' +
             '<span>' + r.played + '<em>ž.</em></span>' +
@@ -570,7 +573,7 @@
 
   function renderAll() {
     indexClubImages(state.matches);
-    renderDayRail(); renderTinklelis(); renderKlubai(); renderStandings();
+    renderDayRail(); renderClubChips(); renderTinklelis(); renderKlubai(); renderStandings();
     var q = document.getElementById('search-input').value.trim();
     renderSearch(q);
   }
@@ -596,10 +599,8 @@
   document.getElementById('club-chips').addEventListener('click', function (e) {
     var btn = e.target.closest('.club-chip');
     if (!btn) return;
-    document.querySelectorAll('#club-chips .club-chip').forEach(function (c) { c.classList.remove('active'); c.style.removeProperty('--chip-c'); });
-    btn.classList.add('active');
-    btn.style.setProperty('--chip-c', clubColor(btn.dataset.club));
     activeClub = btn.dataset.club;
+    renderClubChips();
     renderKlubai();
   });
 
@@ -619,13 +620,6 @@
       var head = document.querySelector('.time-head[data-time="' + tick.dataset.time + '"]');
       if (head) head.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-  });
-
-  // Klubai tab's initial active chip needs its border colour set on load too.
-  var initialClubChip = document.querySelector('#club-chips .club-chip.active');
-  if (initialClubChip) initialClubChip.style.setProperty('--chip-c', clubColor(initialClubChip.dataset.club));
-  document.querySelectorAll('#club-chips .club-chip .dot').forEach(function (dot) {
-    dot.style.background = clubColor(dot.parentElement.dataset.club);
   });
 
   function refresh() {
