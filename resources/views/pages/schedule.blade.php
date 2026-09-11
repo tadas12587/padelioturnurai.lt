@@ -623,6 +623,15 @@
     });
   });
 
+  function fmtSyncTime(iso) {
+    if (!iso) return null;
+    try {
+      return new Date(iso).toLocaleTimeString('lt-LT', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Europe/Vilnius' });
+    } catch (e) { return null; }
+  }
+
+  // Rodo tikrą paskutinio sinchronizavimo laiką — ne "ką tik", nes tai
+  // klaidina, kai relay scenarijus nebeveikia ir duomenys realiai nesikeičia.
   function refresh() {
     fetch(DATA_URL).then(function (r) { return r.json(); }).then(function (json) {
       state.matches = json.matches || [];
@@ -630,7 +639,8 @@
       state.syncedAt = json.synced_at;
       renderAll();
       var t = document.getElementById('synced-text');
-      if (state.syncedAt) t.textContent = 'Atnaujinta ką tik';
+      var time = fmtSyncTime(state.syncedAt);
+      t.textContent = time ? 'Atnaujinta ' + time : 'Duomenys dar nesinchronizuoti';
     }).catch(function () {});
   }
 
