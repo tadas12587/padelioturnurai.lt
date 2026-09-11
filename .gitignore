@@ -27,3 +27,6 @@ Thumbs.db
 
 # Local Tournated auth token (secret, never commit)
 tools/overlay-push/.token
+
+# Local Claude Code permission approvals (can capture secrets typed in commands)
+.claude/settings.local.json
