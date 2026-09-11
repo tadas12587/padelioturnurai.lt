@@ -116,6 +116,25 @@
   .search-box input::placeholder { color: var(--muted); }
   .search-box input:focus { outline: none; border-color: var(--ball); box-shadow: 0 0 0 3px rgba(217,244,90,0.15); }
 
+  .player-suggestions { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+  .player-suggestion {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 8px 12px; cursor: pointer; color: var(--ink); font: inherit;
+  }
+  .player-suggestion:hover, .player-suggestion:focus-visible { border-color: var(--ball); }
+  .player-suggestion span { display: flex; flex-direction: column; font-size: 0.9rem; font-weight: 600; }
+  .player-suggestion em { font-style: normal; font-size: 0.76rem; color: var(--muted); font-weight: 500; }
+
+  .selected-player { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .selected-player b { font-family: var(--display); font-size: 1.05rem; }
+  .clear-player {
+    font-family: var(--display); font-size: 0.76rem; font-weight: 700; color: var(--ink-soft);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 13px; cursor: pointer; flex: none;
+  }
+  .clear-player:hover { color: var(--ink); border-color: var(--ball); }
+
   /* ---------- pills / club chips ---------- */
   .pills, .club-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
   .pill {
@@ -443,8 +462,8 @@
 
   function timeOf(m) { return m.time || '—'; }
 
-  function renderGrid(container, matches) {
-    if (!matches.length) { container.innerHTML = '<p class="empty">Mačų nerasta.</p>'; return; }
+  function gridHtml(matches) {
+    if (!matches.length) return '';
     var byTime = {};
     matches.forEach(function (m) { (byTime[timeOf(m)] = byTime[timeOf(m)] || []).push(m); });
     var times = Object.keys(byTime).sort();
@@ -453,7 +472,10 @@
       html += '<div class="time-head" data-time="' + esc(t) + '">' + esc(t) + ' <span class="n">· ' + byTime[t].length + ' mačai</span></div>';
       byTime[t].forEach(function (m) { html += matchCard(m); });
     });
-    container.innerHTML = html;
+    return html;
+  }
+  function renderGrid(container, matches) {
+    container.innerHTML = gridHtml(matches) || '<p class="empty">Mačų nerasta.</p>';
   }
 
   var activeDivision = '';
@@ -480,16 +502,64 @@
     renderGrid(document.getElementById('club-results'), list);
   }
 
+  // Distinct players across all matches (name -> first-seen club), for the
+  // search-suggestion list. Rebuilt on each search since state.matches
+  // refreshes from the 45s poll.
+  function buildPlayerIndex() {
+    var map = {};
+    state.matches.forEach(function (m) {
+      [1, 2].forEach(function (side) {
+        var team = side === 1 ? m.team1 : m.team2;
+        pairNames(m.participants, side).forEach(function (name) {
+          var key = name.toLowerCase();
+          if (!map[key]) map[key] = { name: name, club: (team && team.title) || '' };
+        });
+      });
+    });
+    return Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'lt'); });
+  }
+
+  function playerMatches(playerName) {
+    var key = playerName.toLowerCase();
+    return state.matches.filter(function (m) {
+      return pairNames(m.participants, 1).some(function (n) { return n.toLowerCase() === key; }) ||
+             pairNames(m.participants, 2).some(function (n) { return n.toLowerCase() === key; });
+    });
+  }
+
+  var selectedPlayer = null;
+
   function renderSearch(query) {
     var box = document.getElementById('search-results');
+
+    if (selectedPlayer) {
+      var mine = playerMatches(selectedPlayer);
+      box.innerHTML = '' +
+        '<div class="selected-player"><button class="clear-player" id="clear-player-btn">← Visi</button><b>' + esc(selectedPlayer) + '</b></div>' +
+        (gridHtml(mine) || '<p class="empty">Mačų nerasta.</p>');
+      return;
+    }
+
     if (!query) { box.innerHTML = '<p class="empty">Įvesk žaidėjo arba klubo vardą.</p>'; return; }
     var q = query.toLowerCase();
-    var list = state.matches.filter(function (m) {
-      var hay = [pairLabel(m.participants, 1), pairLabel(m.participants, 2), (m.team1 || {}).title, (m.team2 || {}).title, m.division]
-        .join(' ').toLowerCase();
+
+    var players = buildPlayerIndex().filter(function (p) { return p.name.toLowerCase().indexOf(q) !== -1; }).slice(0, 8);
+    var matchList = state.matches.filter(function (m) {
+      var hay = [(m.team1 || {}).title, (m.team2 || {}).title, m.division].join(' ').toLowerCase();
       return hay.indexOf(q) !== -1;
     });
-    renderGrid(box, list);
+
+    var html = '';
+    if (players.length) {
+      html += '<div class="player-suggestions">' + players.map(function (p) {
+        return '<button class="player-suggestion" data-player="' + esc(p.name) + '">' +
+          clubBadge(p.club, 28) +
+          '<span>' + esc(p.name) + (p.club ? '<em>' + esc(p.club) + '</em>' : '') + '</span>' +
+        '</button>';
+      }).join('') + '</div>';
+    }
+    html += gridHtml(matchList);
+    box.innerHTML = html || '<p class="empty">Nieko nerasta.</p>';
   }
 
   function tallyMatches(matches) {
@@ -627,8 +697,26 @@
     renderKlubai();
   });
 
-  document.getElementById('search-input').addEventListener('input', function (e) {
+  var searchInput = document.getElementById('search-input');
+  searchInput.addEventListener('input', function (e) {
+    selectedPlayer = null;
     renderSearch(e.target.value.trim());
+  });
+
+  document.getElementById('search-results').addEventListener('click', function (e) {
+    var sugg = e.target.closest('.player-suggestion');
+    if (sugg) {
+      selectedPlayer = sugg.dataset.player;
+      searchInput.value = selectedPlayer;
+      renderSearch(selectedPlayer);
+      return;
+    }
+    if (e.target.closest('#clear-player-btn')) {
+      selectedPlayer = null;
+      searchInput.value = '';
+      searchInput.focus();
+      renderSearch('');
+    }
   });
 
   document.getElementById('day-rail-wrap').addEventListener('click', function (e) {
