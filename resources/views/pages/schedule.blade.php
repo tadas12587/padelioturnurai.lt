@@ -117,7 +117,7 @@
 
   <div class="synced" id="synced-line">
     <span class="dot"></span>
-    <span id="synced-text">@if($syncedAt) Atnaujinta {{ \Illuminate\Support\Carbon::parse($syncedAt)->locale('lt')->diffForHumans() }} @else Duomenys dar nesinchronizuoti @endif</span>
+    <span id="synced-text">@if($syncedAt) Atnaujinta {{ \Illuminate\Support\Carbon::parse($syncedAt)->timezone('Europe/Vilnius')->format('H:i') }} @else Duomenys dar nesinchronizuoti @endif</span>
   </div>
 
   <div class="tabs">
