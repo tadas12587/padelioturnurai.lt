@@ -44,3 +44,26 @@ paskutinę gautą būseną).
 | `INGEST_TOKEN`    | —                            | Slaptas raktas (kaip serverio .env)|
 | `TOURNAMENT_ID`   | `10424`                      | Tournated turnyro ID               |
 | `POLL_INTERVAL_MS`| `120000`                     | Kas kiek ms siųsti (grafikas/rezultatai; sunkūs duomenys ~2x rečiau) |
+
+## Viešas "Grafikas" puslapis (`schedule-push.js`)
+
+Atskiras scenarijus tam pačiam tikslui, bet viešam tvarkaraščio/rezultatų/
+lentelių puslapiui (`/grafikas/{turnyras}`), skirtam dalyviams ir svečiams —
+ne OBS overlay'ams. Naudoja **naują oficialų Tournated `/api/v2`** (su API
+raktu), o ne seną GraphQL.
+
+1. Portale (`api.tournated.com` → API Keys) susikurk raktą ir įrašyk į
+   `tools/overlay-push/.api-key` (į git nepatenka) arba `TOURNATED_API_KEY`
+   aplinkos kintamąjį.
+2. Ingest tokeną (tą patį, kaip serverio `.env` `OVERLAY_INGEST_TOKEN`)
+   įrašyk į `tools/overlay-push/.ingest-token` arba `INGEST_TOKEN` kintamąjį.
+3. Paleidimas:
+   ```bash
+   TOURNAMENT_ID=11532 node schedule-push.js
+   ```
+
+**Svarbu:** šio turnyro tipo (klubų lyga, dideli mačų sąstatai) `/matches`
+endpoint'as Tournated pusėje yra nestabilus daugiau nei 1 mačui viename
+atsakyme (502) — scenarijus todėl eina po vieną mačą su bandymų kartojimu, ir
+vienas pilnas ciklas gali užtrukti kelias minutes. Tai apribojimas Tournated
+API pusėje, ne šio scenarijaus klaida.

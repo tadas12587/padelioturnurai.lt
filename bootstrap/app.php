@@ -24,6 +24,7 @@ return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR
             'overlay/ingest',
             'overlay/*/control',
             'overlay/*/score',
+            'grafikas/ingest',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

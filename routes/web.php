@@ -7,6 +7,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\OverlayController;
 use App\Http\Controllers\ProposalController;
 use App\Http\Controllers\RegistrationInterestController;
+use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,13 @@ Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name(
 // Snapshot ingest — external bridge pushes Tournated data here (token-protected,
 // CSRF-exempt; see bootstrap/app.php).
 Route::post('/overlay/ingest', [OverlayController::class, 'ingest'])->name('overlay.ingest');
+
+// Public schedule / results / group-tables page (for participants & guests).
+// Fed the same way as overlays: an external bridge pushes Tournated data in
+// (production host can't reach api.tournated.com — see docs/overlays.md).
+Route::post('/grafikas/ingest', [ScheduleController::class, 'ingest'])->name('schedule.ingest');
+Route::get('/grafikas/{tournament}/data', [ScheduleController::class, 'data'])->name('schedule.data');
+Route::get('/grafikas/{tournament}', [ScheduleController::class, 'show'])->name('schedule.show');
 
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])
