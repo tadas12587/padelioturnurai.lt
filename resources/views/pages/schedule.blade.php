@@ -103,7 +103,7 @@
   <p class="eyebrow">Grafikas ir rezultatai</p>
   <h1>Grafikas</h1>
   <p class="lede">
-    @if($tDate)Turnyras {{ \Illuminate\Support\Carbon::parse($tDate)->translatedFormat('F d') }} d.@endif
+    @if($tDate)Turnyras {{ \Illuminate\Support\Carbon::parse($tDate)->locale('lt')->translatedFormat('F d') }} d.@endif
     Susirask save paieškoje arba atsidaryk viso klubo dieną — kada, kuriame korte ir prieš ką žaidi. Sužaisti mačai rodo rezultatą iš karto.
   </p>
 
@@ -117,7 +117,7 @@
 
   <div class="synced" id="synced-line">
     <span class="dot"></span>
-    <span id="synced-text">@if($syncedAt) Atnaujinta {{ \Illuminate\Support\Carbon::parse($syncedAt)->diffForHumans() }} @else Duomenys dar nesinchronizuoti @endif</span>
+    <span id="synced-text">@if($syncedAt) Atnaujinta {{ \Illuminate\Support\Carbon::parse($syncedAt)->locale('lt')->diffForHumans() }} @else Duomenys dar nesinchronizuoti @endif</span>
   </div>
 
   <div class="tabs">
