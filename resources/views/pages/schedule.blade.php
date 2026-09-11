@@ -170,13 +170,12 @@
   .row-text span { display: block; font-size: 0.86rem; color: var(--muted); line-height: 1.3; overflow-wrap: anywhere; }
   .match-row.winner .row-text b { color: var(--ink); }
   .match-row.winner .row-text span { color: var(--ink-soft); }
-  .check { flex: none; color: var(--ball); }
-
-  .score-strip {
-    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
-    font-family: var(--display); font-weight: 700; font-size: 0.94rem; color: var(--ball);
-    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  .set-scores { display: flex; gap: 9px; flex: none; padding: 0 4px; }
+  .set-cell {
+    font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums; width: 15px; text-align: center;
   }
+  .set-cell.won { color: var(--ball); }
 
   /* ---------- standings ---------- */
   .division-block { margin-bottom: 26px; }
@@ -387,14 +386,26 @@
     }).join(', ');
   }
 
-  var CHECK_SVG = '<svg class="check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  // Tennis/padel-style scoreboard: each side's OWN number per set, in its own
+  // row, so you read "6 6" across from BTC and "4 3" across from Pasitaškom —
+  // not a single shared "6-4, 6-3" string you have to decode.
+  function setNumbers(sets, side) {
+    return (sets || []).map(function (s) {
+      var a, b;
+      if (typeof s === 'string') { var p = s.split('-'); a = parseInt(p[0], 10); b = parseInt(p[1], 10); }
+      else { a = s.side1 ?? 0; b = s.side2 ?? 0; }
+      var mine = side === 1 ? a : b, theirs = side === 1 ? b : a;
+      if (isNaN(mine) || isNaN(theirs)) return '';
+      return '<span class="set-cell' + (mine > theirs ? ' won' : '') + '">' + mine + '</span>';
+    }).join('');
+  }
 
-  function matchRow(clubTitle, players, won) {
+  function matchRow(clubTitle, players, won, setsHtml) {
     return '' +
       '<div class="match-row' + (won ? ' winner' : '') + '">' +
         clubBadge(clubTitle, 30) +
         '<div class="row-text"><b>' + esc(clubTitle || 'Klubas') + '</b><span>' + esc(players) + '</span></div>' +
-        (won ? CHECK_SVG : '') +
+        (setsHtml ? '<div class="set-scores">' + setsHtml + '</div>' : '') +
       '</div>';
   }
 
@@ -405,17 +416,18 @@
     var w = m.winner_side;
     var t1 = (m.team1 && m.team1.title) || '';
     var t2 = (m.team2 && m.team2.title) || '';
+    var hasSets = played && m.sets && m.sets.length && !m.is_walkover && !m.is_bye;
 
     var badges = '';
     if (m.is_match_in_progress) badges += '<span class="badge live">● Vyksta</span>';
     if (m.division) badges += '<span class="badge division">' + esc(m.division) + '</span>';
+    if (played && (m.is_walkover || m.is_bye)) badges += '<span class="badge score">' + esc(scoreText(m)) + '</span>';
 
     return '' +
       '<div class="match">' +
         '<div class="match-top"><span>' + esc(court) + '</span><span class="spacer"></span>' + badges + '</div>' +
-        matchRow(t1, p1, played && w === 1) +
-        matchRow(t2, p2, played && w === 2) +
-        (played && !m.is_match_in_progress ? '<div class="score-strip">' + esc(scoreText(m)) + '</div>' : '') +
+        matchRow(t1, p1, played && w === 1, hasSets ? setNumbers(m.sets, 1) : '') +
+        matchRow(t2, p2, played && w === 2, hasSets ? setNumbers(m.sets, 2) : '') +
       '</div>';
   }
 
