@@ -367,10 +367,20 @@
 
   function esc(s) { return (s ?? '').toString().replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
 
+  function pairNames(participants, side) {
+    return (participants || []).filter(function (p) { return p.side === side; })
+      .map(function (p) { return ((p.name || '') + ' ' + (p.surname || '')).trim(); })
+      .filter(Boolean);
+  }
+  // Plain-text form for search matching.
   function pairLabel(participants, side) {
-    var names = (participants || []).filter(function (p) { return p.side === side; })
-      .map(function (p) { return (p.name || '') + ' ' + (p.surname || ''); }).map(function (s) { return s.trim(); });
+    var names = pairNames(participants, side);
     return names.length ? names.join(' / ') : 'sudėtis nepaskelbta';
+  }
+  // Each player on their own line for the match card.
+  function pairHtml(participants, side) {
+    var names = pairNames(participants, side);
+    return names.length ? names.map(esc).join('<br>') : 'sudėtis nepaskelbta';
   }
 
   function isPlayed(m) {
@@ -400,18 +410,18 @@
     }).join('');
   }
 
-  function matchRow(clubTitle, players, won, setsHtml) {
+  function matchRow(clubTitle, playersHtml, won, setsHtml) {
     return '' +
       '<div class="match-row' + (won ? ' winner' : '') + '">' +
         clubBadge(clubTitle, 30) +
-        '<div class="row-text"><b>' + esc(clubTitle || 'Klubas') + '</b><span>' + esc(players) + '</span></div>' +
+        '<div class="row-text"><b>' + esc(clubTitle || 'Klubas') + '</b><span>' + playersHtml + '</span></div>' +
         (setsHtml ? '<div class="set-scores">' + setsHtml + '</div>' : '') +
       '</div>';
   }
 
   function matchCard(m) {
     var court = (m.court && m.court.name) || '—';
-    var p1 = pairLabel(m.participants, 1), p2 = pairLabel(m.participants, 2);
+    var p1 = pairHtml(m.participants, 1), p2 = pairHtml(m.participants, 2);
     var played = isPlayed(m);
     var w = m.winner_side;
     var t1 = (m.team1 && m.team1.title) || '';
