@@ -163,8 +163,9 @@
   .chip {
     width: 30px; height: 30px; border-radius: 10px; flex: none; display: flex; align-items: center;
     justify-content: center; font-family: var(--display); font-size: 0.72rem; font-weight: 800;
-    color: rgba(10,34,38,0.82);
+    color: rgba(10,34,38,0.82); position: relative; overflow: hidden;
   }
+  .chip img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #fff; }
   .row-text { min-width: 0; flex: 1; }
   .row-text b { display: block; font-size: 0.9rem; font-weight: 600; color: var(--ink-soft); line-height: 1.25; }
   .row-text span { display: block; font-size: 0.86rem; color: var(--muted); line-height: 1.3; overflow-wrap: anywhere; }
@@ -351,6 +352,24 @@
     return name.slice(0, 2).toUpperCase();
   }
 
+  // Tournated sends a real club logo (team.image) on most matches — prefer
+  // it, falling back to the colour-coded initials badge when a club has no
+  // logo yet or the image fails to load.
+  var clubImages = {};
+  function noteClubImage(team) {
+    if (team && team.title && team.image && !clubImages[team.title]) clubImages[team.title] = team.image;
+  }
+  function indexClubImages(matches) {
+    matches.forEach(function (m) { noteClubImage(m.team1); noteClubImage(m.team2); });
+  }
+  function clubBadge(title, size) {
+    size = size || 30;
+    var img = clubImages[title];
+    var html = '<span class="chip" style="background:' + clubColor(title) + ';width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.4) + 'px">' + esc(initials(title));
+    if (img) html += '<img src="' + esc(img) + '" alt="" loading="lazy" onerror="this.remove()">';
+    return html + '</span>';
+  }
+
   function esc(s) { return (s ?? '').toString().replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
 
   function pairLabel(participants, side) {
@@ -375,10 +394,9 @@
   var CHECK_SVG = '<svg class="check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
   function matchRow(clubTitle, players, won) {
-    var c = clubColor(clubTitle);
     return '' +
       '<div class="match-row' + (won ? ' winner' : '') + '">' +
-        '<span class="chip" style="background:' + c + '">' + esc(initials(clubTitle)) + '</span>' +
+        clubBadge(clubTitle, 30) +
         '<div class="row-text"><b>' + esc(clubTitle || 'Klubas') + '</b><span>' + esc(players) + '</span></div>' +
         (won ? CHECK_SVG : '') +
       '</div>';
@@ -551,6 +569,7 @@
   }
 
   function renderAll() {
+    indexClubImages(state.matches);
     renderDayRail(); renderTinklelis(); renderKlubai(); renderStandings();
     var q = document.getElementById('search-input').value.trim();
     renderSearch(q);
