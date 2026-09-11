@@ -210,17 +210,18 @@
   /* ---------- bottom nav ---------- */
   nav.bottom-nav {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
-    background: rgba(14,44,48,0.92); backdrop-filter: blur(10px);
-    border-top: 1px solid var(--line);
-    display: flex; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(19,58,62,0.98); backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(217,244,90,0.16);
+    box-shadow: 0 -12px 28px rgba(3,12,14,0.5);
+    display: flex; gap: 4px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   }
   .nav-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
-    background: none; border: none; color: var(--muted); font-family: var(--sans);
-    font-size: 0.66rem; font-weight: 600; padding: 6px 2px; cursor: pointer; border-radius: 10px;
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: none; border: none; color: var(--ink-soft); font-family: var(--sans);
+    font-size: 0.67rem; font-weight: 600; padding: 7px 2px; cursor: pointer; border-radius: 12px;
   }
-  .nav-btn svg { width: 20px; height: 20px; }
-  .nav-btn.active { color: var(--ball); }
+  .nav-btn svg { width: 22px; height: 22px; stroke-width: 2.2; }
+  .nav-btn.active { color: var(--ball); background: rgba(217,244,90,0.12); }
 
   @media (min-width: 640px) {
     .wrap { padding: 0 24px; }
