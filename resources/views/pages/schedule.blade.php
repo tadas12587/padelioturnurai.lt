@@ -8,128 +8,291 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Grafikas · {{ $tName }}</title>
+<meta name="theme-color" content="#0A2226">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
 <style>
+  /*
+    Padel-court palette: a deep "under the lights" court teal instead of the
+    generic near-black-plus-purple AI default, with a single padel-ball
+    yellow-green as the one accent (live state, winner mark, active nav,
+    the "now" mark on the day rail) — not decoration, it always means
+    "this is the live/active/winning thing". Club identity is a separate,
+    deliberately multi-hue system (see CLUB_COLORS in the script) because
+    telling clubs apart at a glance is the actual usability problem here.
+  */
   :root {
-    --bg: #12131c; --panel: #191b28; --panel2: #1f2233; --line: #2b2f45;
-    --ink: #f1f1f6; --ink-soft: #b7bad0; --muted: #7d8099;
-    --accent: #9184d9; --accent-ink: #efeaff;
-    --live: #e0577a; --go: #4fc48a; --go-wash: #17301f;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --ground: #0A2226;
+    --surface: #0E2C30;
+    --surface-2: #123539;
+    --line: rgba(238,244,242,0.09);
+    --ink: #EAF3F1;
+    --ink-soft: #A9C4BE;
+    --muted: #6E8B85;
+    --ball: #D9F45A;
+    --ball-ink: #17230a;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --display: 'Archivo', var(--sans);
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased; padding-bottom: 76px;
+  }
   a { color: inherit; }
-  .wrap { max-width: 980px; margin: 0 auto; padding: 0 18px 80px; }
+  .wrap { max-width: 620px; margin: 0 auto; padding: 0 16px; }
 
-  header.top { padding: 22px 0 10px; display: flex; justify-content: space-between; align-items: center; }
-  .brand { font-weight: 700; letter-spacing: 0.02em; font-size: 0.95rem; text-transform: uppercase; }
-  .brand b { color: var(--accent-ink); }
-  .home-link { font-size: 0.82rem; color: var(--muted); text-decoration: none; }
-  .home-link:hover { color: var(--ink); }
+  /* ---------- header ---------- */
+  header.top {
+    padding: 16px 0 12px; display: flex; justify-content: space-between; align-items: center;
+    gap: 10px;
+  }
+  .brand {
+    font-family: var(--display); font-weight: 700; letter-spacing: 0.01em; font-size: 0.92rem;
+    line-height: 1.25; color: var(--ink);
+  }
+  .home-link {
+    font-size: 0.78rem; color: var(--muted); text-decoration: none; white-space: nowrap;
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; flex: none;
+  }
+  .home-link:hover { color: var(--ink); border-color: var(--ball); }
 
-  .eyebrow { font-size: 0.74rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin: 18px 0 6px; }
-  h1 { font-size: clamp(2rem, 6vw, 2.8rem); margin: 0 0 10px; letter-spacing: -0.02em; }
-  .lede { color: var(--ink-soft); max-width: 62ch; line-height: 1.5; margin: 0 0 20px; }
+  .eyebrow {
+    font-family: var(--display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ball); margin: 10px 0 4px;
+  }
+  h1 {
+    font-family: var(--display); font-size: clamp(1.9rem, 9vw, 2.5rem); font-weight: 800;
+    margin: 0 0 8px; letter-spacing: -0.02em; line-height: 1;
+  }
+  .lede { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.5; margin: 0 0 18px; max-width: 46ch; }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 10px; margin-bottom: 22px; }
-  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 12px; text-align: center; }
-  .stat b { display: block; font-size: 1.5rem; line-height: 1.1; }
-  .stat span { font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  /* ---------- day rail (signature) ---------- */
+  .day-rail-wrap { margin-bottom: 16px; }
+  .day-rail { display: flex; align-items: center; gap: 8px; }
+  .rail-label {
+    font-family: var(--display); font-size: 0.68rem; font-weight: 700; color: var(--muted);
+    font-variant-numeric: tabular-nums; flex: none;
+  }
+  .rail-track {
+    position: relative; flex: 1; height: 22px; display: flex; align-items: center;
+  }
+  .rail-track::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+    background: var(--line); transform: translateY(-50%);
+  }
+  .rail-tick {
+    position: absolute; top: 50%; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--surface-2); border: 1.5px solid var(--muted);
+    transform: translate(-50%, -50%); cursor: pointer;
+  }
+  .rail-tick.has-live { background: var(--ball); border-color: var(--ball); animation: pulse 1.6s ease-in-out infinite; }
+  .rail-tick.has-played { border-color: var(--ink-soft); }
+  .rail-now {
+    position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--ball); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(217,244,90,0.22);
+  }
 
-  .synced { font-size: 0.74rem; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 6px; }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--go); display: inline-block; }
+  /* ---------- compact stat strip ---------- */
+  .stat-strip {
+    display: flex; flex-wrap: wrap; gap: 4px 0; font-family: var(--display); font-size: 0.78rem;
+    color: var(--ink-soft); margin-bottom: 14px; font-weight: 600;
+  }
+  .stat-strip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat-strip .sep { color: var(--muted); margin: 0 8px; font-weight: 400; }
 
-  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 18px; overflow-x: auto; }
-  .tab-btn { font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--muted); background: none; border: none; padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
-  .tab-btn.active { color: var(--ink); border-color: var(--accent); }
+  .synced { font-size: 0.74rem; color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ball); display: inline-block; box-shadow: 0 0 0 3px rgba(217,244,90,0.18); }
 
-  .pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
-  .pill { font-size: 0.78rem; font-weight: 600; color: var(--ink-soft); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; cursor: pointer; }
-  .pill.active { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  /* ---------- search ---------- */
+  .search-box { position: relative; margin-bottom: 16px; }
+  .search-box svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+  .search-box input {
+    width: 100%; font: inherit; font-size: 0.95rem; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px 13px 40px; color: var(--ink);
+  }
+  .search-box input::placeholder { color: var(--muted); }
+  .search-box input:focus { outline: none; border-color: var(--ball); box-shadow: 0 0 0 3px rgba(217,244,90,0.15); }
 
-  .search-box { position: relative; margin-bottom: 18px; }
-  .search-box input { width: 100%; font: inherit; font-size: 0.95rem; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px 12px 38px; color: var(--ink); }
-  .search-box input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-  .search-box::before { content: "⌕"; position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.1rem; }
+  /* ---------- pills / club chips ---------- */
+  .pills, .club-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .pill {
+    font-family: var(--display); font-size: 0.78rem; font-weight: 600; color: var(--ink-soft);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 8px 14px; cursor: pointer;
+  }
+  .pill.active { color: var(--ball-ink); background: var(--ball); border-color: var(--ball); }
 
-  .time-head { font-family: var(--sans); font-weight: 700; font-size: 1.15rem; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 10px; }
-  .time-head span { font-size: 0.72rem; font-weight: 600; color: var(--muted); letter-spacing: 0.04em; }
+  .club-chip {
+    display: flex; align-items: center; gap: 7px; font-family: var(--display); font-size: 0.82rem;
+    font-weight: 600; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px 7px 8px; cursor: pointer; color: var(--ink-soft);
+  }
+  .club-chip .dot { width: 16px; height: 16px; border-radius: 50%; flex: none; }
+  .club-chip.active { color: var(--ink); background: var(--surface-2); border-color: var(--chip-c, var(--ink-soft)); }
 
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 8px; display: grid; grid-template-columns: 46px 1fr auto; gap: 14px; align-items: center; }
-  .card .court { text-align: center; font-family: var(--sans); }
-  .card .court b { display: block; font-size: 1.2rem; line-height: 1; }
-  .card .court span { font-size: 0.6rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
-  .card .who b { display: block; font-size: 0.98rem; margin-bottom: 3px; }
-  .card .who .clubs { font-size: 0.76rem; color: var(--muted); margin-bottom: 4px; }
-  .card .side { display: flex; align-items: center; gap: 6px; font-size: 0.94rem; }
-  .card .side .vs { color: var(--muted); font-size: 0.8rem; }
-  .card .side.winner { color: var(--go); font-weight: 700; }
-  .badges { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
-  .badge { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; padding: 3px 8px; border-radius: 999px; background: var(--panel2); border: 1px solid var(--line); color: var(--ink-soft); white-space: nowrap; }
-  .badge.live { background: var(--live); border-color: var(--live); color: #fff; animation: pulse 1.6s ease-in-out infinite; }
-  .badge.score { background: var(--go-wash); border-color: var(--go); color: var(--go); font-variant-numeric: tabular-nums; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  /* ---------- match card ---------- */
+  .time-head {
+    font-family: var(--display); font-weight: 700; font-size: 1rem; margin: 22px 0 8px;
+    display: flex; align-items: baseline; gap: 8px; scroll-margin-top: 14px;
+  }
+  .time-head .n { font-size: 0.68rem; font-weight: 600; color: var(--muted); }
 
-  .club-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
-  .club-chip { font-size: 0.82rem; font-weight: 600; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 14px; cursor: pointer; color: var(--ink-soft); }
-  .club-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .match {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 12px 14px 13px; margin-bottom: 10px;
+  }
+  .match-top {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 9px;
+    font-family: var(--display); font-size: 0.72rem; font-weight: 700; color: var(--muted);
+    letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .match-top .spacer { flex: 1; }
+  .badge {
+    font-family: var(--display); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.03em;
+    padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--ink-soft); white-space: nowrap; text-transform: none;
+  }
+  .badge.live { background: var(--ball); border-color: var(--ball); color: var(--ball-ink); animation: pulse 1.6s ease-in-out infinite; }
+  .badge.division { color: var(--muted); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
-  .division-block { margin-bottom: 30px; }
-  .division-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 10px; }
-  table.standings { width: 100%; border-collapse: collapse; font-size: 0.88rem; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  table.standings th { text-align: left; font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); }
-  table.standings td { padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--ink-soft); }
-  table.standings tr:last-child td { border-bottom: none; }
-  table.standings td:first-child, table.standings th:first-child { color: var(--ink); font-weight: 700; width: 34px; }
-  table.standings td.club { color: var(--ink); font-weight: 600; }
-  table.standings td.num { text-align: center; font-variant-numeric: tabular-nums; }
+  .match-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .chip {
+    width: 30px; height: 30px; border-radius: 10px; flex: none; display: flex; align-items: center;
+    justify-content: center; font-family: var(--display); font-size: 0.72rem; font-weight: 800;
+    color: rgba(10,34,38,0.82);
+  }
+  .row-text { min-width: 0; flex: 1; }
+  .row-text b { display: block; font-size: 0.9rem; font-weight: 600; color: var(--ink-soft); line-height: 1.25; }
+  .row-text span { display: block; font-size: 0.86rem; color: var(--muted); line-height: 1.3; overflow-wrap: anywhere; }
+  .match-row.winner .row-text b { color: var(--ink); }
+  .match-row.winner .row-text span { color: var(--ink-soft); }
+  .check { flex: none; color: var(--ball); }
 
-  .empty { color: var(--muted); font-size: 0.9rem; padding: 30px 0; text-align: center; }
+  .score-strip {
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line);
+    font-family: var(--display); font-weight: 700; font-size: 0.94rem; color: var(--ball);
+    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  }
 
-  footer { border-top: 1px solid var(--line); margin-top: 50px; padding-top: 18px; font-size: 0.78rem; color: var(--muted); }
+  /* ---------- standings ---------- */
+  .division-block { margin-bottom: 26px; }
+  .division-title { font-family: var(--display); font-size: 1rem; font-weight: 700; margin: 0 0 10px; }
+  .standings-list { display: flex; flex-direction: column; gap: 6px; }
+  .standing-row {
+    display: flex; align-items: center; gap: 10px; background: var(--surface);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+  }
+  .standing-rank {
+    font-family: var(--display); font-weight: 800; font-size: 0.92rem; color: var(--muted);
+    width: 18px; text-align: center; flex: none;
+  }
+  .standing-rank.top { color: var(--ball); }
+  .standing-row .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .standing-club { flex: 1; min-width: 0; font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .standing-stats {
+    display: flex; gap: 10px; font-family: var(--display); font-size: 0.78rem; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums; flex: none;
+  }
+  .standing-stats em { font-style: normal; color: var(--muted); font-size: 0.66rem; display: block; text-align: center; }
+  .standing-diff { min-width: 34px; text-align: right; }
+  .standing-diff.pos { color: var(--ball); }
+
+  .empty { color: var(--muted); font-size: 0.9rem; padding: 36px 0; text-align: center; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 16px 0 20px; font-size: 0.76rem; color: var(--muted); }
 
   [data-panel] { display: none; }
   [data-panel].active { display: block; }
+
+  /* ---------- bottom nav ---------- */
+  nav.bottom-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: rgba(14,44,48,0.92); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line);
+    display: flex; padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; color: var(--muted); font-family: var(--sans);
+    font-size: 0.66rem; font-weight: 600; padding: 6px 2px; cursor: pointer; border-radius: 10px;
+  }
+  .nav-btn svg { width: 20px; height: 20px; }
+  .nav-btn.active { color: var(--ball); }
+
+  @media (min-width: 640px) {
+    .wrap { padding: 0 24px; }
+    nav.bottom-nav { position: static; background: none; backdrop-filter: none; border: none; padding: 0; margin-bottom: 18px; justify-content: flex-start; gap: 4px; }
+    .nav-btn { flex: none; flex-direction: row; padding: 9px 14px; font-size: 0.82rem; border: 1px solid transparent; }
+    .nav-btn.active { background: var(--surface); border-color: var(--line); }
+    body { padding-bottom: 0; }
+  }
+
+  button:focus-visible, .rail-tick:focus-visible, input:focus-visible {
+    outline: 2px solid var(--ball); outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .badge.live, .rail-tick.has-live { animation: none; }
+    html { scroll-behavior: auto; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
   <header class="top">
-    <div class="brand"><b>{{ $tName }}</b></div>
+    <div class="brand">{{ $tName }}</div>
     <a class="home-link" href="{{ route('home') }}">Pradinis ↗</a>
   </header>
 
   <p class="eyebrow">Grafikas ir rezultatai</p>
   <h1>Grafikas</h1>
   <p class="lede">
-    @if($tDate)Turnyras {{ \Illuminate\Support\Carbon::parse($tDate)->locale('lt')->translatedFormat('F d') }} d.@endif
-    Susirask save paieškoje arba atsidaryk viso klubo dieną — kada, kuriame korte ir prieš ką žaidi. Sužaisti mačai rodo rezultatą iš karto.
+    @if($tDate)Turnyras {{ \Illuminate\Support\Carbon::parse($tDate)->locale('lt')->translatedFormat('F d') }} d. @endif
+    Susirask save paieškoje arba atsidaryk viso klubo dieną. Sužaisti mačai rodo rezultatą iš karto.
   </p>
 
-  <div class="stats">
-    <div class="stat"><b>{{ $stats['courts'] }}</b><span>Kortai</span></div>
-    <div class="stat"><b>{{ $stats['divisions'] }}</b><span>Lygiai</span></div>
-    <div class="stat"><b>{{ $stats['clubs'] }}</b><span>Klubai</span></div>
-    <div class="stat"><b>{{ $stats['matches'] }}</b><span>Mačai</span></div>
-    <div class="stat"><b>{{ $stats['played'] }}</b><span>Sužaista</span></div>
+  <div class="day-rail-wrap" id="day-rail-wrap"></div>
+
+  <div class="stat-strip">
+    <span><b>{{ $stats['courts'] }}</b> kortai</span><span class="sep">·</span>
+    <span><b>{{ $stats['clubs'] }}</b> klubai</span><span class="sep">·</span>
+    <span><b>{{ $stats['matches'] }}</b> mačai</span><span class="sep">·</span>
+    <span><b>{{ $stats['played'] }}</b> sužaista</span>
   </div>
 
   <div class="synced" id="synced-line">
-    <span class="dot"></span>
+    <span class="live-dot"></span>
     <span id="synced-text">@if($syncedAt) Atnaujinta {{ \Illuminate\Support\Carbon::parse($syncedAt)->timezone('Europe/Vilnius')->format('H:i') }} @else Duomenys dar nesinchronizuoti @endif</span>
   </div>
 
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="paieska">Paieška</button>
-    <button class="tab-btn" data-tab="tinklelis">Tinklelis</button>
-    <button class="tab-btn" data-tab="klubai">Klubai</button>
-    <button class="tab-btn" data-tab="lentelės">Grupių lentelės</button>
-  </div>
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="paieska">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      Paieška
+    </button>
+    <button class="nav-btn" data-tab="tinklelis">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+      Tinklelis
+    </button>
+    <button class="nav-btn" data-tab="klubai">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Klubai
+    </button>
+    <button class="nav-btn" data-tab="lentelės">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a2 2 0 0 0 2 4M17 6h3a2 2 0 0 1-2 4"/></svg>
+      Lentelės
+    </button>
+  </nav>
 
   {{-- Paieška --}}
   <div data-panel="paieska" class="active">
     <div class="search-box">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input type="text" id="search-input" placeholder="Ieškok žaidėjo ar klubo vardo…" autocomplete="off">
     </div>
     <div id="search-results"></div>
@@ -150,7 +313,7 @@
   <div data-panel="klubai">
     <div class="club-chips" id="club-chips">
       @foreach($clubList as $c)
-        <button class="club-chip @if($loop->first) active @endif" data-club="{{ $c }}">{{ $c }}</button>
+        <button class="club-chip @if($loop->first) active @endif" data-club="{{ $c }}"><span class="dot"></span>{{ $c }}</button>
       @endforeach
     </div>
     <div id="club-results"></div>
@@ -170,7 +333,23 @@
 (function () {
   var TOURNAMENT_ID = @json($tournamentId);
   var DATA_URL = @json(route('schedule.data', $tournamentId));
+  var TOURNAMENT_DATE = @json($tDate);
   var state = { matches: @json(array_values($matches)), groups: @json(array_values($groups)), syncedAt: @json($syncedAt) };
+
+  var CLUB_COLORS = ['#E9805C', '#E06FA3', '#A578E0', '#E0A34A', '#5FC98A', '#6FA8E0'];
+  var clubColorCache = {};
+  function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function clubColor(name) {
+    if (!name) return '#5A7A76';
+    if (!clubColorCache[name]) clubColorCache[name] = CLUB_COLORS[hashStr(name) % CLUB_COLORS.length];
+    return clubColorCache[name];
+  }
+  function initials(name) {
+    if (!name) return '?';
+    var words = name.trim().split(/\s+/).filter(Boolean);
+    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  }
 
   function esc(s) { return (s ?? '').toString().replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
 
@@ -193,28 +372,36 @@
     }).join(', ');
   }
 
+  var CHECK_SVG = '<svg class="check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+  function matchRow(clubTitle, players, won) {
+    var c = clubColor(clubTitle);
+    return '' +
+      '<div class="match-row' + (won ? ' winner' : '') + '">' +
+        '<span class="chip" style="background:' + c + '">' + esc(initials(clubTitle)) + '</span>' +
+        '<div class="row-text"><b>' + esc(clubTitle || 'Klubas') + '</b><span>' + esc(players) + '</span></div>' +
+        (won ? CHECK_SVG : '') +
+      '</div>';
+  }
+
   function matchCard(m) {
-    var court = (m.court && m.court.name) ? m.court.name.replace(/[^0-9]/g, '') || m.court.name : '–';
+    var court = (m.court && m.court.name) || '—';
     var p1 = pairLabel(m.participants, 1), p2 = pairLabel(m.participants, 2);
     var played = isPlayed(m);
     var w = m.winner_side;
-    var side1Cls = played && w === 1 ? ' winner' : '';
-    var side2Cls = played && w === 2 ? ' winner' : '';
-    var clubsLine = (m.team1 && m.team1.title ? esc(m.team1.title) : '') + (m.team2 && m.team2.title ? ' – ' + esc(m.team2.title) : '');
+    var t1 = (m.team1 && m.team1.title) || '';
+    var t2 = (m.team2 && m.team2.title) || '';
+
     var badges = '';
-    if (m.is_match_in_progress) badges += '<span class="badge live">VYKSTA</span>';
-    else if (played) badges += '<span class="badge score">' + esc(scoreText(m)) + '</span>';
-    if (m.division) badges += '<span class="badge">' + esc(m.division) + '</span>';
+    if (m.is_match_in_progress) badges += '<span class="badge live">● Vyksta</span>';
+    if (m.division) badges += '<span class="badge division">' + esc(m.division) + '</span>';
 
     return '' +
-      '<div class="card">' +
-        '<div class="court"><b>' + esc(court) + '</b><span>kortas</span></div>' +
-        '<div class="who">' +
-          (clubsLine ? '<div class="clubs">' + clubsLine + '</div>' : '') +
-          '<div class="side' + side1Cls + '">' + esc(p1) + '</div>' +
-          '<div class="side' + side2Cls + '"><span class="vs">vs</span> ' + esc(p2) + '</div>' +
-        '</div>' +
-        '<div class="badges">' + badges + '</div>' +
+      '<div class="match">' +
+        '<div class="match-top"><span>' + esc(court) + '</span><span class="spacer"></span>' + badges + '</div>' +
+        matchRow(t1, p1, played && w === 1) +
+        matchRow(t2, p2, played && w === 2) +
+        (played && !m.is_match_in_progress ? '<div class="score-strip">' + esc(scoreText(m)) + '</div>' : '') +
       '</div>';
   }
 
@@ -227,7 +414,7 @@
     var times = Object.keys(byTime).sort();
     var html = '';
     times.forEach(function (t) {
-      html += '<div class="time-head">' + esc(t) + '</div>';
+      html += '<div class="time-head" data-time="' + esc(t) + '">' + esc(t) + ' <span class="n">· ' + byTime[t].length + ' mačai</span></div>';
       byTime[t].forEach(function (m) { html += matchCard(m); });
     });
     container.innerHTML = html;
@@ -251,7 +438,7 @@
 
   function renderSearch(query) {
     var box = document.getElementById('search-results');
-    if (!query) { box.innerHTML = ''; return; }
+    if (!query) { box.innerHTML = '<p class="empty">Įvesk žaidėjo arba klubo vardą.</p>'; return; }
     var q = query.toLowerCase();
     var list = state.matches.filter(function (m) {
       var hay = [pairLabel(m.participants, 1), pairLabel(m.participants, 2), (m.team1 || {}).title, (m.team2 || {}).title, m.division]
@@ -290,26 +477,31 @@
     var rows = Object.keys(tally).map(function (club) { return Object.assign({ club: club }, tally[club]); });
     if (!rows.length) return '';
     rows.sort(function (a, b) { return b.wins - a.wins || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); });
-    var html = '<div class="division-block"><h3 class="division-title">' + esc(title) + '</h3>' +
-      '<table class="standings"><thead><tr><th>#</th><th>Klubas</th><th class="num">Žaista</th><th class="num">Laim.</th><th class="num">Pral.</th><th class="num">Setai</th></tr></thead><tbody>';
+    var html = '<div class="division-block"><h3 class="division-title">' + esc(title) + '</h3><div class="standings-list">';
     rows.forEach(function (r, i) {
-      html += '<tr><td>' + (i + 1) + '</td><td class="club">' + esc(r.club) + '</td><td class="num">' + r.played + '</td><td class="num">' + r.wins + '</td><td class="num">' + r.losses + '</td><td class="num">' + r.setsWon + '-' + r.setsLost + '</td></tr>';
+      var diff = r.setsWon - r.setsLost;
+      html += '' +
+        '<div class="standing-row">' +
+          '<span class="standing-rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+          '<span class="dot" style="background:' + clubColor(r.club) + '"></span>' +
+          '<span class="standing-club">' + esc(r.club) + '</span>' +
+          '<span class="standing-stats">' +
+            '<span>' + r.played + '<em>ž.</em></span>' +
+            '<span>' + r.wins + '-' + r.losses + '<em>w-l</em></span>' +
+            '<span class="standing-diff' + (diff > 0 ? ' pos' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<em>setai</em></span>' +
+          '</span>' +
+        '</div>';
     });
-    return html + '</tbody></table></div>';
+    return html + '</div></div>';
   }
 
   function renderStandings() {
     var box = document.getElementById('standings-results');
     if (!state.matches.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbti mačai.</p>'; return; }
 
-    // Bendra (overall) lentelė — visos komandos, visi mačai, kaip Tournated
-    // pačios rodomas "Bendra" grupės vaizdas. Visada rodoma, nepriklausomai
-    // nuo to, ar mačai turi lygio (division) žymą.
     var overallTitle = (state.groups && state.groups[0] && state.groups[0].name) || 'Bendra';
     var html = standingsTableHtml(overallTitle, tallyMatches(state.matches));
 
-    // Jei mačai pažymėti lygiais (M TOP, V B- ir pan. — iš entry_lists Excel
-    // importo), papildomai rodome ir lentelę kiekvienam lygiui atskirai.
     var byDivision = {};
     state.matches.forEach(function (m) {
       if (!m.division) return;
@@ -318,22 +510,59 @@
     Object.keys(byDivision).sort().forEach(function (div) {
       html += standingsTableHtml(div, tallyMatches(byDivision[div]));
     });
-    box.innerHTML = html;
+    box.innerHTML = html || '<p class="empty">Lentelės pasirodys, kai bus paskelbti mačai.</p>';
+  }
+
+  function renderDayRail() {
+    var wrap = document.getElementById('day-rail-wrap');
+    var times = Array.from(new Set(state.matches.map(function (m) { return m.time; }).filter(Boolean))).sort();
+    if (!times.length) { wrap.innerHTML = ''; return; }
+    function toMin(t) { var p = t.split(':'); return (+p[0]) * 60 + (+p[1]); }
+    var min = toMin(times[0]), max = toMin(times[times.length - 1]);
+    var span = Math.max(max - min, 1);
+    var byTime = {};
+    state.matches.forEach(function (m) { (byTime[m.time] = byTime[m.time] || []).push(m); });
+
+    var ticks = times.map(function (t) {
+      var pct = ((toMin(t) - min) / span) * 100;
+      var ms = byTime[t] || [];
+      var live = ms.some(function (m) { return m.is_match_in_progress; });
+      var played = ms.some(isPlayed);
+      var cls = live ? ' has-live' : (played ? ' has-played' : '');
+      return '<span class="rail-tick' + cls + '" style="left:' + pct + '%" data-time="' + esc(t) + '" title="' + esc(t) + '"></span>';
+    }).join('');
+
+    var nowHtml = '';
+    if (TOURNAMENT_DATE) {
+      var now = new Date();
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      var todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+      if (todayStr === TOURNAMENT_DATE) {
+        var nowMin = now.getHours() * 60 + now.getMinutes();
+        if (nowMin >= min && nowMin <= max) {
+          nowHtml = '<span class="rail-now" style="left:' + (((nowMin - min) / span) * 100) + '%"></span>';
+        }
+      }
+    }
+
+    wrap.innerHTML = '<div class="day-rail"><span class="rail-label">' + esc(times[0]) + '</span>' +
+      '<div class="rail-track">' + ticks + nowHtml + '</div>' +
+      '<span class="rail-label">' + esc(times[times.length - 1]) + '</span></div>';
   }
 
   function renderAll() {
-    renderTinklelis(); renderKlubai(); renderStandings();
+    renderDayRail(); renderTinklelis(); renderKlubai(); renderStandings();
     var q = document.getElementById('search-input').value.trim();
-    if (q) renderSearch(q);
+    renderSearch(q);
   }
 
-  document.querySelectorAll('.tab-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
-      document.querySelectorAll('[data-panel]').forEach(function (p) { p.classList.remove('active'); });
-      btn.classList.add('active');
-      document.querySelector('[data-panel="' + btn.dataset.tab + '"]').classList.add('active');
-    });
+  function switchTab(tab) {
+    document.querySelectorAll('.nav-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === tab); });
+    document.querySelectorAll('[data-panel]').forEach(function (p) { p.classList.toggle('active', p.dataset.panel === tab); });
+  }
+
+  document.querySelectorAll('.nav-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
   });
 
   document.getElementById('division-pills').addEventListener('click', function (e) {
@@ -348,14 +577,36 @@
   document.getElementById('club-chips').addEventListener('click', function (e) {
     var btn = e.target.closest('.club-chip');
     if (!btn) return;
-    document.querySelectorAll('#club-chips .club-chip').forEach(function (c) { c.classList.remove('active'); });
+    document.querySelectorAll('#club-chips .club-chip').forEach(function (c) { c.classList.remove('active'); c.style.removeProperty('--chip-c'); });
     btn.classList.add('active');
+    btn.style.setProperty('--chip-c', clubColor(btn.dataset.club));
     activeClub = btn.dataset.club;
     renderKlubai();
   });
 
   document.getElementById('search-input').addEventListener('input', function (e) {
     renderSearch(e.target.value.trim());
+  });
+
+  document.getElementById('day-rail-wrap').addEventListener('click', function (e) {
+    var tick = e.target.closest('.rail-tick');
+    if (!tick) return;
+    switchTab('tinklelis');
+    document.querySelectorAll('#division-pills .pill').forEach(function (p) { p.classList.remove('active'); });
+    document.querySelector('#division-pills .pill[data-division=""]').classList.add('active');
+    activeDivision = '';
+    renderTinklelis();
+    requestAnimationFrame(function () {
+      var head = document.querySelector('.time-head[data-time="' + tick.dataset.time + '"]');
+      if (head) head.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Klubai tab's initial active chip needs its border colour set on load too.
+  var initialClubChip = document.querySelector('#club-chips .club-chip.active');
+  if (initialClubChip) initialClubChip.style.setProperty('--chip-c', clubColor(initialClubChip.dataset.club));
+  document.querySelectorAll('#club-chips .club-chip .dot').forEach(function (dot) {
+    dot.style.background = clubColor(dot.parentElement.dataset.club);
   });
 
   function refresh() {
