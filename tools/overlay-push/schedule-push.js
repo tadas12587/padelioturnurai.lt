@@ -77,8 +77,9 @@ const MATCHES_QUERY = `query tournamentAllMatches($filter: ListMatchesInput) {
         isMatchTie
         court { id name }
         group { id name segment }
-        team1Entry { user { name surname } team { id title image } }
-        team2Entry { user { name surname } team { id title image } }
+        team1Entry { user { id name surname } team { id title image } }
+        team2Entry { user { id name surname } team { id title image } }
+        teamWinner { user { id } }
       }
     }
   }
@@ -133,6 +134,21 @@ function winnerFromSets(sets) {
   return w1 > w2 ? 1 : 2;
 }
 
+// `teamScore`'s left/right number order does NOT reliably line up with
+// team1Entry/team2Entry — confirmed by comparing against `teamWinner`
+// (the actual winning roster) across live matches on 2026-09-12: it flips
+// per match with no fixed pattern. `teamWinner` is the only trustworthy
+// signal for who actually won.
+function winnerSideFromTeamWinner(m) {
+  const winnerIds = new Set((m.teamWinner || []).map((w) => w.user && w.user.id).filter(Boolean));
+  if (!winnerIds.size) return null;
+  const t1Ids = (m.team1Entry || []).map((e) => e.user && e.user.id).filter(Boolean);
+  const t2Ids = (m.team2Entry || []).map((e) => e.user && e.user.id).filter(Boolean);
+  if (t1Ids.length && t1Ids.every((id) => winnerIds.has(id))) return 1;
+  if (t2Ids.length && t2Ids.every((id) => winnerIds.has(id))) return 2;
+  return null;
+}
+
 function entryToTeam(entry) {
   const team = entry && entry[0] && entry[0].team;
   return team ? { team_id: team.id, title: team.title, image: team.image || null } : null;
@@ -146,7 +162,21 @@ function entryToParticipants(entry, side) {
 // ScheduleController/schedule.blade.php (match_id, court.name, team1/team2,
 // participants, sets[{side1,side2}], division, ...).
 function normaliseMatch(m) {
-  const sets = m.status === 'completed' ? parseTeamScore(m.teamScore) : [];
+  const rawSets = m.status === 'completed' ? parseTeamScore(m.teamScore) : [];
+  const trueWinner = winnerSideFromTeamWinner(m);
+
+  // Align sets' side1/side2 with team1/team2: if the raw string's "left"
+  // side won the majority of sets but teamWinner says team2 actually won
+  // (or vice versa), the string's side order is reversed for this match —
+  // swap so side1 always means team1's score, consistently.
+  let sets = rawSets;
+  if (trueWinner && rawSets.length) {
+    const scoreImpliedWinner = winnerFromSets(rawSets);
+    if (scoreImpliedWinner && scoreImpliedWinner !== trueWinner) {
+      sets = rawSets.map((s) => ({ side1: s.side2, side2: s.side1 }));
+    }
+  }
+
   return {
     match_id: m.id,
     date: m.date ? String(m.date).slice(0, 10) : null,
@@ -157,7 +187,9 @@ function normaliseMatch(m) {
     team2: entryToTeam(m.team2Entry),
     participants: [...entryToParticipants(m.team1Entry, 1), ...entryToParticipants(m.team2Entry, 2)],
     sets,
-    winner_side: winnerFromSets(sets),
+    // Prefer Tournated's own recorded winner; fall back to score-majority
+    // only when teamWinner is missing (e.g. a tie/no-decision edge case).
+    winner_side: trueWinner ?? winnerFromSets(sets),
     is_bye: !!m.isBye,
     is_walkover: !!m.isWalkover,
     is_disqualified: !!m.isDisqualified,
