@@ -462,6 +462,15 @@
 
   function timeOf(m) { return m.time || '—'; }
 
+  // Numeric court number parsed out of the court name ("Court 2" -> 2), so
+  // matches sort 1, 2, 3… instead of by Tournated's internal court_id (which
+  // has no relation to the printed court number).
+  function courtNumber(m) {
+    var name = (m.court && m.court.name) || '';
+    var found = name.match(/\d+/);
+    return found ? parseInt(found[0], 10) : 999;
+  }
+
   function gridHtml(matches) {
     if (!matches.length) return '';
     var byTime = {};
@@ -469,8 +478,9 @@
     var times = Object.keys(byTime).sort();
     var html = '';
     times.forEach(function (t) {
-      html += '<div class="time-head" data-time="' + esc(t) + '">' + esc(t) + ' <span class="n">· ' + byTime[t].length + ' mačai</span></div>';
-      byTime[t].forEach(function (m) { html += matchCard(m); });
+      var ms = byTime[t].slice().sort(function (a, b) { return courtNumber(a) - courtNumber(b); });
+      html += '<div class="time-head" data-time="' + esc(t) + '">' + esc(t) + ' <span class="n">· ' + ms.length + ' mačai</span></div>';
+      ms.forEach(function (m) { html += matchCard(m); });
     });
     return html;
   }
