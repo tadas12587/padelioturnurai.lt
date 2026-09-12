@@ -61,7 +61,6 @@
 
   <form method="POST" action="{{ route('schedule.delays.save', ['tournament' => $tournamentId]) }}">
     @csrf
-    <input type="hidden" name="token" value="{{ $token }}">
 
     @forelse ($courts as $court)
       @php $current = $delays[$court] ?? 0; @endphp

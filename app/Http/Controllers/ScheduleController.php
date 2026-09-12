@@ -146,14 +146,31 @@ class ScheduleController extends Controller
         ]);
     }
 
+    private const ADMIN_COOKIE = 'overlay_admin_token';
+
     /**
      * Unlinked page (no nav entry) where the organizer sets a per-court delay
-     * in minutes while the tournament is live. Guarded by a shared token in
-     * the URL rather than a login — this is a same-day correction tool, not
-     * account-holder data.
+     * in minutes while the tournament is live. Guarded by a shared token
+     * rather than a login — this is a same-day correction tool, not
+     * account-holder data. The token is only ever accepted once via the URL
+     * (the bootstrap link); from then on it's read back from an httpOnly
+     * cookie so it stops being written into server access logs and browser
+     * history on every reload.
      */
     public function delaysForm(Request $request, string $tournamentExternalId)
     {
+        $expected = config('services.overlay.admin_token');
+        $queryToken = (string) $request->query('token', '');
+
+        if ($expected && $queryToken !== '' && hash_equals($expected, $queryToken)) {
+            return redirect()
+                ->route('schedule.delays.form', ['tournament' => $tournamentExternalId])
+                ->withCookie(cookie(
+                    self::ADMIN_COOKIE, $queryToken, 60 * 24 * 30,
+                    null, null, $request->secure(), true
+                ));
+        }
+
         $this->authorizeAdmin($request);
 
         $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
@@ -171,7 +188,6 @@ class ScheduleController extends Controller
 
         return view('pages.schedule-delays', [
             'tournamentId' => $tournamentExternalId,
-            'token'        => $request->query('token'),
             'courts'       => $courts,
             'delays'       => $payload['court_delays'] ?? [],
         ]);
@@ -197,18 +213,17 @@ class ScheduleController extends Controller
 
         $snapshot->update(['payload' => $payload]);
 
-        return redirect()->route('schedule.delays.form', [
-            'tournament' => $tournamentExternalId,
-            'token'      => $request->input('token'),
-        ])->with('saved', true);
+        return redirect()
+            ->route('schedule.delays.form', ['tournament' => $tournamentExternalId])
+            ->with('saved', true);
     }
 
     private function authorizeAdmin(Request $request): void
     {
         $expected = config('services.overlay.admin_token');
-        $given = (string) ($request->query('token') ?: $request->input('token'));
+        $given = (string) ($request->cookie(self::ADMIN_COOKIE) ?: $request->query('token') ?: $request->input('token'));
 
-        abort_if(! $expected || ! hash_equals($expected, $given), 403);
+        abort_if(! $expected || $given === '' || ! hash_equals($expected, $given), 403);
     }
 
     private function courtNumber(string $courtName): int
