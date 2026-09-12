@@ -169,6 +169,15 @@ class ScheduleController extends Controller
 
     private function tagDivision(array $match, array $divisionByPair): array
     {
+        // The relay (play.padel.lt GraphQL) already sends a real division
+        // name (Tournated's own match `name`, e.g. "Moterys B 1") — only
+        // fall back to the Excel entry_lists pair-matching guess when that's
+        // missing (e.g. an older/different data source, or Tournated left
+        // it blank).
+        if (! empty($match['division'])) {
+            return $match;
+        }
+
         $sig1 = $this->pairSignature($match['participants'] ?? [], 1);
         $sig2 = $this->pairSignature($match['participants'] ?? [], 2);
         $match['division'] = $divisionByPair[$sig1] ?? $divisionByPair[$sig2] ?? null;
