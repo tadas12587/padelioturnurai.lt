@@ -101,32 +101,37 @@ async function apiWithRetry(path, attempts = 3) {
 
 // Šio turnyro `/matches` yra nestabilus Tournated pusėje: bet koks atsakymas
 // su >1 mačo pilnu įrašu dažnai grąžina 502 (matyt dėl didelių side_a/side_b
-// sąrašų). Todėl einame po vieną mačą su cursor puslapiavimu ir kartojimais;
-// jei konkretus mačas ir toliau nepasiekiamas po bandymų, jį praleidžiame
-// šiame cikle (liks paskutinė žinoma jo būsena) — vienas blogas mačas
-// nesugriauna viso siuntimo.
+// sąrašų). Todėl einame po vieną mačą.
+//
+// SVARBU: naudojame `page=` (ne `cursor=`) puslapiavimą, nes kiekvienas
+// puslapis yra NEPRIKLAUSOMAS užklausimas — jei 5-as mačas nuolat 502'ina
+// net po pakartojimų, vis tiek pereiname prie 6-o, 7-o ir t.t. `cursor=`
+// puslapiavimas to negalėtų: kito cursor'io sužinome tik iš SĖKMINGO
+// atsakymo, tad viena užstrigusi vieta sustabdytų VISĄ likusį ėjimą (taip
+// realiai nutiko turnyro dieną — po kelių mačų visas ciklas nutrūkdavo, ir
+// vėlesni mačai/rezultatai niekada nebūdavo pasiekti).
 async function fetchAllMatchesFull(tournamentId, onProgress) {
   const matches = [];
   const failed = [];
-  let cursor = null;
-  let guard = 0;
-  while (guard++ < 500) {
-    const qs = new URLSearchParams({ tournamentId, view: 'full', limit: '1' });
-    if (cursor) qs.set('cursor', cursor);
-    let json;
+
+  // Pirma sužinome bendrą mačų skaičių lengvu (results view) užklausimu.
+  let total = null;
+  try {
+    const probe = await apiWithRetry(`/matches?${new URLSearchParams({ tournamentId, limit: '1' })}`);
+    total = probe.meta?.total ?? null;
+  } catch (e) { /* neturime total — eisime iki protingo maksimumo */ }
+  const maxPages = total || 300;
+
+  for (let page = 1; page <= maxPages; page++) {
+    const qs = new URLSearchParams({ tournamentId, view: 'full', limit: '1', page: String(page) });
     try {
-      json = await apiWithRetry(`/matches?${qs.toString()}`);
+      const json = await apiWithRetry(`/matches?${qs.toString()}`);
+      const row = (json.data || [])[0];
+      if (row) matches.push(row);
+      if (onProgress) onProgress(matches.length, total);
     } catch (e) {
-      failed.push({ cursor, error: e.message });
-      // Be sėkmingo atsakymo nežinome kito cursor — negalime tęsti toliau
-      // šiame bandyme. Sustojame; kitas ciklas pradės iš naujo nuo pradžių.
-      break;
+      failed.push({ page, error: e.message });
     }
-    const row = (json.data || [])[0];
-    if (row) matches.push(row);
-    cursor = json.meta?.next_cursor || null;
-    if (onProgress) onProgress(matches.length, json.meta?.total || null);
-    if (!cursor) break;
     await sleep(150); // švelniai, kad netrenktume į 100 req/60s limitą
   }
   return { matches, failed };
