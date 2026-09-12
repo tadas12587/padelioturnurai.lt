@@ -176,6 +176,10 @@
   .badge.live { background: var(--ball); border-color: var(--ball); color: var(--ball-ink); animation: pulse 1.6s ease-in-out infinite; }
   .badge.division { color: var(--muted); }
   .badge.delay { background: var(--ball); border-color: var(--ball); color: var(--ball-ink); }
+
+  .delay-hint {
+    margin: -6px 0 14px; font-size: 0.76rem; color: var(--ball); line-height: 1.4;
+  }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 
   /* ---------- delay ticker ---------- */
@@ -307,6 +311,10 @@
     <span class="live-dot"></span>
     <span id="synced-text">@if($syncedAt) Atnaujinta {{ \Illuminate\Support\Carbon::parse($syncedAt)->timezone('Europe/Vilnius')->format('H:i') }} @else Duomenys dar nesinchronizuoti @endif</span>
   </div>
+
+  <p class="delay-hint" id="delay-hint" hidden>
+    ⏱ Rodomas laikas jau perskaičiuotas su vėlavimu — pridėti papildomai nereikia.
+  </p>
 
   <nav class="bottom-nav">
     <button class="nav-btn active" data-tab="paieska">
@@ -480,7 +488,11 @@
 
     var badges = '';
     if (m.is_match_in_progress) badges += '<span class="badge live">● Vyksta</span>';
-    if (delay) badges += '<span class="badge delay">⏱ vėluoja ' + delay + ' min</span>';
+    // Show old time → new time, not just "+N min" — a bare delay figure gets
+    // misread as something to add on top of the (already adjusted) time
+    // shown elsewhere on the card/grid, doubling the correction in people's
+    // heads.
+    if (delay) badges += '<span class="badge delay">⏱ ' + esc(m.time) + ' → ' + esc(addMinutes(m.time, delay)) + '</span>';
     if (m.division) badges += '<span class="badge division">' + esc(m.division) + '</span>';
     if (played && (m.is_walkover || m.is_bye)) badges += '<span class="badge score">' + esc(scoreText(m)) + '</span>';
 
@@ -773,6 +785,7 @@
         var n = (c.match(/\d+/) || [])[0];
         return (n ? ('Kortas ' + n) : c) + ': vėluoja ' + delays[c] + ' min';
       });
+    document.getElementById('delay-hint').hidden = !parts.length;
     if (!parts.length) { el.hidden = true; return; }
     var text = '⏱ ' + parts.join('   •   ') + '   •   ';
     document.getElementById('delay-ticker-text-a').textContent = text;
