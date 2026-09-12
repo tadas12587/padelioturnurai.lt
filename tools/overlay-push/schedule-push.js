@@ -30,7 +30,7 @@ import { dirname, join } from 'node:path';
 
 const SITE_URL      = process.env.SITE_URL      || 'https://padelioturnyrai.lt';
 const TOURNAMENT_ID  = process.env.TOURNAMENT_ID || '';
-const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 30000);
+const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 180000);
 
 const GRAPHQL_URL = 'https://play.padel.lt/api/graphql';
 

@@ -597,10 +597,41 @@
     return g;
   }
 
-  function standingsTableHtml(title, tally) {
-    var rows = Object.keys(tally).map(function (club) { return Object.assign({ club: club }, tally[club]); });
+  // Tournated's own "Bendra" club table scores by TIE, not raw match count:
+  // whichever club has won more individual matches so far against a given
+  // opponent (across every division combined — a "tie" is the whole
+  // club-vs-club meeting) gets 1 point for that tie. A club's overall place
+  // is its tie-point total, not how many individual matches it has won.
+  function tiePointsByClub(matches) {
+    var pairs = {};
+    matches.forEach(function (m) {
+      if (!isPlayed(m) || !m.team1 || !m.team2 || !m.winner_side) return;
+      var a = m.team1.title, b = m.team2.title;
+      var key = [a, b].sort().join('||');
+      pairs[key] = pairs[key] || {};
+      pairs[key][a] = pairs[key][a] || 0;
+      pairs[key][b] = pairs[key][b] || 0;
+      if (m.winner_side === 1) pairs[key][a]++; else pairs[key][b]++;
+    });
+    var points = {};
+    Object.keys(pairs).forEach(function (key) {
+      var clubs = key.split('||');
+      var wa = pairs[key][clubs[0]] || 0, wb = pairs[key][clubs[1]] || 0;
+      if (wa > wb) points[clubs[0]] = (points[clubs[0]] || 0) + 1;
+      else if (wb > wa) points[clubs[1]] = (points[clubs[1]] || 0) + 1;
+      // Lygu iki šiol — taškas kol kas niekam neskiriamas (susitikimas neaiškus).
+    });
+    return points;
+  }
+
+  function standingsTableHtml(title, tally, tiePoints) {
+    var rows = Object.keys(tally).map(function (club) {
+      return Object.assign({ club: club, tiePoints: (tiePoints && tiePoints[club]) || 0 }, tally[club]);
+    });
     if (!rows.length) return '';
-    rows.sort(function (a, b) { return b.wins - a.wins || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); });
+    rows.sort(tiePoints
+      ? function (a, b) { return b.tiePoints - a.tiePoints || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); }
+      : function (a, b) { return b.wins - a.wins || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); });
     var html = '<div class="division-block"><h3 class="division-title">' + esc(title) + '</h3><div class="standings-list">';
     rows.forEach(function (r, i) {
       var diff = r.setsWon - r.setsLost;
@@ -610,7 +641,7 @@
           clubBadge(r.club, 26) +
           '<span class="standing-club">' + esc(r.club) + '</span>' +
           '<span class="standing-stats">' +
-            '<span>' + r.played + '<em>ž.</em></span>' +
+            (tiePoints ? '<span>' + r.tiePoints + '<em>tšk.</em></span>' : '') +
             '<span>' + r.wins + '-' + r.losses + '<em>w-l</em></span>' +
             '<span class="standing-diff' + (diff > 0 ? ' pos' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<em>setai</em></span>' +
           '</span>' +
@@ -624,7 +655,7 @@
     if (!state.matches.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbti mačai.</p>'; return; }
 
     var overallTitle = (state.groups && state.groups[0] && state.groups[0].name) || 'Bendra';
-    var html = standingsTableHtml(overallTitle, tallyMatches(state.matches));
+    var html = standingsTableHtml(overallTitle, tallyMatches(state.matches), tiePointsByClub(state.matches));
 
     var byDivision = {};
     state.matches.forEach(function (m) {
