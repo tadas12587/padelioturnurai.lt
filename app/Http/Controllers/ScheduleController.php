@@ -71,7 +71,7 @@ class ScheduleController extends Controller
         abort_if(! $snapshot, 404);
 
         $payload = $snapshot->payload ?? [];
-        $matches = $payload['matches'] ?? [];
+        $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));
         $groups = $payload['groups'] ?? [];
         $standings = $payload['standings'] ?? [];
 
@@ -123,8 +123,9 @@ class ScheduleController extends Controller
         abort_if(! $snapshot, 404);
 
         $payload = $snapshot->payload ?? [];
+        $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));
         $divisionByPair = $this->divisionLookup($tournamentExternalId);
-        $matches = array_map(fn (array $m) => $this->tagDivision($m, $divisionByPair), $payload['matches'] ?? []);
+        $matches = array_map(fn (array $m) => $this->tagDivision($m, $divisionByPair), $matches);
 
         return response()->json([
             'matches'   => $matches,
@@ -137,6 +138,19 @@ class ScheduleController extends Controller
     public static function isPlayed(array $match): bool
     {
         return ! empty($match['sets']) || ! empty($match['winner_side']) || ! empty($match['is_walkover']) || ! empty($match['is_bye']);
+    }
+
+    /**
+     * A handful of low match_ids for this tournament (captured very early,
+     * 2026-09-11) came back from Tournated's `view=full` with no time/court
+     * and a degenerate placeholder `sets` value (e.g. a lone "0-0" or "1-0"
+     * entry) — not real scheduled matches, but they were counting as
+     * "played" and showing up with no time/court context. Exclude anything
+     * without a real time+court from the public page entirely.
+     */
+    public static function isUsableMatch(array $match): bool
+    {
+        return ! empty($match['time']) && ! empty($match['court']['name'] ?? null);
     }
 
     /** @return array<string, array<int, array<string, mixed>>> keyed by club title */
