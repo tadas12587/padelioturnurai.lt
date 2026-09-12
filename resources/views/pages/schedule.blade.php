@@ -386,6 +386,10 @@
 
   function esc(s) { return (s ?? '').toString().replace(/[&<>"]/g, function (c) { return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]; }); }
 
+  // Same division played as multiple legs (e.g. "Moterys B 1"/"Moterys B 2")
+  // is one level, not two — strip the trailing leg number.
+  function divisionGroup(name) { return (name || '').replace(/\s+\d+$/, ''); }
+
   function pairNames(participants, side) {
     return (participants || []).filter(function (p) { return p.side === side; })
       .map(function (p) { return ((p.name || '') + ' ' + (p.surname || '')).trim(); })
@@ -490,7 +494,7 @@
 
   var activeDivision = '';
   function renderTinklelis() {
-    var list = state.matches.filter(function (m) { return !activeDivision || m.division === activeDivision; });
+    var list = state.matches.filter(function (m) { return !activeDivision || divisionGroup(m.division) === activeDivision; });
     renderGrid(document.getElementById('grid-results'), list);
   }
 
@@ -660,7 +664,8 @@
     var byDivision = {};
     state.matches.forEach(function (m) {
       if (!m.division) return;
-      (byDivision[m.division] = byDivision[m.division] || []).push(m);
+      var key = divisionGroup(m.division);
+      (byDivision[key] = byDivision[key] || []).push(m);
     });
     Object.keys(byDivision).sort().forEach(function (div) {
       html += standingsTableHtml(div, tallyMatches(byDivision[div]));

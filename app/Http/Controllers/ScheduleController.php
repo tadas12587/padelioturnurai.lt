@@ -87,7 +87,15 @@ class ScheduleController extends Controller
         });
 
         $courts = collect($matches)->pluck('court.name')->filter()->unique()->values();
-        $divisions = collect($matches)->pluck('division')->filter()->unique()->sort()->values();
+        // Same division played as multiple legs (e.g. "Moterys B 1"/"Moterys B 2")
+        // is one level, not two — merge the trailing leg number for the pill list.
+        $divisions = collect($matches)
+            ->pluck('division')
+            ->filter()
+            ->map(fn ($d) => preg_replace('/\s+\d+$/', '', $d))
+            ->unique()
+            ->sort()
+            ->values();
         $clubs = collect($matches)
             ->flatMap(fn ($m) => [$m['team1']['title'] ?? null, $m['team2']['title'] ?? null])
             ->filter()
