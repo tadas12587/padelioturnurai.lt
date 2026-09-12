@@ -39,6 +39,9 @@ return [
         // Shared secret the external bridge sends in X-Overlay-Token to push
         // tournament snapshots to POST /overlay/ingest.
         'ingest_token' => env('OVERLAY_INGEST_TOKEN'),
+        // Shared secret for the unlinked /grafikas/{tournament}/velavimai
+        // court-delay admin page (passed as ?token=... in the URL).
+        'admin_token' => env('OVERLAY_ADMIN_TOKEN'),
     ],
 
 ];

@@ -43,6 +43,8 @@ Route::post('/overlay/ingest', [OverlayController::class, 'ingest'])->name('over
 // (production host can't reach api.tournated.com — see docs/overlays.md).
 Route::post('/grafikas/ingest', [ScheduleController::class, 'ingest'])->name('schedule.ingest');
 Route::get('/grafikas/{tournament}/data', [ScheduleController::class, 'data'])->name('schedule.data');
+Route::get('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysForm'])->name('schedule.delays.form');
+Route::post('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysSave'])->name('schedule.delays.save');
 Route::get('/grafikas/{tournament}', [ScheduleController::class, 'show'])->name('schedule.show');
 
 // Admin CSV export — protected by Filament auth

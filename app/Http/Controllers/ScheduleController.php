@@ -57,6 +57,7 @@ class ScheduleController extends Controller
                 'matches'    => $byId->values()->all(),
                 'groups'     => ! empty($validated['groups']) ? $validated['groups'] : ($existing['groups'] ?? []),
                 'standings'  => ! empty($validated['standings']) ? $validated['standings'] : ($existing['standings'] ?? []),
+                'court_delays' => $existing['court_delays'] ?? [],
                 'synced_at'  => now()->toIso8601String(),
             ]],
         );
@@ -121,6 +122,7 @@ class ScheduleController extends Controller
             'divisionList' => $divisions,
             'clubList'     => $clubs,
             'matchesByClub' => $this->groupByClub($matches, $clubs),
+            'courtDelays'  => $payload['court_delays'] ?? [],
         ]);
     }
 
@@ -136,11 +138,82 @@ class ScheduleController extends Controller
         $matches = array_map(fn (array $m) => $this->tagDivision($m, $divisionByPair), $matches);
 
         return response()->json([
-            'matches'   => $matches,
-            'groups'    => $payload['groups'] ?? [],
-            'standings' => $payload['standings'] ?? [],
-            'synced_at' => $payload['synced_at'] ?? null,
+            'matches'      => $matches,
+            'groups'       => $payload['groups'] ?? [],
+            'standings'    => $payload['standings'] ?? [],
+            'synced_at'    => $payload['synced_at'] ?? null,
+            'court_delays' => $payload['court_delays'] ?? [],
         ]);
+    }
+
+    /**
+     * Unlinked page (no nav entry) where the organizer sets a per-court delay
+     * in minutes while the tournament is live. Guarded by a shared token in
+     * the URL rather than a login — this is a same-day correction tool, not
+     * account-holder data.
+     */
+    public function delaysForm(Request $request, string $tournamentExternalId)
+    {
+        $this->authorizeAdmin($request);
+
+        $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
+        abort_if(! $snapshot, 404);
+
+        $payload = $snapshot->payload ?? [];
+        $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));
+
+        $courts = collect($matches)
+            ->pluck('court.name')
+            ->filter()
+            ->unique()
+            ->sort(fn ($a, $b) => $this->courtNumber($a) <=> $this->courtNumber($b))
+            ->values();
+
+        return view('pages.schedule-delays', [
+            'tournamentId' => $tournamentExternalId,
+            'token'        => $request->query('token'),
+            'courts'       => $courts,
+            'delays'       => $payload['court_delays'] ?? [],
+        ]);
+    }
+
+    public function delaysSave(Request $request, string $tournamentExternalId)
+    {
+        $this->authorizeAdmin($request);
+
+        $validated = $request->validate([
+            'delays'   => 'array',
+            'delays.*' => 'nullable|integer|min:0|max:240',
+        ]);
+
+        $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
+        abort_if(! $snapshot, 404);
+
+        $payload = $snapshot->payload ?? [];
+        $payload['court_delays'] = collect($validated['delays'] ?? [])
+            ->filter(fn ($minutes) => (int) $minutes > 0)
+            ->map(fn ($minutes) => (int) $minutes)
+            ->all();
+
+        $snapshot->update(['payload' => $payload]);
+
+        return redirect()->route('schedule.delays.form', [
+            'tournament' => $tournamentExternalId,
+            'token'      => $request->input('token'),
+        ])->with('saved', true);
+    }
+
+    private function authorizeAdmin(Request $request): void
+    {
+        $expected = config('services.overlay.admin_token');
+        $given = (string) ($request->query('token') ?: $request->input('token'));
+
+        abort_if(! $expected || ! hash_equals($expected, $given), 403);
+    }
+
+    private function courtNumber(string $courtName): int
+    {
+        return preg_match('/\d+/', $courtName, $m) ? (int) $m[0] : 999;
     }
 
     public static function isPlayed(array $match): bool

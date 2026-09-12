@@ -175,7 +175,21 @@
   }
   .badge.live { background: var(--ball); border-color: var(--ball); color: var(--ball-ink); animation: pulse 1.6s ease-in-out infinite; }
   .badge.division { color: var(--muted); }
+  .badge.delay { background: var(--ball); border-color: var(--ball); color: var(--ball-ink); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* ---------- delay ticker ---------- */
+  .delay-ticker {
+    position: sticky; top: 0; z-index: 60; overflow: hidden;
+    background: var(--ball); color: var(--ball-ink); border-bottom: 1px solid rgba(0,0,0,0.15);
+  }
+  .delay-ticker-track { display: inline-flex; width: max-content; animation: ticker-scroll 22s linear infinite; }
+  .delay-ticker-track .seg {
+    flex: none; padding: 7px 0; font-family: var(--display); font-weight: 700;
+    font-size: 0.78rem; letter-spacing: 0.01em; white-space: nowrap; padding-right: 48px;
+  }
+  @keyframes ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .delay-ticker-track { animation: none; } }
 
   .match-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
   .chip {
@@ -260,6 +274,12 @@
 </style>
 </head>
 <body>
+<div id="delay-ticker" class="delay-ticker" hidden>
+  <div class="delay-ticker-track">
+    <span class="seg" id="delay-ticker-text-a"></span>
+    <span class="seg" id="delay-ticker-text-b"></span>
+  </div>
+</div>
 <div class="wrap">
 
   <header class="top">
@@ -349,7 +369,12 @@
   var DATA_URL = @json(route('schedule.data', $tournamentId));
   var TOURNAMENT_DATE = @json($tDate);
   var CLUB_LIST = @json($clubList->values());
-  var state = { matches: @json(array_values($matches)), groups: @json(array_values($groups)), syncedAt: @json($syncedAt) };
+  var state = {
+    matches: @json(array_values($matches)),
+    groups: @json(array_values($groups)),
+    syncedAt: @json($syncedAt),
+    courtDelays: @json($courtDelays ?: (object) [])
+  };
 
   var CLUB_COLORS = ['#E9805C', '#E06FA3', '#A578E0', '#E0A34A', '#5FC98A', '#6FA8E0'];
   var clubColorCache = {};
@@ -451,8 +476,11 @@
     var t2 = (m.team2 && m.team2.title) || '';
     var hasSets = played && m.sets && m.sets.length && !m.is_walkover && !m.is_bye;
 
+    var delay = !played ? courtDelayMinutes(m) : 0;
+
     var badges = '';
     if (m.is_match_in_progress) badges += '<span class="badge live">● Vyksta</span>';
+    if (delay) badges += '<span class="badge delay">⏱ vėluoja ' + delay + ' min</span>';
     if (m.division) badges += '<span class="badge division">' + esc(m.division) + '</span>';
     if (played && (m.is_walkover || m.is_bye)) badges += '<span class="badge score">' + esc(scoreText(m)) + '</span>';
 
@@ -464,7 +492,28 @@
       '</div>';
   }
 
-  function timeOf(m) { return m.time || '—'; }
+  // Court delays only affect matches that have no result yet — a match that
+  // already has a score keeps showing the real time it was actually played.
+  function courtDelayMinutes(m) {
+    var courtName = (m.court && m.court.name) || '';
+    return (state.courtDelays && state.courtDelays[courtName]) || 0;
+  }
+
+  function addMinutes(hhmm, minutes) {
+    var parts = (hhmm || '').split(':');
+    var h = parseInt(parts[0], 10), m = parseInt(parts[1], 10);
+    if (isNaN(h) || isNaN(m)) return hhmm;
+    var total = ((h * 60 + m + minutes) % 1440 + 1440) % 1440;
+    var nh = Math.floor(total / 60), nm = total % 60;
+    return (nh < 10 ? '0' : '') + nh + ':' + (nm < 10 ? '0' : '') + nm;
+  }
+
+  function timeOf(m) {
+    if (!m.time) return '—';
+    if (isPlayed(m)) return m.time;
+    var delay = courtDelayMinutes(m);
+    return delay ? addMinutes(m.time, delay) : m.time;
+  }
 
   // Numeric court number parsed out of the court name ("Court 2" -> 2), so
   // matches sort 1, 2, 3… instead of by Tournated's internal court_id (which
@@ -710,8 +759,30 @@
       '<span class="rail-label">' + esc(times[times.length - 1]) + '</span></div>';
   }
 
+  function updateDelayTicker() {
+    var el = document.getElementById('delay-ticker');
+    var delays = state.courtDelays || {};
+    var parts = Object.keys(delays)
+      .filter(function (c) { return delays[c] > 0; })
+      .sort(function (a, b) {
+        var na = parseInt((a.match(/\d+/) || [999])[0], 10);
+        var nb = parseInt((b.match(/\d+/) || [999])[0], 10);
+        return na - nb;
+      })
+      .map(function (c) {
+        var n = (c.match(/\d+/) || [])[0];
+        return (n ? ('Kortas ' + n) : c) + ': vėluoja ' + delays[c] + ' min';
+      });
+    if (!parts.length) { el.hidden = true; return; }
+    var text = '⏱ ' + parts.join('   •   ') + '   •   ';
+    document.getElementById('delay-ticker-text-a').textContent = text;
+    document.getElementById('delay-ticker-text-b').textContent = text;
+    el.hidden = false;
+  }
+
   function renderAll() {
     indexClubImages(state.matches);
+    updateDelayTicker();
     renderDayRail(); renderClubChips(); renderTinklelis(); renderKlubai(); renderStandings();
     var q = document.getElementById('search-input').value.trim();
     renderSearch(q);
@@ -793,6 +864,7 @@
       state.matches = json.matches || [];
       state.groups = json.groups || state.groups;
       state.syncedAt = json.synced_at;
+      state.courtDelays = json.court_delays || {};
       renderAll();
       var t = document.getElementById('synced-text');
       var time = fmtSyncTime(state.syncedAt);
