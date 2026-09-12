@@ -137,6 +137,18 @@
 
   /* ---------- pills / club chips ---------- */
   .pills, .club-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .toggle-row { display: flex; justify-content: flex-end; margin: -10px 0 16px; }
+  .toggle-btn {
+    font-family: var(--sans); font-size: 0.78rem; font-weight: 600; color: var(--ink-soft);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+    padding: 7px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .toggle-btn .box {
+    width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--ink-soft);
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+  }
+  .toggle-btn.active { color: var(--ink); border-color: var(--ball); }
+  .toggle-btn.active .box { background: var(--ball); border-color: var(--ball); color: var(--ball-ink); font-size: 0.6rem; }
   .pill {
     font-family: var(--display); font-size: 0.78rem; font-weight: 600; color: var(--ink-soft);
     background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
@@ -352,6 +364,11 @@
         <button class="pill" data-division="{{ $d }}">{{ $d }}</button>
       @endforeach
     </div>
+    <div class="toggle-row">
+      <button class="toggle-btn" id="hide-played-toggle" type="button">
+        <span class="box"></span> Slėpti sužaistus
+      </button>
+    </div>
     <div id="grid-results"></div>
   </div>
 
@@ -554,8 +571,13 @@
   }
 
   var activeDivision = '';
+  var hidePlayed = false;
   function renderTinklelis() {
-    var list = state.matches.filter(function (m) { return !activeDivision || divisionGroup(m.division) === activeDivision; });
+    var list = state.matches.filter(function (m) {
+      if (activeDivision && divisionGroup(m.division) !== activeDivision) return false;
+      if (hidePlayed && isPlayed(m)) return false;
+      return true;
+    });
     renderGrid(document.getElementById('grid-results'), list);
   }
 
@@ -816,6 +838,13 @@
     document.querySelectorAll('#division-pills .pill').forEach(function (p) { p.classList.remove('active'); });
     btn.classList.add('active');
     activeDivision = btn.dataset.division;
+    renderTinklelis();
+  });
+
+  document.getElementById('hide-played-toggle').addEventListener('click', function () {
+    hidePlayed = !hidePlayed;
+    this.classList.toggle('active', hidePlayed);
+    this.querySelector('.box').textContent = hidePlayed ? '✓' : '';
     renderTinklelis();
   });
 
