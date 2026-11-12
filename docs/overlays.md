@@ -12,9 +12,14 @@ tipai, push scenarijus, administravimas, diegimas ir problemų sprendimas.
 
 ## 1. Architektūra ir kodėl push
 
-Produkcinis serveris (freehosting.lt) **negali** pasiekti Tournated API
-(`api.tournated.com`) — išeinantis ryšys blokuojamas. Todėl duomenys ne
-traukiami serveryje, o **pučiami** iš tavo PC:
+> **2026-11-12:** serveris **jau pasiekia** Tournated API. Viešas grafikas
+> (`/grafikas/{id}`) dabar pildomas pačiame serveryje (`php artisan tournated:sync`,
+> hostingo CRON kas minutę → `cron.php`, žr.
+> `docs/superpowers/plans/2026-11-12-tournated-tiesioginis-rysys.md`). OBS langai
+> kol kas dar naudoja žemiau aprašytą `push.js` – bus perkelti 5 etape.
+
+Anksčiau produkcinis serveris (freehosting.lt) negalėjo pasiekti Tournated API,
+todėl duomenys ne traukiami serveryje, o **pučiami** iš tavo PC:
 
 ```
 Tournated API  ──(GraphQL)──>  push.js (tavo PC)  ──(POST /overlay/ingest)──>  serveris (snapshot DB)
