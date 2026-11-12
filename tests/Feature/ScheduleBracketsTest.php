@@ -73,13 +73,13 @@ class ScheduleBracketsTest extends TestCase
     public function test_page_labels_the_tab_by_what_the_tournament_has(): void
     {
         $this->seedDraw();
-        $this->get('/grafikas/900')->assertOk()->assertSee('Tinkleliai')->assertSee('Vyrai A')->assertDontSee('player_id');
+        $this->get('/grafikas/900')->assertOk()->assertSee('data-tab="lenteles"', false)->assertDontSee('data-tab="grupes"', false)->assertDontSee('player_id');
 
         ScheduleSnapshot::create(['tournament_external_id' => '901', 'payload' => [
             'tournament' => ['name' => 'Lyga'],
             'matches' => [$this->match(10, 'R1', [1 => ['Ana A'], 2 => ['Cid C']], ['team1' => ['title' => 'Klubas 1'], 'team2' => ['title' => 'Klubas 2']])],
             'groups' => [['group_id' => 1, 'name' => 'Bendra', 'match_ids' => [10], 'entries' => [['player' => ['player_id' => 9]]]]],
         ]]);
-        $this->get('/grafikas/901')->assertOk()->assertSee('Lentelės')->assertDontSee('player_id');
+        $this->get('/grafikas/901')->assertOk()->assertSee('data-tab="grupes"', false)->assertDontSee('data-tab="lenteles"', false)->assertDontSee('player_id');
     }
 }

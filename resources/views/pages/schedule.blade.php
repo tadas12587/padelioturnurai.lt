@@ -6,7 +6,8 @@
     $hasDraws = count($draws) > 0;
     // Player groups get their own tables; a club league's single group is the club table.
     $hasGroupTables = ! $hasClubs && collect($groups)->contains(fn ($g) => ! empty($g['match_ids']));
-    $tablesLabel = ($hasClubs || $hasGroupTables) ? 'Lentelės' : 'Tinkleliai';
+    // User's naming: "Grupės" = club table / player groups, "Lentelės" = knockout brackets.
+    $hasGroupsTab = $hasClubs || $hasGroupTables;
 @endphp
 <!doctype html>
 <html lang="lt">
@@ -343,10 +344,18 @@
       Klubai
     </button>
     @endif
+    @if($hasGroupsTab)
+    <button class="nav-btn" data-tab="grupes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>
+      Grupės
+    </button>
+    @endif
+    @if($hasDraws)
     <button class="nav-btn" data-tab="lenteles">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a2 2 0 0 0 2 4M17 6h3a2 2 0 0 1-2 4"/></svg>
-      {{ $tablesLabel }}
+      Lentelės
     </button>
+    @endif
   </nav>
 
   {{-- Mano --}}
@@ -380,9 +389,14 @@
   </div>
   @endif
 
-  {{-- Lentelės --}}
-  <div data-panel="lenteles">
+  {{-- Grupės: club table and/or player group tables --}}
+  <div data-panel="grupes">
     <div id="standings-results"></div>
+    <div id="groups-results"></div>
+  </div>
+
+  {{-- Lentelės: knockout brackets --}}
+  <div data-panel="lenteles">
     <div id="brackets-results"></div>
   </div>
 
@@ -677,13 +691,13 @@ window.PushUI = (function () {
   function choosePlayer(name) {
     me = name; store(false, name);
     try { var u = new URL(location.href); u.searchParams.set('z', name); history.replaceState(null, '', u); } catch (e) {}
-    renderMano(); renderGrid(); renderKlubai(); renderBrackets();
+    renderMano(); renderGrid(); renderKlubai(); renderGroupTables(); renderBrackets();
     window.scrollTo(0, 0);
   }
   function forgetPlayer() {
     me = null; store(false, null);
     try { var u = new URL(location.href); u.searchParams.delete('z'); history.replaceState(null, '', u); } catch (e) {}
-    renderMano(); renderGrid(); renderKlubai(); renderBrackets();
+    renderMano(); renderGrid(); renderKlubai(); renderGroupTables(); renderBrackets();
   }
 
   var manoQuery = '';
@@ -956,10 +970,10 @@ window.PushUI = (function () {
   function renderStandings() {
     var box = document.getElementById('standings-results');
     if (!HAS_CLUBS) {
-      box.innerHTML = tableCategories().length ? '' : '<p class="empty">Šiam turnyrui lentelės dar ruošiamos.</p>';
+      box.innerHTML = tableCategories().some(function (c) { return c.groups.length; }) ? '' : '<p class="empty">Grupės pasirodys, kai bus paskelbtos.</p>';
       return;
     }
-    if (!state.matches.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbti mačai.</p>'; return; }
+    if (!state.matches.length) { box.innerHTML = '<p class="empty">Grupės pasirodys, kai bus paskelbti mačai.</p>'; return; }
     var overall = (state.groups && state.groups[0] && state.groups[0].name) || 'Bendra';
     var html = standingsTableHtml(overall, tallyMatches(state.matches), tiePointsByClub(state.matches));
     var byDivision = {};
@@ -1133,11 +1147,11 @@ window.PushUI = (function () {
   }
   function renderBrackets() {
     var box = document.getElementById('brackets-results');
-    var cats = tableCategories();
-    if (!cats.length) { box.innerHTML = ''; return; }
+    var cats = tableCategories().filter(function (c) { return c.draws.length; });
+    if (!cats.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbtos.</p>'; return; }
     var cur = cats.filter(function (c) { return c.key === activeCat; })[0] || cats.filter(catHasMe)[0] || cats[0];
     activeCat = cur.key;
-    var html = HAS_CLUBS ? '<h3 class="section-sub">Tinkleliai</h3>' : '';
+    var html = '';
     if (cats.length > 1) {
       html += '<div class="cat-chips">' + cats.map(function (c) {
         return '<button class="cat-chip' + (c.key === cur.key ? ' active' : '') + '" data-cat="' + esc(c.key) + '">' + esc(c.title) + '</button>';
@@ -1145,7 +1159,6 @@ window.PushUI = (function () {
     } else {
       html += '<h3 class="division-title">' + esc(cur.title) + '</h3>';
     }
-    cur.groups.forEach(function (g) { html += groupTableHtml(g); });
     var focus = -1;
     cur.draws.forEach(function (d) {
       var entries = drawEntries(d), bts = [];
@@ -1153,7 +1166,6 @@ window.PushUI = (function () {
       if (!bts.length) return;
       bts.sort(function (a, b) { return (a === 'main' ? 0 : parseInt(a, 10)) - (b === 'main' ? 0 : parseInt(b, 10)); });
       var bt = bts.indexOf(activeBt[d.draw_id]) !== -1 ? activeBt[d.draw_id] : bts[0];
-      if (cur.groups.length) html += '<h3 class="section-sub">Atkrintamosios</h3>';
       if (bt === 'main') html += championHtml(entries);
       if (bts.length > 1) {
         html += '<div class="seg">' + bts.map(function (b) {
@@ -1181,6 +1193,30 @@ window.PushUI = (function () {
       if (col) scroller.scrollLeft = Math.max(0, col.offsetLeft - scroller.querySelector('.bracket').offsetLeft + col.offsetWidth - scroller.clientWidth + 28);
     }
   }
+  var activeGCat = null;
+  function renderGroupTables() {
+    var box = document.getElementById('groups-results');
+    if (!box) return;
+    var cats = tableCategories().filter(function (c) { return c.groups.length; });
+    if (!cats.length) { box.innerHTML = ''; return; }
+    var cur = cats.filter(function (c) { return c.key === activeGCat; })[0] || cats.filter(catHasMe)[0] || cats[0];
+    activeGCat = cur.key;
+    var html = HAS_CLUBS ? '<h3 class="section-sub">Žaidėjų grupės</h3>' : '';
+    if (cats.length > 1) {
+      html += '<div class="cat-chips">' + cats.map(function (c) {
+        return '<button class="cat-chip' + (c.key === cur.key ? ' active' : '') + '" data-gcat="' + esc(c.key) + '">' + esc(c.title) + '</button>';
+      }).join('') + '</div>';
+    } else {
+      html += '<h3 class="division-title">' + esc(cur.title) + '</h3>';
+    }
+    cur.groups.forEach(function (g) { html += groupTableHtml(g); });
+    box.innerHTML = html;
+  }
+  var groupsBox = document.getElementById('groups-results');
+  if (groupsBox) groupsBox.addEventListener('click', function (e) {
+    var chip = e.target.closest('.cat-chip');
+    if (chip) { activeGCat = chip.dataset.gcat; renderGroupTables(); }
+  });
   document.getElementById('brackets-results').addEventListener('click', function (e) {
     var chip = e.target.closest('.cat-chip');
     if (chip) { activeCat = chip.dataset.cat; renderBrackets(); return; }
@@ -1203,7 +1239,7 @@ window.PushUI = (function () {
 
   function renderAll() {
     indexClubImages(state.matches);
-    renderHeader(); renderMano(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderBrackets();
+    renderHeader(); renderMano(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets();
   }
 
   function switchTab(tab) {
@@ -1232,7 +1268,7 @@ window.PushUI = (function () {
       state.draws = json.draws || state.draws;
       state.syncedAt = json.synced_at;
       var typing = document.activeElement && document.activeElement.id === 'me-search';
-      if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderBrackets(); } else renderAll();
+      if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets(); } else renderAll();
     }).catch(function () { state.lastFetchOk = false; renderHeader(); });
   }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refresh(); });
