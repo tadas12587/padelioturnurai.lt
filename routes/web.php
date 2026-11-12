@@ -6,6 +6,7 @@ use App\Http\Controllers\TournamentController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\OverlayController;
 use App\Http\Controllers\ProposalController;
+use App\Http\Controllers\PushController;
 use App\Http\Controllers\RegistrationInterestController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SitemapController;
@@ -46,6 +47,14 @@ Route::get('/grafikas/{tournament}/data', [ScheduleController::class, 'data'])->
 Route::get('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysForm'])->name('schedule.delays.form');
 Route::post('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysSave'])->name('schedule.delays.save');
 Route::get('/grafikas/{tournament}', [ScheduleController::class, 'show'])->name('schedule.show');
+
+// Phone notifications for the schedule page ("Tavo eilė! Eik į Kortą 4").
+Route::post('/grafikas/{tournament}/push/subscribe', [PushController::class, 'subscribe'])->middleware('throttle:20,1')->name('push.subscribe');
+Route::get('/grafikas/{tournament}/manifest.webmanifest', [PushController::class, 'manifest'])->name('push.manifest');
+Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->middleware('throttle:20,1')->name('push.unsubscribe');
+Route::post('/push/dispatch', [PushController::class, 'dispatch'])->name('push.dispatch');
+Route::get('/sw.js', [PushController::class, 'serviceWorker'])->name('push.sw');
+Route::get('/grafikas-icon/{size}.png', [PushController::class, 'icon'])->whereNumber('size')->name('push.icon');
 
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])

@@ -3,6 +3,7 @@
 namespace App\Services\Tournated;
 
 use App\Models\ScheduleSnapshot;
+use App\Services\Push\PushEvents;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -80,6 +81,14 @@ class TournamentSync
 
         [$matches, $source] = $this->matches($tournamentId, ! empty($teams), $warnings);
         $matches = self::stampResults($matches, $existing['matches'] ?? [], ! empty($existing));
+        if (! empty($existing['matches'])) {
+            try {
+                $matches = PushEvents::detect($tournamentId, $existing['matches'], $matches,
+                    ($existing['source'] ?? null) === $source, $tournament['tz'] ?? 'Europe/Vilnius');
+            } catch (Throwable $e) {
+                $warnings[] = "push: {$e->getMessage()}"; // notifications must never break the sync
+            }
+        }
 
         $dates = array_filter(array_column($matches, 'date'));
         $tournament['date'] = $dates ? min($dates) : (isset($tournament['start'])

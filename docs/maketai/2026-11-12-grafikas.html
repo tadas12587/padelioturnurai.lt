@@ -60,6 +60,7 @@
   .vs { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; }
   .vs b { color: var(--ink); font-weight: 600; }
   .queue { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--ink-soft); display: flex; gap: 8px; align-items: center; }
+  .notify { margin-top: 12px; width: 100%; height: 46px; border-radius: 12px; border: 1px solid rgba(217,244,90,.45); background: rgba(217,244,90,.10); color: var(--ball); font: 600 0.9rem var(--sans); }
   .hint { margin-top: 8px; font-size: 0.74rem; color: var(--muted); }
 
   .section { font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 18px 2px 8px; display: flex; justify-content: space-between; }
@@ -111,11 +112,7 @@
 <div class="intro">
   <h1>Grafiko maketas: kitas turnyras (klubų lyga)</h1>
   <p>Trys telefono ekranai. Laikai pavyzdiniai, kad matytųsi automatinis vėlavimas: kai teisėjas įveda rezultatą, kito mačo korte laikas = įvedimo laikas + 5 min, toliau + planinis tarpas.</p>
-  <div class="legend">
-    <span class="badge late">+17 min vėluoja</span>
-    <span class="badge early">−10 min gali anksčiau</span>
-    <span class="badge ontime">laiku</span>
-  </div>
+  <div class="legend"><span>Laikas su „~“ = apytikslis (apskaičiuotas automatiškai), šalia mažai – planuotas.</span></div>
 </div>
 
 <div class="phones">
@@ -132,16 +129,17 @@
 
         <div class="next">
           <div class="label">Kitas tavo mačas</div>
-          <div class="bigtime"><span class="t">~13:37</span><span class="badge late">+17 min</span></div>
+          <div class="bigtime"><span class="t">~13:37</span></div>
           <div class="planned">planuota <s>13:20</s> · gali keistis ±</div>
           <div class="court-big">Kortas 4</div>
           <div class="vs">su <b>Agnius Čiapas</b><br>prieš <b>BTC Klubas</b> – M. Povilavičius, I. Riauba</div>
+          <button class="notify">🔔 Pranešti man likus 20 min</button>
           <div class="queue"><span class="pulse"></span>Korte 4 dabar žaidžia Slėnio – 4Padel (nuo 12:47), tu – po jų</div>
         </div>
 
         <div class="section"><span>Vėliau</span></div>
         <div class="m">
-          <div class="mhead"><div class="when"><span class="t">~15:17</span><span class="badge late">+17</span></div><span class="courttag">Kortas 4</span></div>
+          <div class="mhead"><div class="when"><span class="t">~15:17</span></div><span class="courttag">Kortas 4</span></div>
           <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl"><span class="hl">R. Šimkus</span>, A. Čiapas</div></div></div>
           <div class="side"><div class="who"><div class="club">4Padel</div><div class="pl">E. Sileika, G. Skirutis</div></div></div>
         </div>
@@ -166,30 +164,30 @@
     <div class="phone">
       <div class="scroll">
         <div class="top"><b>Klaipėdos klubų lyga – III etapas</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
-        <div class="section" style="margin-top:6px"><span>Kortai · 12:58</span><span>vidutiniškai +9 min</span></div>
+        <div class="section" style="margin-top:6px"><span>Kortai · 12:58</span></div>
 
         <div class="court">
-          <div class="ch"><b>Kortas 1</b><span class="badge ontime">laiku</span></div>
+          <div class="ch"><b>Kortas 1</b></div>
           <div class="row"><span class="k">Laisvas</span><span class="v">Paskutinis baigtas 12:52</span></div>
           <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">13:20</span>BTC – Pasitaškom <span style="color:var(--muted)">· Moterys B 2</span></span></div>
         </div>
 
         <div class="court">
-          <div class="ch"><b>Kortas 2</b><span class="badge early">−10 min</span></div>
+          <div class="ch"><b>Kortas 2</b></div>
           <div class="row"><span class="k live">Žaidžia</span><span class="v"><span class="pulse"></span>4Padel – BTC <span style="color:var(--muted)">· Vyrai TOP 1 · nuo 12:20</span></span></div>
-          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:10</span>Slėnio – Pasitaškom <span style="color:var(--muted)">(pl. 13:20, gali anksčiau)</span></span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:10</span>Slėnio – Pasitaškom <span style="color:var(--muted)">(planuota 13:20, gali anksčiau)</span></span></div>
         </div>
 
         <div class="court">
-          <div class="ch"><b>Kortas 3</b><span class="badge late">+25 min</span></div>
+          <div class="ch"><b>Kortas 3</b></div>
           <div class="row"><span class="k live">Žaidžia</span><span class="v"><span class="pulse"></span>Pasitaškom – Slėnio <span style="color:var(--muted)">· nuo 12:05</span><br><span class="over">Užsitęsė: planuota baigti 12:50</span></span></div>
-          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:45</span>4Padel – BTC <span style="color:var(--muted)">(pl. 13:20)</span></span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:45</span>4Padel – BTC <span style="color:var(--muted)">(planuota 13:20)</span></span></div>
         </div>
 
         <div class="court">
-          <div class="ch"><b>Kortas 4</b><span class="badge late">+17 min</span></div>
+          <div class="ch"><b>Kortas 4</b></div>
           <div class="row"><span class="k live">Žaidžia</span><span class="v"><span class="pulse"></span>Slėnio – 4Padel <span style="color:var(--muted)">· Vyrai B- 1 · nuo 12:47</span></span></div>
-          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:37</span>BTC – Pasitaškom <span style="color:var(--muted)">· Vyrai B- 1 (pl. 13:20)</span></span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:37</span>BTC – Pasitaškom <span style="color:var(--muted)">· Vyrai B- 1 · planuota 13:20</span></span></div>
         </div>
         <p class="hint">Laikai numatomi automatiškai pagal tai, kada teisėjas įveda rezultatus. Anksčiau nei 15 min iki planuoto laiko nerodoma.</p>
       </div>
@@ -216,17 +214,17 @@
 
         <div class="section"><span>Šeštadienis, 13:20 planas</span><span>4 mačai</span></div>
         <div class="m">
-          <div class="mhead"><div class="when"><span class="t">13:20</span><span class="badge ontime">laiku</span></div><span class="courttag">Kortas 1</span></div>
+          <div class="mhead"><div class="when"><span class="t">13:20</span></div><span class="courttag">Kortas 1</span></div>
           <div class="side"><div class="who"><div class="club">BTC Klubas</div><div class="pl">D. Lomsargienė, A. Mordvinukienė</div></div></div>
           <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl">L. Butkienė, L. Šacauskienė</div></div></div>
         </div>
         <div class="m">
-          <div class="mhead"><div class="when"><span class="t">~13:10</span><span class="p">pl. 13:20</span><span class="badge early">−10</span></div><span class="courttag">Kortas 2</span></div>
+          <div class="mhead"><div class="when"><span class="t">~13:10</span><span class="p">planuota 13:20</span></div><span class="courttag">Kortas 2</span></div>
           <div class="side"><div class="who"><div class="club">Slėnio Padelio Klubas</div><div class="pl">G. Simkevičiūtė, V. Praleikienė</div></div></div>
           <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl">E. Čerbienė, K. Sparnauskaitė</div></div></div>
         </div>
         <div class="m">
-          <div class="mhead"><div class="when"><span class="t">~13:37</span><span class="p">pl. 13:20</span><span class="badge late">+17</span></div><span class="courttag">Kortas 4</span></div>
+          <div class="mhead"><div class="when"><span class="t">~13:37</span><span class="p">planuota 13:20</span></div><span class="courttag">Kortas 4</span></div>
           <div class="side"><div class="who"><div class="club">BTC Klubas</div><div class="pl">M. Povilavičius, I. Riauba</div></div></div>
           <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl"><span class="hl">R. Šimkus</span>, A. Čiapas</div></div></div>
         </div>

@@ -276,9 +276,22 @@ class ScheduleController extends Controller
      * "played" and showing up with no time/court context. Exclude anything
      * without a real time+court from the public page entirely.
      */
+    /**
+     * Scheduled matches, plus unscheduled ones whose two sides are known (the
+     * page lists those under "Laikas dar nepaskirtas" instead of hiding them).
+     * Empty bracket slots and byes stay out.
+     */
     public static function isUsableMatch(array $match): bool
     {
-        return ! empty($match['time']) && ! empty($match['court']['name'] ?? null);
+        if (! empty($match['is_bye'])) {
+            return false;
+        }
+        if (! empty($match['time']) && ! empty($match['court']['name'] ?? null)) {
+            return true;
+        }
+        $sides = array_unique(array_column($match['participants'] ?? [], 'side'));
+
+        return in_array(1, $sides, true) && in_array(2, $sides, true);
     }
 
     /** @return array<string, array<int, array<string, mixed>>> keyed by club title */

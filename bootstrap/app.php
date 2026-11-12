@@ -25,6 +25,11 @@ return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR
             'overlay/*/control',
             'overlay/*/score',
             'grafikas/ingest',
+            // phone notification sign-up from the public page (no login) and
+            // the token-protected dispatcher the scheduler calls
+            'grafikas/*/push/subscribe',
+            'push/unsubscribe',
+            'push/dispatch',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

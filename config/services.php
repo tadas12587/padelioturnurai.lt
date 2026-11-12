@@ -54,4 +54,13 @@ return [
         'graphql_url' => env('TOURNATED_GRAPHQL_URL', 'https://play.padel.lt/api/graphql'),
     ],
 
+    // Web Push for the /grafikas page. Keys: `php artisan push:vapid-keys <path>`.
+    'push' => [
+        'vapid_public' => env('VAPID_PUBLIC_KEY'),
+        'vapid_private_path' => env('VAPID_PRIVATE_KEY_PATH', storage_path('app/vapid-private.pem')),
+        'subject' => env('VAPID_SUBJECT', 'https://padelioturnyrai.lt'),
+        // shared secret the scheduler sends to POST /push/dispatch
+        'dispatch_token' => env('PUSH_DISPATCH_TOKEN'),
+    ],
+
 ];
