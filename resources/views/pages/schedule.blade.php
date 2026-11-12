@@ -796,8 +796,14 @@
   function updateDelayTicker() {
     var el = document.getElementById('delay-ticker');
     var delays = state.courtDelays || {};
+    // A delay only matters while the court still has matches to play — once
+    // a court (or the whole tournament) is finished its old delay is hidden.
+    var pending = {};
+    state.matches.forEach(function (m) {
+      if (!isPlayed(m) && m.court && m.court.name) pending[m.court.name] = true;
+    });
     var parts = Object.keys(delays)
-      .filter(function (c) { return delays[c] > 0; })
+      .filter(function (c) { return delays[c] > 0 && pending[c]; })
       .sort(function (a, b) {
         var na = parseInt((a.match(/\d+/) || [999])[0], 10);
         var nb = parseInt((b.match(/\d+/) || [999])[0], 10);
