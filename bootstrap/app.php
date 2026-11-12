@@ -30,6 +30,8 @@ return Application::configure(basePath: getenv('APP_BASE_PATH') ?: dirname(__DIR
             'grafikas/*/push/subscribe',
             'push/unsubscribe',
             'push/dispatch',
+            // the mobile app (no browser session)
+            'api/app/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

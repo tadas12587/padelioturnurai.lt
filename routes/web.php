@@ -3,6 +3,7 @@
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\TournamentController;
+use App\Http\Controllers\AppApiController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\OverlayController;
 use App\Http\Controllers\ProposalController;
@@ -55,6 +56,14 @@ Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->middle
 Route::post('/push/dispatch', [PushController::class, 'dispatch'])->name('push.dispatch');
 Route::get('/sw.js', [PushController::class, 'serviceWorker'])->name('push.sw');
 Route::get('/grafikas-icon/{size}.png', [PushController::class, 'icon'])->whereNumber('size')->name('push.icon');
+
+// "Padelio turnyrai" mobile app (Expo).
+Route::prefix('api/app/v1')->middleware('throttle:120,1')->group(function () {
+    Route::get('/tournaments', [AppApiController::class, 'tournaments'])->name('app.tournaments');
+    Route::get('/tournaments/{tournament}', [ScheduleController::class, 'data'])->name('app.tournament');
+    Route::post('/devices', [AppApiController::class, 'registerDevice'])->middleware('throttle:20,1')->name('app.devices.store');
+    Route::post('/devices/delete', [AppApiController::class, 'deleteDevice'])->middleware('throttle:20,1')->name('app.devices.delete');
+});
 
 // Admin CSV export — protected by Filament auth
 Route::get('/admin/interests/export', [RegistrationInterestController::class, 'export'])

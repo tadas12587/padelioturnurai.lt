@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PushMessage;
 use App\Models\PushSubscription;
 use App\Models\ScheduleSnapshot;
+use App\Services\Push\ExpoPush;
 use App\Services\Push\WebPush;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -68,10 +69,37 @@ class PushController extends Controller
         // "Go to your court" is useless 15 minutes late.
         PushMessage::where('status', 'pending')->where('created_at', '<', now()->subMinutes(15))->update(['status' => 'expired']);
 
-        $push = self::webPush();
         $sent = $failed = 0;
-        $messages = PushMessage::with('subscription')->where('status', 'pending')->orderBy('id')->limit(300)->get();
-        foreach ($messages as $msg) {
+        $messages = PushMessage::with(['subscription', 'device'])->where('status', 'pending')->orderBy('id')->limit(300)->get();
+
+        // App phones: one batched call to Expo's push service.
+        $appMsgs = $messages->filter(fn ($m) => $m->app_device_id)->values();
+        if ($appMsgs->isNotEmpty()) {
+            $live = $appMsgs->filter(fn ($m) => $m->device)->values();
+            $appMsgs->reject(fn ($m) => $m->device)->each->update(['status' => 'expired']);
+            $results = ExpoPush::send($live->map(fn ($m) => [
+                'to' => $m->device->expo_token,
+                'title' => $m->title,
+                'body' => $m->body,
+                'data' => ['kind' => $m->kind, 'matchId' => $m->url, 'tournament' => $m->device->tournament_external_id],
+            ])->all());
+            foreach ($live as $i => $msg) {
+                $res = $results[$i];
+                if ($res['gone']) {
+                    $msg->device->delete(); // cascades its messages
+                    continue;
+                }
+                $attempts = $msg->attempts + 1;
+                $msg->update($res['ok']
+                    ? ['status' => 'sent', 'sent_at' => now(), 'attempts' => $attempts]
+                    : ['status' => $attempts >= 3 ? 'failed' : 'pending', 'attempts' => $attempts]);
+                $res['ok'] ? $sent++ : $failed++;
+            }
+        }
+
+        $webMsgs = $messages->reject(fn ($m) => $m->app_device_id);
+        $push = $webMsgs->isNotEmpty() ? self::webPush() : null;
+        foreach ($webMsgs as $msg) {
             if (! $msg->subscription) {
                 $msg->update(['status' => 'expired']);
                 continue;

@@ -2,6 +2,7 @@
 
 namespace App\Services\Push;
 
+use App\Models\AppDevice;
 use App\Models\PushMessage;
 use App\Models\PushSubscription;
 use App\Services\Tournated\CourtDelays;
@@ -34,6 +35,7 @@ class PushEvents
         $today = $now->toDateString();
         $nowMin = $now->hour * 60 + $now->minute;
         $subs = PushSubscription::where('tournament_external_id', $tournamentId)->get();
+        $devices = AppDevice::where('tournament_external_id', $tournamentId)->get();
 
         $prev = [];
         foreach ($before as $m) {
@@ -45,8 +47,10 @@ class PushEvents
         }
 
         $queue = [];
-        $send = function (array $m, string $kind, string $key, string $title, string $body, ?array $people = null) use (&$queue) {
-            $queue[] = compact('m', 'kind', 'key', 'title', 'body', 'people');
+        // $fan: title for app spectators following someone in the match ("{who} · …");
+        // $fanOnly: an event only spectators get (results of the people they follow)
+        $send = function (array $m, string $kind, string $key, string $title, string $body, ?array $people = null, ?string $fan = null, bool $fanOnly = false) use (&$queue) {
+            $queue[] = compact('m', 'kind', 'key', 'title', 'body', 'people', 'fan', 'fanOnly');
         };
 
         foreach ($after as $i => $m) {
@@ -67,7 +71,7 @@ class PushEvents
                 $send($m, 'time', "time:{$m['match_id']}:{$m['time']}", "Pasikeitė mačo laikas: ~{$eta}", "{$court} · {$teams}");
                 $after[$i]['eta_announced'] = $eta;
             } elseif ($eta && $after[$i]['eta_announced'] && abs(self::min($eta) - self::min($after[$i]['eta_announced'])) > self::ETA_SHIFT) {
-                $send($m, 'time', "eta:{$m['match_id']}:{$eta}", "Tavo mačas dabar apie {$eta}", "{$court} · {$teams} (planuota {$m['time']})");
+                $send($m, 'time', "eta:{$m['match_id']}:{$eta}", "Tavo mačas dabar apie {$eta}", "{$court} · {$teams} (planuota {$m['time']})", null, "mačas apie {$eta}");
                 $after[$i]['eta_announced'] = $eta;
             }
             if (self::signature($old) !== self::signature($m) && self::signature($old) !== '') {
@@ -83,8 +87,10 @@ class PushEvents
             if (($m['date'] ?? null) !== $today || ! self::played($m) || ! $old || self::played($old) || ! empty($m['result_batch'])) {
                 continue;
             }
+            $send($m, 'result', "result:{$m['match_id']}", 'Rezultatas', self::teams($m), null, null, true);
             if ($next = self::nextOnCourt($after, $m)) {
-                $send($next, 'turn', "turn:{$next['match_id']}", 'Tavo eilė! Eik į '.self::court($next, true), self::teams($next).(! empty($next['division']) ? ' · '.$next['division'] : ''));
+                $send($next, 'turn', "turn:{$next['match_id']}", 'Tavo eilė! Eik į '.self::court($next, true), self::teams($next).(! empty($next['division']) ? ' · '.$next['division'] : ''),
+                    null, 'eina į '.self::court($next, true));
             }
         }
         // First match of the day on a court: nothing before it, so remind shortly before the planned time.
@@ -94,7 +100,7 @@ class PushEvents
             }
             $lead = self::min($m['time']) - $nowMin;
             if ($lead <= self::FIRST_MATCH_LEAD && $lead >= -20 && ! self::earlierOnCourt($after, $m)) {
-                $send($m, 'turn', "turn:{$m['match_id']}", 'Tavo eilė! Eik į '.self::court($m, true), self::teams($m).' · '.$m['time']);
+                $send($m, 'turn', "turn:{$m['match_id']}", 'Tavo eilė! Eik į '.self::court($m, true), self::teams($m).' · '.$m['time'], null, 'eina į '.self::court($m, true));
             }
         }
         // Removed from the schedule (only when both syncs came from the same source and lists are complete).
@@ -108,18 +114,38 @@ class PushEvents
             }
         }
 
-        self::enqueue($tournamentId, $subs, $queue);
+        self::enqueue($tournamentId, $subs, $devices, $queue);
 
         return $after;
     }
 
-    private static function enqueue(string $tournamentId, $subs, array $queue): void
+    private static function enqueue(string $tournamentId, $subs, $devices, array $queue): void
     {
-        if ($subs->isEmpty() || ! $queue) {
+        if (($subs->isEmpty() && $devices->isEmpty()) || ! $queue) {
             return;
         }
         foreach ($queue as $q) {
             $people = $q['people'] ?? self::people($q['m']);
+            foreach ($devices as $device) {
+                $interest = $device->interestIn($people);
+                if (! $interest || ($interest === 'me' && $q['fanOnly'])) {
+                    continue;
+                }
+                $title = $q['title'];
+                if ($interest === 'follow') {
+                    $title = $q['kind'] === 'result'
+                        ? self::resultTitle($q['m'], $device)
+                        : implode(', ', $device->followedIn($people)).' · '.($q['fan'] ?? $q['title']);
+                }
+                $body = $q['kind'] === 'result' ? $q['body'].' · '.self::score($q['m']) : $q['body'];
+                PushMessage::firstOrCreate(
+                    ['app_device_id' => $device->id, 'dedupe_key' => $q['key']],
+                    ['kind' => $q['kind'], 'title' => mb_substr($title, 0, 190), 'body' => mb_substr($body, 0, 490), 'url' => (string) $q['m']['match_id']],
+                );
+            }
+            if ($q['fanOnly']) {
+                continue;
+            }
             foreach ($subs as $sub) {
                 if (! in_array($sub->player_key, $people, true)) {
                     continue;
@@ -135,6 +161,26 @@ class PushEvents
                 );
             }
         }
+    }
+
+    /** "Robertas Šimkus laimėjo" / "… pralaimėjo", from the followed player's side. */
+    private static function resultTitle(array $m, AppDevice $device): string
+    {
+        $side = null;
+        foreach ($m['participants'] ?? [] as $p) {
+            if (in_array(PushSubscription::key(trim(($p['name'] ?? '').' '.($p['surname'] ?? ''))), $device->follow_keys ?? [], true)) {
+                $side = $p['side'] ?? null;
+                break;
+            }
+        }
+        $won = $side && (int) ($m['winner_side'] ?? 0) === (int) $side;
+
+        return implode(', ', $device->followedIn(self::people($m))).($won ? ' laimėjo' : ' pralaimėjo');
+    }
+
+    private static function score(array $m): string
+    {
+        return implode(' ', array_map(fn ($s) => ($s['side1'] ?? '?').'-'.($s['side2'] ?? '?'), $m['sets'] ?? []));
     }
 
     private static function nextOnCourt(array $matches, array $m): ?array
