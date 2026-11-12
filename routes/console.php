@@ -19,3 +19,10 @@ Schedule::call(function () {
         \Illuminate\Support\Facades\Http::withHeaders(['X-Push-Token' => $token])->timeout(50)->post(route('push.dispatch'));
     }
 })->everyMinute()->name('push-dispatch')->withoutOverlapping(5);
+
+// Privacy policy (/privatumas): idle devices go after 60 days, sent texts after 30.
+Schedule::call(function () {
+    \App\Models\AppDevice::where('updated_at', '<', now()->subDays(60))->delete();
+    \App\Models\PushSubscription::where('updated_at', '<', now()->subDays(60))->delete();
+    \App\Models\PushMessage::where('created_at', '<', now()->subDays(30))->delete();
+})->dailyAt('04:10')->name('push-prune');

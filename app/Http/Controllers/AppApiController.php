@@ -61,7 +61,7 @@ class AppApiController extends Controller
         abort_unless(self::acceptsPush($data['tournament']), 404);
 
         $follows = array_values(array_unique($data['follows'] ?? []));
-        AppDevice::updateOrCreate(['expo_token' => $data['token']], [
+        $device = AppDevice::updateOrCreate(['expo_token' => $data['token']], [
             'platform' => $data['platform'] ?? null,
             'tournament_external_id' => $data['tournament'],
             'role' => $data['role'],
@@ -70,6 +70,7 @@ class AppApiController extends Controller
             'follows' => $follows,
             'follow_keys' => array_map([PushSubscription::class, 'key'], $follows),
         ]);
+        $device->touch(); // each app launch keeps the record alive (60-day prune)
 
         return response()->json(['ok' => true]);
     }

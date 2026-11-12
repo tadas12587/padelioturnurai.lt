@@ -80,6 +80,7 @@ Route::middleware('setlocale')->group(function () {
     Route::get('/kontaktai', [ContactController::class, 'index'])->name('contact');
     Route::post('/kontaktai', [ContactController::class, 'store'])->middleware('throttle:3,10')->name('contact.store');
     Route::get('/tapk-remeju', [ProposalController::class, 'index'])->name('proposal');
+    Route::view('/privatumas', 'pages.privacy')->name('privacy');
 });
 
 // Routes with locale prefix (lt or en)
@@ -92,4 +93,5 @@ Route::prefix('{locale}')->where(['locale' => 'lt|en'])->middleware('setlocale')
     Route::get('/kontaktai', [ContactController::class, 'index'])->name('contact.locale');
     Route::post('/kontaktai', [ContactController::class, 'store'])->middleware('throttle:3,10')->name('contact.store.locale');
     Route::get('/tapk-remeju', [ProposalController::class, 'index'])->name('proposal.locale');
+    Route::view('/privatumas', 'pages.privacy')->name('privacy.locale');
 });

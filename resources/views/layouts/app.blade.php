@@ -246,6 +246,7 @@
                 <div class="text-center md:text-left">
                     <a href="{{ lroute('home') }}" class="text-gold font-black text-lg tracking-widest">PADELIO TURNYRAI</a>
                     <p class="text-gray-600 text-sm mt-2">&copy; {{ date('Y') }} Padelioturnyrai.lt. {{ __('messages.footer_rights') }}.</p>
+                    <a href="{{ lroute('privacy') }}" class="text-gray-600 hover:text-gold text-sm mt-1 inline-block">Privatumo politika</a>
                 </div>
 
                 {{-- Social Links (admin-managed; shown only when set) --}}
