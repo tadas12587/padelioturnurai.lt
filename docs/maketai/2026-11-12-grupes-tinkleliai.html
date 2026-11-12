@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grupių ir tinklelių maketas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground: #0A2226; --surface: #0E2C30; --surface-2: #123539;
+    --line: rgba(238,244,242,0.09); --line-2: rgba(238,244,242,0.22); --ink: #EAF3F1; --ink-soft: #A9C4BE;
+    --muted: #8BA7A1; --ball: #D9F45A; --ball-ink: #17230a; --late: #F5B54A;
+    --sans: 'Inter', -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: 'Archivo', var(--sans);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #061719; color: var(--ink); font-family: var(--sans); padding: 24px 16px 48px; }
+  .intro { max-width: 1180px; margin: 0 auto 22px; }
+  .intro h1 { font-family: var(--display); font-size: 1.4rem; margin: 0 0 6px; text-wrap: balance; }
+  .intro p { color: var(--ink-soft); margin: 0 0 6px; font-size: 0.92rem; line-height: 1.5; max-width: 72ch; }
+  .phones { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; max-width: 1180px; margin: 0 auto; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; max-width: 100%; }
+  .col > h2 { font-family: var(--display); font-size: 0.95rem; margin: 0; color: var(--ink-soft); font-weight: 600; }
+  .phone { width: 360px; max-width: 100%; height: 760px; background: var(--ground); border-radius: 34px; border: 8px solid #1d3236;
+    position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .phone.app { border-radius: 40px; }
+  .scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0 14px 96px; }
+  .note { max-width: 360px; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.45; margin: 0; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 0 10px; }
+  .top b { font-family: var(--display); font-size: 0.86rem; line-height: 1.2; }
+  .fresh { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ball); box-shadow: 0 0 0 3px rgba(217,244,90,.18); }
+  .section { font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 18px 2px 8px; display: flex; justify-content: space-between; gap: 8px; }
+
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin: 0 -14px; padding-left: 14px; padding-right: 14px; scrollbar-width: none; }
+  .chip { flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 999px;
+    padding: 0 14px; height: 36px; display: inline-flex; align-items: center; font-size: 0.8rem; white-space: nowrap; }
+  .chip.on { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); font-weight: 700; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin-top: 12px; }
+  .seg span { text-align: center; font-size: 0.78rem; padding: 8px 0; border-radius: 9px; color: var(--ink-soft); }
+  .seg span.on { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+
+  .champ { margin-top: 12px; background: linear-gradient(160deg, #15444a, var(--surface)); border: 1px solid rgba(217,244,90,.35);
+    border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+  .champ .cup { font-size: 1.6rem; }
+  .champ .l { font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ball); font-weight: 700; }
+  .champ .n { font-family: var(--display); font-weight: 700; font-size: 1rem; }
+
+  /* bracket */
+  .bracket-scroll { overflow-x: auto; margin: 0 -14px; padding: 0 14px 6px; scrollbar-width: thin; }
+  .bracket { display: flex; gap: 18px; width: max-content; }
+  .bcol { width: 186px; flex: none; }
+  .bhead { font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; height: 22px; }
+  .pairbox { position: relative; }
+  .pairbox.joined::after { content: ""; position: absolute; right: -10px; top: 25%; bottom: 25%; width: 10px;
+    border: 2px solid var(--line-2); border-left: 0; border-radius: 0 6px 6px 0; }
+  .slot { display: flex; align-items: center; }
+  .bm { position: relative; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 5px 8px; }
+  .bcol:not(.first) .bm::before { content: ""; position: absolute; left: -10px; top: 50%; width: 9px; border-top: 2px solid var(--line-2); }
+  .bm.mine { border-color: rgba(217,244,90,.55); box-shadow: 0 0 0 1px rgba(217,244,90,.15) inset; }
+  .bmeta { font-size: 0.62rem; color: var(--muted); margin-bottom: 2px; }
+  .bs { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 0.74rem; line-height: 1.5; color: var(--ink-soft); }
+  .bs .bn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bs.won { color: var(--ink); font-weight: 700; }
+  .bs.lost { color: var(--muted); }
+  .bs.me .bn { color: var(--ball); }
+  .bsets { display: flex; gap: 5px; font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .bsets .w { color: var(--ink); font-weight: 800; }
+  .bs.lost .bsets span { color: var(--muted); }
+  .bye { color: var(--muted); font-style: italic; font-weight: 400; }
+  .hint { font-size: 0.72rem; color: var(--muted); margin: 6px 2px 0; line-height: 1.45; }
+  .third .bm { max-width: 220px; }
+
+  /* places */
+  .prow { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 9px 12px; font-size: 0.84rem;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 6px; }
+  .prow .pos { font-family: var(--display); font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .prow .pn { min-width: 0; }
+  .prow .pts { font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .prow.me { border-color: rgba(217,244,90,.55); }
+  .prow.me .pn { color: var(--ball); font-weight: 600; }
+
+  /* league table */
+  .tbl-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+  th { font-size: 0.64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; text-align: center; padding: 9px 6px; border-bottom: 1px solid var(--line); }
+  td { text-align: center; padding: 10px 6px; border-bottom: 1px solid var(--line); color: var(--ink-soft); }
+  tr:last-child td { border-bottom: 0; }
+  td.pos { font-family: var(--display); font-weight: 800; color: var(--muted); width: 26px; }
+  td.tn { text-align: left; color: var(--ink); font-weight: 600; white-space: nowrap; }
+  th.tn { text-align: left; }
+  td.pts { font-family: var(--display); font-weight: 800; color: var(--ink); font-size: 0.95rem; }
+  tr.me td { background: rgba(217,244,90,.07); }
+  tr.me td.tn { color: var(--ball); }
+  .qual td.pos { color: var(--ball); }
+  .h2h td.w { color: var(--ball); font-weight: 700; }
+  .h2h td.l { color: var(--muted); }
+  .h2h td.x { background: rgba(238,244,242,.04); }
+  .h2h th:first-child, .h2h tr th { text-align: center; }
+
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr);
+    background: rgba(10,34,38,.96); border-top: 1px solid var(--line); padding: 6px 4px 12px; }
+  .nav.four { grid-template-columns: repeat(5, 1fr); }
+  .nav a { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.66rem; color: var(--muted);
+    text-decoration: none; padding: 6px 0; border-radius: 12px; min-height: 48px; justify-content: center; }
+  .nav a.on { color: var(--ball); background: rgba(217,244,90,.08); }
+  .nav svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .apptitle { font-family: var(--display); font-weight: 800; font-size: 1.6rem; margin: 18px 0 2px; }
+  .appsub { font-size: 0.8rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Grupės ir tinkleliai: maketas</h1>
+  <p>Visi vardai ir rezultatai tikri: Jūros šventės čempionatas (Tournated 10931, kategorija „Masters – Besso“) ir klubų lyga (11532). Žaidėjas pavyzdyje – Aidas Akcijonaitis, jo pora visur paryškinta žaliai.</p>
+  <p>Penktas skirtukas „Lentelės“ tampa „Tinkleliai“: jame kategorijų mygtukai, tinklelis (jei turnyras su atkrintamosiomis), grupių lentelės (jei su grupėmis) ir galutinės vietos.</p>
+</div>
+
+<div class="phones">
+  <!-- 1: bracket -->
+  <div class="col">
+    <h2>1. Tinklelis (atkrintamosios)</h2>
+    <div class="phone">
+      <div class="scroll">
+        <div class="top"><b>Jūros šventės padelio čempionatas 2026</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
+        <div class="chips"><span class="chip">M Start Plus</span><span class="chip">M Light</span><span class="chip">M Power</span><span class="chip">M Hard</span><span class="chip">V Light</span><span class="chip">V Light Plus- Kavoszinovai.lt</span><span class="chip">V Power</span><span class="chip">V Power Plus</span><span class="chip">V Hard</span><span class="chip">MIX</span><span class="chip on">Masters</span><span class="chip">ProXpadel</span></div>
+        <div class="seg"><span class="on">Pagrindinis</span><span>5–8 vietos</span><span>9–16 vietos</span></div>
+        <div class="champ"><span class="cup">🏆</span><div><div class="l">Nugalėtojai</div><div class="n">T. Butvilas / G. Lescinskas</div></div></div>
+        <div class="section"><span>Pagrindinis tinklelis</span><span>braukite →</span></div>
+        <div class="bracket-scroll"><div class="bracket"><div class="bcol first"><div class="bhead">Aštuntfinalis</div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm "><div class="bs"><span class="bn">M. Udra / A. Udra</span><span class="bsets"></span></div><div class="bs"><span class="bn"><span class="bye">laisvas ratas</span></span><span class="bsets"></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">11:00 · Vidus 1</div><div class="bs won"><span class="bn">E. Paulavicius / E. Starkutis</span><span class="bsets"><span class="">4</span><span class="w">6</span><span class="w">10</span></span></div><div class="bs lost"><span class="bn">R. Valinskas / Š. Gailius</span><span class="bsets"><span class="w">6</span><span class="">3</span><span class="">8</span></span></div></div></div></div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">11:00 · Vidus 3</div><div class="bs lost"><span class="bn">G. Zemeckas / M. Dakanis</span><span class="bsets"><span class="">4</span><span class="w">6</span><span class="">5</span></span></div><div class="bs won"><span class="bn">K. Kucka / I. Daukontas</span><span class="bsets"><span class="w">6</span><span class="">4</span><span class="w">10</span></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bs"><span class="bn"><span class="bye">laisvas ratas</span></span><span class="bsets"></span></div><div class="bs"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"></span></div></div></div></div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm mine "><div class="bs me"><span class="bn">E. Gudavičius / A. Akcijonaitis</span><span class="bsets"></span></div><div class="bs"><span class="bn"><span class="bye">laisvas ratas</span></span><span class="bsets"></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">11:00 · Vidus 2</div><div class="bs won"><span class="bn">A. Bružas / A. Žernys</span><span class="bsets"><span class="w">6</span><span class="">6</span><span class="w">10</span></span></div><div class="bs lost"><span class="bn">A. Gaiduk / A. Radiuš</span><span class="bsets"><span class="">4</span><span class="w">7</span><span class="">3</span></span></div></div></div></div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">11:00 · Vidus 5</div><div class="bs won"><span class="bn">G. Šilgalis / A. Bleuer</span><span class="bsets"><span class="w">7</span><span class="">3</span><span class="w">11</span></span></div><div class="bs lost"><span class="bn">F. Lescinskas / D. Kanopa</span><span class="bsets"><span class="">5</span><span class="w">6</span><span class="">9</span></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bs"><span class="bn"><span class="bye">laisvas ratas</span></span><span class="bsets"></span></div><div class="bs"><span class="bn">K. Pirogov / P. Balcaitis</span><span class="bsets"></span></div></div></div></div></div><div class="bcol"><div class="bhead">Ketvirtfinalis</div><div class="pairbox joined"><div class="slot" style="height:164px"><div class="bm "><div class="bmeta">13:00 · Vidus 1</div><div class="bs won"><span class="bn">A. Udra / M. Udra</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div><div class="bs lost"><span class="bn">E. Paulavicius / E. Starkutis</span><span class="bsets"><span class="">3</span><span class="">4</span></span></div></div></div><div class="slot" style="height:164px"><div class="bm "><div class="bmeta">13:00 · Vidus 3</div><div class="bs lost"><span class="bn">K. Kucka / I. Daukontas</span><span class="bsets"><span class="">6</span><span class="w">6</span><span class="">5</span></span></div><div class="bs won"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"><span class="w">7</span><span class="">1</span><span class="w">10</span></span></div></div></div></div><div class="pairbox joined"><div class="slot" style="height:164px"><div class="bm mine "><div class="bmeta">13:00 · Vidus 4</div><div class="bs won me"><span class="bn">A. Akcijonaitis / E. Gudavičius</span><span class="bsets"><span class="w">6</span><span class="w">7</span></span></div><div class="bs lost"><span class="bn">A. Bružas / A. Žernys</span><span class="bsets"><span class="">1</span><span class="">5</span></span></div></div></div><div class="slot" style="height:164px"><div class="bm "><div class="bmeta">13:00 · Vidus 6</div><div class="bs won"><span class="bn">A. Bleuer / G. Šilgalis</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div><div class="bs lost"><span class="bn">K. Pirogov / P. Balcaitis</span><span class="bsets"><span class="">2</span><span class="">3</span></span></div></div></div></div></div><div class="bcol"><div class="bhead">Pusfinalis</div><div class="pairbox joined"><div class="slot" style="height:328px"><div class="bm "><div class="bmeta">14:00 · Vidus 5</div><div class="bs lost"><span class="bn">A. Udra / M. Udra</span><span class="bsets"><span class="">7</span></span></div><div class="bs won"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"><span class="w">10</span></span></div></div></div><div class="slot" style="height:328px"><div class="bm mine "><div class="bmeta">15:00 · Vidus 5</div><div class="bs won me"><span class="bn">E. Gudavičius / A. Akcijonaitis</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div><div class="bs lost"><span class="bn">A. Bleuer / G. Šilgalis</span><span class="bsets"><span class="">2</span><span class="">0</span></span></div></div></div></div></div><div class="bcol"><div class="bhead">Finalas</div><div class="pairbox"><div class="slot" style="height:656px"><div class="bm mine "><div class="bmeta">16:00 · Vidus 1</div><div class="bs won"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"><span class="w">6</span><span class="">5</span><span class="w">10</span></span></div><div class="bs lost me"><span class="bn">A. Akcijonaitis / E. Gudavičius</span><span class="bsets"><span class="">4</span><span class="w">7</span><span class="">8</span></span></div></div></div></div></div></div></div>
+        <div class="section"><span>Dėl 3 vietos</span></div>
+        <div class="third"><div class="bm "><div class="bmeta">16:00 · Vidus 5</div><div class="bs won"><span class="bn">M. Udra / A. Udra</span><span class="bsets"><span class="w">6</span><span class="w">7</span><span class="w">7</span></span></div><div class="bs lost"><span class="bn">A. Bleuer / G. Šilgalis</span><span class="bsets"><span class="">2</span><span class="">6</span><span class="">4</span></span></div></div></div>
+        <p class="hint">Tinklelis slenkamas į šoną. Atsidarius jis automatiškai nuslenka iki rato, kuriame tavo pora žaidžia dabar.</p>
+      </div>
+      <nav class="nav">
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="11" r="2.5"/><path d="M3 20c.8-3 3-5 6-5s5 2 6 5"/></svg>Klubai</a>
+        <a class="on"><svg viewBox="0 0 24 24"><path d="M4 5h5v6H4zM4 15h5v4H4zM9 8h4v9H9M13 12h7"/></svg>Tinkleliai</a>
+      </nav>
+    </div>
+    <p class="note">Laimėjusi pora – balta ir paryškinta, pralaimėjusi – pilka. Laimėti setai paryškinti. „Laisvas ratas“ – pora į kitą ratą pateko be mačo.</p>
+  </div>
+
+  <!-- 2: places + consolation -->
+  <div class="col">
+    <h2>2. Galutinės vietos ir paguodos tinklelis</h2>
+    <div class="phone">
+      <div class="scroll">
+        <div class="top"><b>Jūros šventės padelio čempionatas 2026</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
+        <div class="chips"><span class="chip">M Start Plus</span><span class="chip">M Light</span><span class="chip">M Power</span><span class="chip">M Hard</span><span class="chip">V Light</span><span class="chip">V Light Plus- Kavoszinovai.lt</span><span class="chip">V Power</span><span class="chip">V Power Plus</span><span class="chip">V Hard</span><span class="chip">MIX</span><span class="chip on">Masters</span><span class="chip">ProXpadel</span></div>
+        <div class="section"><span>Galutinės vietos</span><span>reitingo taškai</span></div>
+        <div class="prow"><span class="pos">1</span><span class="pn">🥇 T. Butvilas / G. Lescinskas</span><span class="pts">100</span></div><div class="prow me"><span class="pos">2</span><span class="pn">🥈 A. Akcijonaitis / E. Gudavičius</span><span class="pts">80</span></div><div class="prow"><span class="pos">3</span><span class="pn">🥉 M. Udra / A. Udra</span><span class="pts">60</span></div><div class="prow"><span class="pos">4</span><span class="pn"> A. Bleuer / G. Šilgalis</span><span class="pts"></span></div><div class="prow"><span class="pos">5</span><span class="pn"> K. Kucka / I. Daukontas</span><span class="pts"></span></div><div class="prow"><span class="pos">6</span><span class="pn"> K. Pirogov / P. Balcaitis</span><span class="pts"></span></div><div class="prow"><span class="pos">7</span><span class="pn"> A. Bružas / A. Žernys</span><span class="pts"></span></div><div class="prow"><span class="pos">8</span><span class="pn"> E. Starkutis / E. Paulavicius</span><span class="pts"></span></div>
+        <div class="section"><span>5–8 vietos</span><span>braukite →</span></div>
+        <div class="bracket-scroll"><div class="bracket"><div class="bcol first"><div class="bhead">5–8 v. pusfinalis</div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">14:00 · Vidus 1</div><div class="bs lost"><span class="bn">E. Starkutis / E. Paulavicius</span><span class="bsets"><span class="">3</span><span class="">2</span></span></div><div class="bs won"><span class="bn">K. Kucka / I. Daukontas</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">15:00 · Vidus 4</div><div class="bs lost"><span class="bn">A. Žernys / A. Bružas</span><span class="bsets"><span class="w">6</span><span class="">6</span><span class="">3</span></span></div><div class="bs won"><span class="bn">P. Balcaitis / K. Pirogov</span><span class="bsets"><span class="">4</span><span class="w">7</span><span class="w">10</span></span></div></div></div></div></div><div class="bcol"><div class="bhead">Dėl 5 vietos</div><div class="pairbox"><div class="slot" style="height:164px"><div class="bm "><div class="bmeta">16:00 · Vidus 3</div><div class="bs won"><span class="bn">K. Kucka / I. Daukontas</span><span class="bsets"><span class="w">6</span><span class="w">7</span><span class="w">7</span></span></div><div class="bs lost"><span class="bn">K. Pirogov / P. Balcaitis</span><span class="bsets"><span class="">1</span><span class="">6</span><span class="">3</span></span></div></div></div></div></div></div></div>
+        <p class="hint">Galutinės vietos rodomos, kai kategorija baigta. Kol vyksta – vietoj jų rodomas „Kas toliau“: kurie mačai liko ir kada.</p>
+      </div>
+      <nav class="nav">
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="11" r="2.5"/><path d="M3 20c.8-3 3-5 6-5s5 2 6 5"/></svg>Klubai</a>
+        <a class="on"><svg viewBox="0 0 24 24"><path d="M4 5h5v6H4zM4 15h5v4H4zM9 8h4v9H9M13 12h7"/></svg>Tinkleliai</a>
+      </nav>
+    </div>
+    <p class="note">Tournated reitingo taškai rodomi tik ten, kur jie yra (pvz., 1–3 vietos). Kitur stulpelis tuščias.</p>
+  </div>
+
+  <!-- 3: group (club league) -->
+  <div class="col">
+    <h2>3. Grupė / lyga (kaip 11532)</h2>
+    <div class="phone">
+      <div class="scroll">
+        <div class="top"><b>Klaipėdos klubų lyga</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
+        <div class="chips"><span class="chip on">Bendra lentelė</span><span class="chip">Moterys TOP</span><span class="chip">Vyrai TOP</span><span class="chip">Moterys B</span><span class="chip">Vyrai B-</span></div>
+        <div class="section"><span>Grupė „Bendra“</span><span>tavo klubas: Pasitaškom</span></div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>#</th><th class="tn">Klubas</th><th>L-L-P</th><th>Mačai</th><th>Tšk</th></tr></thead>
+          <tbody><tr class=""><td class="pos">1</td><td class="tn">Slėnio Padelio Klubas</td><td>3-0-0</td><td>24:12</td><td class="pts">12</td></tr><tr class=""><td class="pos">2</td><td class="tn">4Padel</td><td>2-0-1</td><td>22:14</td><td class="pts">9</td></tr><tr class=""><td class="pos">3</td><td class="tn">BTC Klubas</td><td>1-0-2</td><td>19:17</td><td class="pts">7</td></tr><tr class="me"><td class="pos">4</td><td class="tn">Pasitaškom</td><td>0-0-3</td><td>7:29</td><td class="pts">4</td></tr></tbody>
+        </table></div>
+        <p class="hint">Susitikimas = visi 12 mačų tarp dviejų klubų. L-L-P = laimėta–lygiosios–pralaimėta. Taškai – iš Tournated.</p>
+        <div class="section"><span>Klubas prieš klubą</span><span>laimėti mačai</span></div>
+        <div class="tbl-wrap"><table class="h2h">
+          <thead><tr><th></th><th>SLĖ</th><th>4PA</th><th>BTC</th><th>PAS</th></tr></thead>
+          <tbody><tr class=""><th>SLĖ</th><td class="x"></td><td class="w">8:4</td><td class="w">7:5</td><td class="w">9:3</td></tr><tr class=""><th>4PA</th><td class="l">4:8</td><td class="x"></td><td class="w">7:5</td><td class="w">11:1</td></tr><tr class=""><th>BTC</th><td class="l">5:7</td><td class="l">5:7</td><td class="x"></td><td class="w">9:3</td></tr><tr class="me"><th>PAS</th><td class="l">3:9</td><td class="l">1:11</td><td class="l">3:9</td><td class="x"></td></tr></tbody>
+        </table></div>
+        <p class="hint">Paspaudus langelį atsidaro tų dviejų klubų 12 mačų su rezultatais.</p>
+      </div>
+      <nav class="nav">
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="11" r="2.5"/><path d="M3 20c.8-3 3-5 6-5s5 2 6 5"/></svg>Klubai</a>
+        <a class="on"><svg viewBox="0 0 24 24"><path d="M4 5h5v6H4zM4 15h5v4H4zM9 8h4v9H9M13 12h7"/></svg>Tinkleliai</a>
+      </nav>
+    </div>
+    <p class="note">Turnyrams su grupėmis (round-robin) rodoma ta pati lentelė kiekvienai grupei, o po jomis – atkrintamųjų tinklelis.</p>
+  </div>
+
+  <!-- 4: app -->
+  <div class="col">
+    <h2>4. Programėlėje „Padelio turnyrai“</h2>
+    <div class="phone app">
+      <div class="scroll">
+        <div class="apptitle">Tinkleliai</div>
+        <div class="appsub">Masters – Besso · tavo pora: A. Akcijonaitis / E. Gudavičius</div>
+        <div class="seg"><span class="on">Pagrindinis</span><span>5–8 vietos</span><span>Vietos</span></div>
+        <div class="section"><span>Nuo ketvirtfinalio</span><span>braukite →</span></div>
+        <div class="bracket-scroll"><div class="bracket"><div class="bcol first"><div class="bhead">Ketvirtfinalis</div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">13:00 · Vidus 1</div><div class="bs won"><span class="bn">A. Udra / M. Udra</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div><div class="bs lost"><span class="bn">E. Paulavicius / E. Starkutis</span><span class="bsets"><span class="">3</span><span class="">4</span></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">13:00 · Vidus 3</div><div class="bs lost"><span class="bn">K. Kucka / I. Daukontas</span><span class="bsets"><span class="">6</span><span class="w">6</span><span class="">5</span></span></div><div class="bs won"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"><span class="w">7</span><span class="">1</span><span class="w">10</span></span></div></div></div></div><div class="pairbox joined"><div class="slot" style="height:82px"><div class="bm mine "><div class="bmeta">13:00 · Vidus 4</div><div class="bs won me"><span class="bn">A. Akcijonaitis / E. Gudavičius</span><span class="bsets"><span class="w">6</span><span class="w">7</span></span></div><div class="bs lost"><span class="bn">A. Bružas / A. Žernys</span><span class="bsets"><span class="">1</span><span class="">5</span></span></div></div></div><div class="slot" style="height:82px"><div class="bm "><div class="bmeta">13:00 · Vidus 6</div><div class="bs won"><span class="bn">A. Bleuer / G. Šilgalis</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div><div class="bs lost"><span class="bn">K. Pirogov / P. Balcaitis</span><span class="bsets"><span class="">2</span><span class="">3</span></span></div></div></div></div></div><div class="bcol"><div class="bhead">Pusfinalis</div><div class="pairbox joined"><div class="slot" style="height:164px"><div class="bm "><div class="bmeta">14:00 · Vidus 5</div><div class="bs lost"><span class="bn">A. Udra / M. Udra</span><span class="bsets"><span class="">7</span></span></div><div class="bs won"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"><span class="w">10</span></span></div></div></div><div class="slot" style="height:164px"><div class="bm mine "><div class="bmeta">15:00 · Vidus 5</div><div class="bs won me"><span class="bn">E. Gudavičius / A. Akcijonaitis</span><span class="bsets"><span class="w">6</span><span class="w">6</span></span></div><div class="bs lost"><span class="bn">A. Bleuer / G. Šilgalis</span><span class="bsets"><span class="">2</span><span class="">0</span></span></div></div></div></div></div><div class="bcol"><div class="bhead">Finalas</div><div class="pairbox"><div class="slot" style="height:328px"><div class="bm mine "><div class="bmeta">16:00 · Vidus 1</div><div class="bs won"><span class="bn">T. Butvilas / G. Lescinskas</span><span class="bsets"><span class="w">6</span><span class="">5</span><span class="w">10</span></span></div><div class="bs lost me"><span class="bn">A. Akcijonaitis / E. Gudavičius</span><span class="bsets"><span class="">4</span><span class="w">7</span><span class="">8</span></span></div></div></div></div></div></div></div>
+        <p class="hint">Tie patys blokai kaip svetainėje, tik programėlėje kategorija pasirenkama pagal tavo porą automatiškai (kitas – per sąrašą viršuje).</p>
+      </div>
+      <nav class="nav four" style="grid-template-columns:repeat(5,1fr)">
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a class="on"><svg viewBox="0 0 24 24"><path d="M4 5h5v6H4zM4 15h5v4H4zM9 8h4v9H9M13 12h7"/></svg>Tinkleliai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg>Nustatymai</a>
+      </nav>
+    </div>
+    <p class="note">Programėlėje – nauja skiltis tarp „Mačai“ ir „Nustatymai“ (5 skirtukai). Lentelės ir tinkleliai tie patys.</p>
+  </div>
+</div>
+</body>
+</html>

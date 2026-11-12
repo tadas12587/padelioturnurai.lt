@@ -2,6 +2,11 @@
     $tName = $tournament['name'] ?? 'Turnyras';
     $tDate = $tournament['date'] ?? null;
     $hasClubs = $clubList->isNotEmpty();
+    $draws = $draws ?? [];
+    $hasDraws = count($draws) > 0;
+    // Player groups get their own tables; a club league's single group is the club table.
+    $hasGroupTables = ! $hasClubs && collect($groups)->contains(fn ($g) => ! empty($g['match_ids']));
+    $tablesLabel = ($hasClubs || $hasGroupTables) ? 'Lentelės' : 'Tinkleliai';
 @endphp
 <!doctype html>
 <html lang="lt">
@@ -222,6 +227,57 @@
   .standing-diff { min-width: 34px; text-align: right; }
   .standing-diff.pos { color: var(--ball); }
 
+  /* ---------- groups & brackets ---------- */
+  .cat-chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -14px 10px; padding: 2px 14px 6px; scrollbar-width: none; }
+  .cat-chips::-webkit-scrollbar { display: none; }
+  .cat-chip {
+    flex: none; font-family: var(--display); font-size: 0.8rem; font-weight: 600; color: var(--ink-soft);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 999px; min-height: 38px; padding: 0 14px; cursor: pointer;
+  }
+  .cat-chip.active { color: var(--ball-ink); background: var(--ball); border-color: var(--ball); }
+  .seg { display: flex; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 3px; margin: 0 0 12px; overflow-x: auto; }
+  .seg button { flex: 1 0 auto; font-size: 0.8rem; padding: 8px 12px; border-radius: 9px; color: var(--ink-soft); background: none; border: 0; cursor: pointer; white-space: nowrap; }
+  .seg button.active { background: var(--surface-2); color: var(--ink); font-weight: 600; }
+  .champ { margin: 0 0 12px; background: linear-gradient(160deg, #15444a, var(--surface)); border: 1px solid rgba(217,244,90,.35);
+    border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
+  .champ .cup { font-size: 1.5rem; }
+  .champ .l { font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ball); font-weight: 700; }
+  .champ .n { font-family: var(--display); font-weight: 700; font-size: 1rem; }
+  .bracket-scroll { overflow-x: auto; margin: 0 -14px; padding: 0 14px 8px; scrollbar-width: thin; scroll-behavior: smooth; }
+  .bracket { display: flex; gap: 18px; width: max-content; }
+  .bcol { width: 190px; flex: none; }
+  .bhead { font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; height: 22px; white-space: nowrap; }
+  .pairbox { position: relative; }
+  .pairbox.joined::after { content: ""; position: absolute; right: -10px; top: 25%; bottom: 25%; width: 10px;
+    border: 2px solid rgba(234,243,241,0.16); border-left: 0; border-radius: 0 6px 6px 0; }
+  .slot { display: flex; align-items: center; }
+  .bm { position: relative; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 5px 8px; }
+  .bcol:not(.first) .bm::before { content: ""; position: absolute; left: -10px; top: 50%; width: 9px; border-top: 2px solid rgba(234,243,241,0.16); }
+  .bm.mine { border-color: rgba(217,244,90,.55); box-shadow: 0 0 0 1px rgba(217,244,90,.15) inset; }
+  .bm.live { border-color: var(--ball); }
+  .bmeta { font-size: 0.64rem; color: var(--muted); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bs { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 0.76rem; line-height: 1.5; color: var(--ink-soft); }
+  .bs .bn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bs.won { color: var(--ink); font-weight: 700; }
+  .bs.lost { color: var(--muted); }
+  .bs.isme .bn { color: var(--ball); }
+  .bsets { display: flex; gap: 5px; font-family: var(--display); font-variant-numeric: tabular-nums; font-weight: 600; flex: none; }
+  .bsets .w { color: var(--ink); font-weight: 800; }
+  .bs.lost .bsets span { color: var(--muted); }
+  .bye { color: var(--muted); font-style: italic; font-weight: 400; }
+  .placement { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
+  .placement .bhead { height: auto; margin-bottom: 4px; }
+  .gtable { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .gtable-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .gtable th { font-size: 0.64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; text-align: center; padding: 8px 6px; }
+  .gtable th:nth-child(2) { text-align: left; }
+  .gtable td { padding: 8px 6px; border-top: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; font-family: var(--display); }
+  .gtable td.pn { text-align: left; font-family: inherit; min-width: 140px; }
+  .gtable td.pos { color: var(--muted); font-weight: 800; width: 24px; }
+  .gtable tr.top td.pos { color: var(--ball); }
+  .gtable tr.isme td.pn { color: var(--ball); font-weight: 600; }
+  .gtable td.pts { font-weight: 800; color: var(--ink); }
+  .section-sub { font-family: var(--display); font-size: 0.95rem; font-weight: 700; margin: 18px 0 10px; }
   .empty { color: var(--muted); font-size: 0.92rem; padding: 32px 0; text-align: center; line-height: 1.5; }
   footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 16px 0 20px; font-size: 0.76rem; color: var(--muted); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   footer a { color: var(--ink-soft); }
@@ -289,7 +345,7 @@
     @endif
     <button class="nav-btn" data-tab="lenteles">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4a2 2 0 0 0 2 4M17 6h3a2 2 0 0 1-2 4"/></svg>
-      Lentelės
+      {{ $tablesLabel }}
     </button>
   </nav>
 
@@ -327,6 +383,7 @@
   {{-- Lentelės --}}
   <div data-panel="lenteles">
     <div id="standings-results"></div>
+    <div id="brackets-results"></div>
   </div>
 
   <footer>
@@ -415,11 +472,13 @@ window.PushUI = (function () {
   var TOURNAMENT_DATE = @json($tDate);
   var CLUB_LIST = @json($clubList->values());
   var HAS_CLUBS = @json($hasClubs);
+  var HAS_GROUP_TABLES = @json($hasGroupTables);
   var TZ = 'Europe/Vilnius';
   var STORE_KEY = 'grafikas:' + TOURNAMENT_ID + ':player';
   var state = {
     matches: @json(array_values($matches)),
     groups: @json(array_values($groups)),
+    draws: @json(array_values($draws)),
     syncedAt: @json($syncedAt),
     lastFetchOk: true
   };
@@ -618,13 +677,13 @@ window.PushUI = (function () {
   function choosePlayer(name) {
     me = name; store(false, name);
     try { var u = new URL(location.href); u.searchParams.set('z', name); history.replaceState(null, '', u); } catch (e) {}
-    renderMano(); renderGrid(); renderKlubai();
+    renderMano(); renderGrid(); renderKlubai(); renderBrackets();
     window.scrollTo(0, 0);
   }
   function forgetPlayer() {
     me = null; store(false, null);
     try { var u = new URL(location.href); u.searchParams.delete('z'); history.replaceState(null, '', u); } catch (e) {}
-    renderMano(); renderGrid(); renderKlubai();
+    renderMano(); renderGrid(); renderKlubai(); renderBrackets();
   }
 
   var manoQuery = '';
@@ -896,7 +955,10 @@ window.PushUI = (function () {
   }
   function renderStandings() {
     var box = document.getElementById('standings-results');
-    if (!HAS_CLUBS) { box.innerHTML = '<p class="empty">Šiam turnyrui lentelės dar ruošiamos.</p>'; return; }
+    if (!HAS_CLUBS) {
+      box.innerHTML = tableCategories().length ? '' : '<p class="empty">Šiam turnyrui lentelės dar ruošiamos.</p>';
+      return;
+    }
     if (!state.matches.length) { box.innerHTML = '<p class="empty">Lentelės pasirodys, kai bus paskelbti mačai.</p>'; return; }
     var overall = (state.groups && state.groups[0] && state.groups[0].name) || 'Bendra';
     var html = standingsTableHtml(overall, tallyMatches(state.matches), tiePointsByClub(state.matches));
@@ -905,6 +967,226 @@ window.PushUI = (function () {
     Object.keys(byDivision).sort().forEach(function (d) { html += standingsTableHtml(d, tallyMatches(byDivision[d])); });
     box.innerHTML = html;
   }
+
+  /* ---------- groups & brackets (Tournated draws) ---------- */
+  // One chip per category: its knockout draw and/or its player groups. A club
+  // league's single group is already the club table above, so it is skipped.
+  var activeCat = null, activeBt = {};
+  function matchesById() { var o = {}; state.matches.forEach(function (m) { o[m.match_id] = m; }); return o; }
+  function tableCategories() {
+    var cats = [], byKey = {};
+    function cat(key, title) {
+      if (!byKey[key]) { byKey[key] = { key: key, title: title, draws: [], groups: [] }; cats.push(byKey[key]); }
+      return byKey[key];
+    }
+    (state.draws || []).forEach(function (d) { cat('c' + (d.category_id ?? d.draw_id), d.title).draws.push(d); });
+    if (HAS_GROUP_TABLES) (state.groups || []).forEach(function (g) {
+      if (g.match_ids && g.match_ids.length) cat('c' + (g.category_id ?? g.group_id), g.name).groups.push(g);
+    });
+    return cats;
+  }
+  function isMeName(n) { return !!me && fold(n) === fold(me); }
+  function pairLabel(names) { return names.map(shortName).join(' / '); }
+  function roundRank(r) {
+    var m = /^R(\d+)$/i.exec(r || '');
+    if (m) return +m[1];
+    if (/quarter/i.test(r)) return 97;
+    if (/semi/i.test(r)) return 98;
+    if (/^final$/i.test(r)) return 99;
+    return 50;
+  }
+  function isPlacement(r) { return /place/i.test(r || ''); }
+  function btLabel(bt) { return !bt || bt === 'main' ? 'Pagrindinis' : bt.replace('-', '–') + ' v.'; }
+  function colLabel(round, count, bt) {
+    var main = !bt || bt === 'main', range = main ? '' : bt.replace('-', '–') + ' v. ';
+    if (main) {
+      if (/^final$/i.test(round) || count === 1) return 'Finalas';
+      if (/semi/i.test(round) || count === 2) return 'Pusfinalis';
+      if (/quarter/i.test(round) || count === 4) return 'Ketvirtfinalis';
+      if (count === 8) return 'Aštuntfinalis';
+      return roundRank(round) + ' ratas';
+    }
+    if (count === 1) return 'Dėl ' + parseInt(bt, 10) + ' vietos';
+    if (count === 2) return range + 'pusfinalis';
+    if (count === 4) return range + 'ketvirtfinalis';
+    return range + roundRank(round) + ' ratas';
+  }
+  function drawEntries(d) {
+    var byId = matchesById(), list = [];
+    (d.match_ids || []).forEach(function (id) {
+      var m = byId[id];
+      if (m) list.push({ id: id, m: m, round: m.round, bt: m.bracket_type || 'main', sides: [pairNames(m.participants, 1), pairNames(m.participants, 2)], winner: m.winner_side, sets: m.sets || [] });
+    });
+    (d.slots || []).forEach(function (s) {
+      list.push({ id: s.match_id, round: s.round, bt: s.bracket_type || 'main', sides: [s.side1 || [], s.side2 || []], winner: s.winner_side, sets: [], bye: s.bye });
+    });
+    return list;
+  }
+  function entryLive(e) { return !!(e.m && e.m.is_match_in_progress && !isPlayed(e.m) && e.m.date === nowLocal().date); }
+  function entryDone(e) { return !!(e.winner || (e.sets && e.sets.length) || (e.m && isPlayed(e.m))); }
+  function bmHtml(e) {
+    var all = e.sides[0].concat(e.sides[1]);
+    var mine = all.some(isMeName), live = entryLive(e), meta = '';
+    if (e.m && !isPlayed(e.m) && e.m.time) {
+      meta = (e.m.date && e.m.date !== nowLocal().date ? dayLabel(e.m.date) + ' ' : '') +
+        (e.m.eta && e.m.eta !== e.m.time ? '~' + e.m.eta : e.m.time) + (isScheduled(e.m) ? ' · ' + courtLabel(e.m) : '');
+    }
+    var html = '<div class="bm' + (mine ? ' mine' : '') + (live ? ' live' : '') + '">';
+    if (live) html += '<div class="bmeta">● Vyksta · ' + esc(courtLabel(e.m)) + '</div>';
+    else if (meta) html += '<div class="bmeta">' + esc(meta) + '</div>';
+    [0, 1].forEach(function (i) {
+      var side = i + 1, names = e.sides[i], other = e.sides[1 - i];
+      var cls = e.winner ? (e.winner === side ? ' won' : ' lost') : '';
+      if (names.some(isMeName)) cls += ' isme';
+      var label = names.length ? esc(pairLabel(names))
+        : '<span class="bye">' + (e.bye && other.length ? 'laisvas ratas' : 'laukiama') + '</span>';
+      var sets = (e.sets || []).map(function (s) {
+        var a = side === 1 ? s.side1 : s.side2, b = side === 1 ? s.side2 : s.side1;
+        return '<span class="' + ((a ?? 0) > (b ?? 0) ? 'w' : '') + '">' + esc(a ?? '') + '</span>';
+      }).join('');
+      html += '<div class="bs' + cls + '"><span class="bn">' + label + '</span><span class="bsets">' + sets + '</span></div>';
+    });
+    return html + '</div>';
+  }
+  function bracketHtml(entries, bt) {
+    var rounds = {};
+    entries.filter(function (e) { return !isPlacement(e.round); }).forEach(function (e) { (rounds[e.round || '?'] = rounds[e.round || '?'] || []).push(e); });
+    var order = Object.keys(rounds).sort(function (a, b) { return roundRank(a) - roundRank(b); });
+    var html = '', focus = -1;
+    if (order.length) {
+      var h0 = rounds[order[0]].length * 82;
+      html = '<div class="bracket-scroll"><div class="bracket">';
+      order.forEach(function (r, ci) {
+        var list = rounds[r].sort(function (a, b) { return a.id - b.id; });
+        if (list.some(function (e) { return entryDone(e) || entryLive(e); })) focus = ci;
+        var h = Math.max(82, Math.round(h0 / list.length));
+        html += '<div class="bcol' + (ci === 0 ? ' first' : '') + '"><div class="bhead">' + esc(colLabel(r, list.length, bt)) + '</div>';
+        var joined = list.length > 1 && list.length % 2 === 0 && ci < order.length - 1;
+        for (var i = 0; i < list.length; i += joined ? 2 : 1) {
+          var group = joined ? list.slice(i, i + 2) : [list[i]];
+          html += '<div class="pairbox' + (joined ? ' joined' : '') + '">' + group.map(function (e) {
+            return '<div class="slot" style="height:' + h + 'px">' + bmHtml(e) + '</div>';
+          }).join('') + '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
+    var places = entries.filter(function (e) { return isPlacement(e.round); }).sort(function (a, b) { return a.id - b.id; });
+    if (places.length) {
+      html += '<div class="placement">' + places.map(function (e) {
+        var n = (/(\d+)/.exec(e.round) || [])[1];
+        return '<div><div class="bhead">Dėl ' + esc(n || '') + ' vietos</div>' + bmHtml(e) + '</div>';
+      }).join('') + '</div>';
+    }
+    return { html: html, focus: focus };
+  }
+  function championHtml(entries) {
+    var main = entries.filter(function (e) { return e.bt === 'main' && !isPlacement(e.round); });
+    if (!main.length) return '';
+    var top = Math.max.apply(null, main.map(function (e) { return roundRank(e.round); }));
+    var last = main.filter(function (e) { return roundRank(e.round) === top; });
+    if (last.length !== 1 || !last[0].winner) return '';
+    var names = last[0].sides[last[0].winner - 1];
+    if (!names.length) return '';
+    return '<div class="champ"><span class="cup">🏆</span><div><div class="l">Nugalėtojai</div><div class="n">' + esc(names.join(' / ')) + '</div></div></div>';
+  }
+  function groupTableHtml(g) {
+    var byId = matchesById(), rows = {};
+    (g.match_ids || []).forEach(function (id) {
+      var m = byId[id]; if (!m) return;
+      var keys = [1, 2].map(function (side) {
+        var names = pairNames(m.participants, side); if (!names.length) return null;
+        var k = names.map(fold).sort().join('|');
+        rows[k] = rows[k] || { names: names, p: 0, w: 0, l: 0, sw: 0, sl: 0, gw: 0, gl: 0 };
+        return k;
+      });
+      if (!keys[0] || !keys[1] || !isPlayed(m) || !m.winner_side) return;
+      var a = rows[keys[0]], b = rows[keys[1]];
+      a.p++; b.p++;
+      if (m.winner_side === 1) { a.w++; b.l++; } else { b.w++; a.l++; }
+      (m.sets || []).forEach(function (s) {
+        var x = s.side1 ?? 0, y = s.side2 ?? 0;
+        a.gw += x; a.gl += y; b.gw += y; b.gl += x;
+        if (x > y) { a.sw++; b.sl++; } else if (y > x) { b.sw++; a.sl++; }
+      });
+    });
+    var list = Object.keys(rows).map(function (k) { return rows[k]; });
+    if (!list.length) return '';
+    list.sort(function (a, b) { return b.w - a.w || (b.sw - b.sl) - (a.sw - a.sl) || (b.gw - b.gl) - (a.gw - a.gl); });
+    function d(n) { return (n > 0 ? '+' : '') + n; }
+    var html = '<div class="division-block"><h3 class="division-title">' + esc(g.name || 'Grupė') + '</h3><div class="gtable-wrap"><table class="gtable">' +
+      '<thead><tr><th>#</th><th>Pora</th><th>Ž</th><th>L–P</th><th>Setai</th><th>Geim.</th></tr></thead><tbody>';
+    list.forEach(function (r, i) {
+      var mine = r.names.some(isMeName);
+      html += '<tr class="' + (i === 0 ? 'top' : '') + (mine ? ' isme' : '') + '"><td class="pos">' + (i + 1) + '</td><td class="pn">' + esc(pairLabel(r.names)) +
+        '</td><td>' + r.p + '</td><td class="pts">' + r.w + '–' + r.l + '</td><td>' + d(r.sw - r.sl) + '</td><td>' + d(r.gw - r.gl) + '</td></tr>';
+    });
+    return html + '</tbody></table></div></div>';
+  }
+  function catHasMe(c) {
+    if (!me) return false;
+    var byId = matchesById(), ids = [];
+    c.draws.forEach(function (d) { ids = ids.concat(d.match_ids || []); });
+    c.groups.forEach(function (g) { ids = ids.concat(g.match_ids || []); });
+    return ids.some(function (id) { return byId[id] && sideOf(byId[id], me) > 0; });
+  }
+  function renderBrackets() {
+    var box = document.getElementById('brackets-results');
+    var cats = tableCategories();
+    if (!cats.length) { box.innerHTML = ''; return; }
+    var cur = cats.filter(function (c) { return c.key === activeCat; })[0] || cats.filter(catHasMe)[0] || cats[0];
+    activeCat = cur.key;
+    var html = HAS_CLUBS ? '<h3 class="section-sub">Tinkleliai</h3>' : '';
+    if (cats.length > 1) {
+      html += '<div class="cat-chips">' + cats.map(function (c) {
+        return '<button class="cat-chip' + (c.key === cur.key ? ' active' : '') + '" data-cat="' + esc(c.key) + '">' + esc(c.title) + '</button>';
+      }).join('') + '</div>';
+    } else {
+      html += '<h3 class="division-title">' + esc(cur.title) + '</h3>';
+    }
+    cur.groups.forEach(function (g) { html += groupTableHtml(g); });
+    var focus = -1;
+    cur.draws.forEach(function (d) {
+      var entries = drawEntries(d), bts = [];
+      entries.forEach(function (e) { if (bts.indexOf(e.bt) === -1) bts.push(e.bt); });
+      if (!bts.length) return;
+      bts.sort(function (a, b) { return (a === 'main' ? 0 : parseInt(a, 10)) - (b === 'main' ? 0 : parseInt(b, 10)); });
+      var bt = bts.indexOf(activeBt[d.draw_id]) !== -1 ? activeBt[d.draw_id] : bts[0];
+      if (cur.groups.length) html += '<h3 class="section-sub">Atkrintamosios</h3>';
+      if (bt === 'main') html += championHtml(entries);
+      if (bts.length > 1) {
+        html += '<div class="seg">' + bts.map(function (b) {
+          return '<button class="' + (b === bt ? 'active' : '') + '" data-draw="' + esc(d.draw_id) + '" data-bt="' + esc(b) + '">' + esc(btLabel(b)) + '</button>';
+        }).join('') + '</div>';
+      }
+      var br = bracketHtml(entries.filter(function (e) { return e.bt === bt; }), bt);
+      html += br.html; focus = br.focus;
+    });
+    box.innerHTML = html;
+    var scroller = box.querySelector('.bracket-scroll');
+    if (scroller) scroller.dataset.focus = focus;
+    focusBracket();
+  }
+  // Open on the newest round that has been played (or is being played now),
+  // and keep the chosen category chip in view. Needs the panel to be visible.
+  function focusBracket() {
+    var box = document.getElementById('brackets-results');
+    if (!box.offsetParent) return;
+    var chip = box.querySelector('.cat-chip.active');
+    if (chip) chip.parentNode.scrollLeft = chip.offsetLeft - chip.parentNode.offsetLeft - 14;
+    var scroller = box.querySelector('.bracket-scroll'), focus = scroller ? +scroller.dataset.focus : -1;
+    if (scroller && focus > 0) {
+      var col = scroller.querySelectorAll('.bcol')[focus];
+      if (col) scroller.scrollLeft = Math.max(0, col.offsetLeft - scroller.querySelector('.bracket').offsetLeft + col.offsetWidth - scroller.clientWidth + 28);
+    }
+  }
+  document.getElementById('brackets-results').addEventListener('click', function (e) {
+    var chip = e.target.closest('.cat-chip');
+    if (chip) { activeCat = chip.dataset.cat; renderBrackets(); return; }
+    var seg = e.target.closest('.seg button');
+    if (seg) { activeBt[seg.dataset.draw] = seg.dataset.bt; renderBrackets(); }
+  });
 
   /* ---------- header, tabs, refresh ---------- */
   function renderHeader() {
@@ -921,7 +1203,7 @@ window.PushUI = (function () {
 
   function renderAll() {
     indexClubImages(state.matches);
-    renderHeader(); renderMano(); renderDabar(); renderGrid(); renderKlubai(); renderStandings();
+    renderHeader(); renderMano(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderBrackets();
   }
 
   function switchTab(tab) {
@@ -932,6 +1214,7 @@ window.PushUI = (function () {
     });
     document.querySelectorAll('[data-panel]').forEach(function (p) { p.classList.toggle('active', p.dataset.panel === tab); });
     window.scrollTo(0, 0);
+    if (tab === 'lenteles') focusBracket();
   }
   document.querySelectorAll('.nav-btn').forEach(function (btn) { btn.addEventListener('click', function () { switchTab(btn.dataset.tab); }); });
 
@@ -946,9 +1229,10 @@ window.PushUI = (function () {
       var json = JSON.parse(body);
       state.matches = json.matches || [];
       state.groups = json.groups || state.groups;
+      state.draws = json.draws || state.draws;
       state.syncedAt = json.synced_at;
       var typing = document.activeElement && document.activeElement.id === 'me-search';
-      if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); } else renderAll();
+      if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderBrackets(); } else renderAll();
     }).catch(function () { state.lastFetchOk = false; renderHeader(); });
   }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refresh(); });

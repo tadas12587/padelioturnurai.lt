@@ -77,8 +77,8 @@ class ScheduleController extends Controller
 
         $payload = $snapshot->payload ?? [];
         $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));
-        $groups = $payload['groups'] ?? [];
-        $standings = $payload['standings'] ?? [];
+        $groups = self::publicGroups($payload);
+        $draws = self::publicDraws($payload);
 
         $divisionByPair = $this->divisionLookup($tournamentExternalId);
         $matches = array_map(fn (array $m) => $this->tagDivision($m, $divisionByPair), $matches);
@@ -115,7 +115,7 @@ class ScheduleController extends Controller
             'tournament'   => $payload['tournament'] ?? [],
             'matches'      => $matches,
             'groups'       => $groups,
-            'standings'    => $standings,
+            'draws'        => $draws,
             'syncedAt'     => $payload['synced_at'] ?? null,
             'stats'        => [
                 'courts'    => $courts->count(),
@@ -174,8 +174,8 @@ class ScheduleController extends Controller
 
         return response()->json([
             'matches'      => $matches,
-            'groups'       => $payload['groups'] ?? [],
-            'standings'    => $payload['standings'] ?? [],
+            'groups'       => self::publicGroups($payload),
+            'draws'        => self::publicDraws($payload),
             'synced_at'    => $payload['synced_at'] ?? null,
             'court_delays' => $courtDelays,
         ]);
@@ -284,6 +284,74 @@ class ScheduleController extends Controller
      * page lists those under "Laikas dar nepaskirtas" instead of hiding them).
      * Empty bracket slots and byes stay out.
      */
+    /** Groups for the "Lentelės" tab: names and match ids only (no player ids). */
+    public static function publicGroups(array $payload): array
+    {
+        return array_values(array_map(fn (array $g) => [
+            'group_id' => $g['group_id'] ?? null,
+            'category_id' => $g['category_id'] ?? null,
+            'name' => (string) ($g['name'] ?? ''),
+            'match_ids' => array_values(array_map('intval', $g['match_ids'] ?? [])),
+        ], $payload['groups'] ?? []));
+    }
+
+    /**
+     * Knockout draws for the bracket view. Matches the schedule hides (byes,
+     * rounds whose players aren't known yet) come along as light "slots" so
+     * the bracket keeps its shape; real matches are taken from `matches`.
+     */
+    public static function publicDraws(array $payload): array
+    {
+        $byId = [];
+        foreach ($payload['matches'] ?? [] as $m) {
+            if (isset($m['match_id'])) {
+                $byId[(int) $m['match_id']] = $m;
+            }
+        }
+
+        $out = [];
+        foreach ($payload['draws'] ?? [] as $d) {
+            $ids = array_values(array_map('intval', $d['match_ids'] ?? []));
+            if (! $ids) {
+                continue;
+            }
+            $slots = [];
+            foreach ($ids as $id) {
+                $m = $byId[$id] ?? null;
+                if (! $m || self::isUsableMatch($m)) {
+                    continue;
+                }
+                $names = [1 => [], 2 => []];
+                foreach ($m['participants'] ?? [] as $p) {
+                    $side = (int) ($p['side'] ?? 0);
+                    $n = trim(($p['name'] ?? '').' '.($p['surname'] ?? ''));
+                    if (isset($names[$side]) && $n !== '') {
+                        $names[$side][] = $n;
+                    }
+                }
+                $slots[] = [
+                    'match_id' => $id,
+                    'round' => $m['round'] ?? null,
+                    'bracket_type' => $m['bracket_type'] ?? null,
+                    'bye' => ! empty($m['is_bye']) || (bool) $names[1] !== (bool) $names[2],
+                    'side1' => $names[1],
+                    'side2' => $names[2],
+                    'winner_side' => $m['winner_side'] ?? null,
+                ];
+            }
+            $out[] = [
+                'draw_id' => $d['draw_id'] ?? null,
+                'category_id' => $d['category_id'] ?? null,
+                'title' => (string) ($d['title'] ?? 'Tinklelis'),
+                'size' => (int) ($d['size'] ?? 0),
+                'match_ids' => $ids,
+                'slots' => $slots,
+            ];
+        }
+
+        return $out;
+    }
+
     public static function isUsableMatch(array $match): bool
     {
         if (! empty($match['is_bye'])) {
