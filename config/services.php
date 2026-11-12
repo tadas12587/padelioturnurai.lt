@@ -44,4 +44,14 @@ return [
         'admin_token' => env('OVERLAY_ADMIN_TOKEN'),
     ],
 
+    'tournated' => [
+        // Public API v2 key (read:default is enough — no PII scopes needed).
+        'key' => env('TOURNATED_API_KEY'),
+        'base_url' => env('TOURNATED_API_URL', 'https://api.tournated.com/api/v2'),
+        // Public play.padel.lt GraphQL (no key). Fallback for match lists the
+        // official API cannot serve (club-league /matches 502s) and source of
+        // club-league division names ("Moterys B 1").
+        'graphql_url' => env('TOURNATED_GRAPHQL_URL', 'https://play.padel.lt/api/graphql'),
+    ],
+
 ];

@@ -1,0 +1,110 @@
+{
+ "data": [
+  {
+   "group_id": 29981,
+   "tournament_id": 10210,
+   "category_id": 47627,
+   "name": "Group A",
+   "segment": "MD",
+   "type": "multiple",
+   "group_type": "standard",
+   "round": null,
+   "is_double_round_robin": false,
+   "entries": [
+    {
+     "position": 1,
+     "player": {
+      "player_id": 79621,
+      "public_id": "usr_8e47d6a5ae15d118",
+      "name": "Hubertas",
+      "surname": "Dainius"
+     },
+     "team_id": null
+    },
+    {
+     "position": 3,
+     "player": {
+      "player_id": 87316,
+      "public_id": "usr_46fb307920e0d9e3",
+      "name": "Jokūbas ",
+      "surname": "Baubkus"
+     },
+     "team_id": null
+    },
+    {
+     "position": 2,
+     "player": {
+      "player_id": 86669,
+      "public_id": "usr_79c177a6a1399228",
+      "name": "Markas",
+      "surname": "Balčikonis"
+     },
+     "team_id": null
+    }
+   ],
+   "match_ids": [
+    1301361,
+    1301362,
+    1301363
+   ],
+   "created_at": "2026-11-04T16:53:47.798Z",
+   "updated_at": "2026-11-04T18:22:21.677Z"
+  },
+  {
+   "group_id": 29982,
+   "tournament_id": 10210,
+   "category_id": 47627,
+   "name": "Group B",
+   "segment": "MD",
+   "type": "multiple",
+   "group_type": "standard",
+   "round": null,
+   "is_double_round_robin": false,
+   "entries": [
+    {
+     "position": 1,
+     "player": {
+      "player_id": 80359,
+      "public_id": "usr_e6a22b47b0f94aae",
+      "name": "Oskaras",
+      "surname": "Žiūkas"
+     },
+     "team_id": null
+    },
+    {
+     "position": 3,
+     "player": {
+      "player_id": 79415,
+      "public_id": "usr_dc0c106dde7c6cf1",
+      "name": "Matas",
+      "surname": "Kunstmonas"
+     },
+     "team_id": null
+    },
+    {
+     "position": 2,
+     "player": {
+      "player_id": 50089,
+      "public_id": "usr_299a745dea1a0cb7",
+      "name": "Dovas",
+      "surname": "Šepetauskas"
+     },
+     "team_id": null
+    }
+   ],
+   "match_ids": [
+    1301364,
+    1301365,
+    1301366
+   ],
+   "created_at": "2026-11-04T16:53:47.798Z",
+   "updated_at": "2026-11-04T18:22:21.677Z"
+  }
+ ],
+ "meta": {
+  "page": 1,
+  "limit": 20,
+  "total": 2,
+  "totalPages": 1
+ }
+}

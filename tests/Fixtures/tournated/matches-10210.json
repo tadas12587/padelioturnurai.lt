@@ -1,0 +1,244 @@
+{
+ "data": [
+  {
+   "match_id": 1301361,
+   "date": "2026-11-07",
+   "time": "11:30",
+   "status": "completed",
+   "match_type": "single",
+   "match_for": "group",
+   "court": {
+    "court_id": 48688,
+    "name": "Court 7"
+   },
+   "category": {
+    "category_id": 8703,
+    "name": "Vaikinai U10 [LC]",
+    "category_setting_id": 47627
+   },
+   "participants": [
+    {
+     "side": 1,
+     "player_id": 87316,
+     "name": "Jokūbas ",
+     "surname": "Baubkus"
+    },
+    {
+     "side": 1,
+     "player_id": 90045,
+     "name": "Augustas",
+     "surname": "Adomaitis"
+    },
+    {
+     "side": 2,
+     "player_id": 79621,
+     "name": "Hubertas",
+     "surname": "Dainius"
+    },
+    {
+     "side": 2,
+     "player_id": 79640,
+     "name": "Herkus",
+     "surname": "Šeputis"
+    }
+   ],
+   "team1": null,
+   "team2": null,
+   "winner_side": 2,
+   "sets": [
+    {
+     "set": 1,
+     "side1": 0,
+     "side2": 6,
+     "side1_tiebreak": null,
+     "side2_tiebreak": null
+    },
+    {
+     "set": 2,
+     "side1": 0,
+     "side2": 6,
+     "side1_tiebreak": null,
+     "side2_tiebreak": null
+    }
+   ],
+   "final_score": {
+    "side1": 0,
+    "side2": 2
+   },
+   "is_bye": false,
+   "is_walkover": false,
+   "is_disqualified": false,
+   "is_match_tie": false,
+   "duration": 45,
+   "round_number": null,
+   "week_number": null,
+   "created_at": "2026-11-04T16:53:47.798Z",
+   "updated_at": "2026-11-07T10:10:23.465Z",
+   "round": "1",
+   "is_match_in_progress": false,
+   "bracket_type": null,
+   "live_streamings": null
+  },
+  {
+   "match_id": 1302562,
+   "date": "2026-11-07",
+   "time": null,
+   "status": "completed",
+   "match_type": "single",
+   "match_for": "group",
+   "court": null,
+   "category": {
+    "category_id": 8703,
+    "name": "Vaikinai U10 [LC]",
+    "category_setting_id": 47627
+   },
+   "participants": [
+    {
+     "side": 1,
+     "player_id": 79621,
+     "name": "Hubertas",
+     "surname": "Dainius"
+    },
+    {
+     "side": 1,
+     "player_id": 79640,
+     "name": "Herkus",
+     "surname": "Šeputis"
+    },
+    {
+     "side": 2,
+     "player_id": 80359,
+     "name": "Oskaras",
+     "surname": "Žiūkas"
+    },
+    {
+     "side": 2,
+     "player_id": 79240,
+     "name": "Garetas",
+     "surname": "Paplauskas"
+    }
+   ],
+   "team1": null,
+   "team2": null,
+   "winner_side": 1,
+   "sets": [
+    {
+     "set": 1,
+     "side1": 6,
+     "side2": 2,
+     "side1_tiebreak": null,
+     "side2_tiebreak": null
+    },
+    {
+     "set": 2,
+     "side1": 6,
+     "side2": 2,
+     "side1_tiebreak": null,
+     "side2_tiebreak": null
+    }
+   ],
+   "final_score": {
+    "side1": 2,
+    "side2": 0
+   },
+   "is_bye": false,
+   "is_walkover": false,
+   "is_disqualified": false,
+   "is_match_tie": false,
+   "duration": 30,
+   "round_number": null,
+   "week_number": null,
+   "created_at": "2026-11-07T10:32:07.104Z",
+   "updated_at": "2026-11-07T11:26:55.166Z",
+   "round": "1",
+   "is_match_in_progress": false,
+   "bracket_type": null,
+   "live_streamings": null
+  },
+  {
+   "match_id": 1301380,
+   "date": "2026-11-07",
+   "time": "13:45",
+   "status": "completed",
+   "match_type": "single",
+   "match_for": "draw",
+   "court": {
+    "court_id": 48687,
+    "name": "Court 6"
+   },
+   "category": {
+    "category_id": 8708,
+    "name": "Merginos U10 [LC]",
+    "category_setting_id": 47632
+   },
+   "participants": [
+    {
+     "side": 1,
+     "player_id": 113583,
+     "name": "Urtė",
+     "surname": "Balčiūtė"
+    },
+    {
+     "side": 1,
+     "player_id": 113759,
+     "name": "Elija",
+     "surname": "Narmontate"
+    },
+    {
+     "side": 2,
+     "player_id": 140206,
+     "name": "Lėja",
+     "surname": "Paulikaitė"
+    },
+    {
+     "side": 2,
+     "player_id": 111242,
+     "name": "Luka",
+     "surname": "Meilūnaitė"
+    }
+   ],
+   "team1": null,
+   "team2": null,
+   "winner_side": 1,
+   "sets": [
+    {
+     "set": 1,
+     "side1": 6,
+     "side2": 0,
+     "side1_tiebreak": null,
+     "side2_tiebreak": null
+    },
+    {
+     "set": 2,
+     "side1": 6,
+     "side2": 0,
+     "side1_tiebreak": null,
+     "side2_tiebreak": null
+    }
+   ],
+   "final_score": {
+    "side1": 2,
+    "side2": 0
+   },
+   "is_bye": false,
+   "is_walkover": false,
+   "is_disqualified": false,
+   "is_match_tie": false,
+   "duration": 45,
+   "round_number": 1,
+   "week_number": null,
+   "created_at": "2026-11-04T17:00:27.153Z",
+   "updated_at": "2026-11-07T13:26:18.858Z",
+   "round": "Quarter-Final",
+   "is_match_in_progress": false,
+   "bracket_type": "main",
+   "live_streamings": null
+  }
+ ],
+ "meta": {
+  "page": 1,
+  "limit": 100,
+  "total": 3,
+  "totalPages": 1
+ }
+}

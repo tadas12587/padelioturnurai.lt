@@ -1,0 +1,108 @@
+{
+ "tournament_id": 10210,
+ "tournament_name": "Lietuvos jaunių padelio čempionatas 2026",
+ "tournament_tz": "Europe/Vilnius",
+ "status": "active",
+ "registration_starts_at": "2026-08-01T09:00:00.000Z",
+ "registration_closed_at": "2026-11-04T12:00:00.000Z",
+ "tournament_start_date": "2026-11-07T09:00:00.000Z",
+ "tournament_end_date": "2026-11-08T18:00:00.000Z",
+ "court_amount": 8,
+ "categories_id_list": [
+  47627,
+  47629,
+  47631,
+  47628,
+  47630,
+  47632,
+  47633,
+  47634,
+  47635,
+  47636
+ ],
+ "city": null,
+ "state": null,
+ "country": null,
+ "tournament_address": null,
+ "show_oop": true,
+ "is_groups_enabled": true,
+ "is_draws_enabled": true,
+ "enable_live_scoring": false,
+ "updated_at": "2026-11-06T21:00:46.426Z",
+ "courts": [
+  {
+   "court_id": 48682,
+   "name": "Court 1"
+  },
+  {
+   "court_id": 48683,
+   "name": "Court 2"
+  },
+  {
+   "court_id": 48684,
+   "name": "Court 3"
+  },
+  {
+   "court_id": 48685,
+   "name": "Court 4"
+  },
+  {
+   "court_id": 48686,
+   "name": "Court 5"
+  },
+  {
+   "court_id": 48687,
+   "name": "Court 6"
+  },
+  {
+   "court_id": 48688,
+   "name": "Court 7"
+  },
+  {
+   "court_id": 48689,
+   "name": "Court 8"
+  }
+ ],
+ "categories": [
+  {
+   "category_id": 47627,
+   "name": "Vaikinai U10 [LC]"
+  },
+  {
+   "category_id": 47629,
+   "name": "Vaikinai U14 [LC]"
+  },
+  {
+   "category_id": 47631,
+   "name": "Vaikinai U18 [LC]"
+  },
+  {
+   "category_id": 47628,
+   "name": "Vaikinai U12 [LC]"
+  },
+  {
+   "category_id": 47630,
+   "name": "Vaikinai U16 [LC]"
+  },
+  {
+   "category_id": 47632,
+   "name": "Merginos U10 [LC]"
+  },
+  {
+   "category_id": 47633,
+   "name": "Merginos U12 [LC]"
+  },
+  {
+   "category_id": 47634,
+   "name": "Merginos U14 [LC]"
+  },
+  {
+   "category_id": 47635,
+   "name": "Merginos U16 [LC]"
+  },
+  {
+   "category_id": 47636,
+   "name": "Merginos U18 [LC]"
+  }
+ ]
+}

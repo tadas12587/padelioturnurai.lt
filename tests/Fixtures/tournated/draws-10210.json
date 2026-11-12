@@ -1,0 +1,120 @@
+{
+ "data": [
+  {
+   "draw_id": 18468,
+   "tournament_id": 10210,
+   "category_id": 47632,
+   "title": "U10 M",
+   "segment": "MD",
+   "type": "play-each-place",
+   "size": 8,
+   "place": null,
+   "qual_winners": null,
+   "main_draw_id": null,
+   "is_24_double_eliminator": false,
+   "is_first_match_losers_to_consolation_draw": false,
+   "group_ids": null,
+   "entries": [
+    {
+     "position": 1,
+     "seed": null,
+     "player": {
+      "player_id": 90085,
+      "public_id": "usr_b4e09adbf1fb5a00",
+      "name": "Kotryna",
+      "surname": "Dargevičiūtė"
+     },
+     "team_id": null
+    },
+    {
+     "position": 2,
+     "seed": null,
+     "player": {
+      "player_id": 111051,
+      "public_id": "usr_6aa2aa77d939bf5f",
+      "name": "Elze",
+      "surname": "Mizaraite"
+     },
+     "team_id": null
+    },
+    {
+     "position": 3,
+     "seed": null,
+     "player": {
+      "player_id": 125690,
+      "public_id": "usr_c1230af296ffc2dd",
+      "name": "Vasarė",
+      "surname": "Mišeikytė"
+     },
+     "team_id": null
+    },
+    {
+     "position": 4,
+     "seed": null,
+     "player": {
+      "player_id": 113759,
+      "public_id": "usr_7716b13d7f25802f",
+      "name": "Elija",
+      "surname": "Narmontate"
+     },
+     "team_id": null
+    },
+    {
+     "position": 5,
+     "seed": null,
+     "player": {
+      "player_id": 111242,
+      "public_id": "usr_50c2c9096d7b84ae",
+      "name": "Luka",
+      "surname": "Meilūnaitė"
+     },
+     "team_id": null
+    },
+    {
+     "position": 6,
+     "seed": null,
+     "player": {
+      "player_id": 136031,
+      "public_id": "usr_jcgdhcdwmdk7e94j",
+      "name": "Rusnė",
+      "surname": "Gerulskytė"
+     },
+     "team_id": null
+    },
+    {
+     "position": 7,
+     "seed": null,
+     "player": {
+      "player_id": 139781,
+      "public_id": "usr_5nh38v10t4c0mjmn",
+      "name": "Kameja",
+      "surname": "Kupstyte"
+     },
+     "team_id": null
+    }
+   ],
+   "match_ids": [
+    1301379,
+    1301380,
+    1301381,
+    1301382,
+    1301383,
+    1301384,
+    1301385,
+    1301386,
+    1301387,
+    1301388,
+    1301389,
+    1301390
+   ],
+   "created_at": "2026-11-04T17:00:27.153Z",
+   "updated_at": "2026-11-04T18:20:54.617Z"
+  }
+ ],
+ "meta": {
+  "page": 1,
+  "limit": 20,
+  "total": 1,
+  "totalPages": 1
+ }
+}

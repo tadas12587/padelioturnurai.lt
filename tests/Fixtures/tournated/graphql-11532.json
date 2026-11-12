@@ -1,0 +1,184 @@
+{
+ "data": {
+  "tournamentAllMatches": {
+   "matchesArray": [
+    {
+     "matches": [
+      {
+       "id": 1261849,
+       "date": "2026-09-12T00:00:00.000Z",
+       "time": "10:50",
+       "status": "completed",
+       "teamScore": "6:2 6:2",
+       "name": "Moterys B 2",
+       "isBye": false,
+       "isWalkover": false,
+       "isDisqualified": false,
+       "isMatchInProgress": false,
+       "isMatchTie": false,
+       "court": {
+        "id": 56657,
+        "name": "Court 1"
+       },
+       "group": {
+        "id": 27809,
+        "name": "Bendra",
+        "segment": "MD"
+       },
+       "team1Entry": [
+        {
+         "user": {
+          "id": 86334,
+          "name": "Viltė",
+          "surname": "Čiapienė"
+         },
+         "team": {
+          "id": 3408,
+          "title": "Pasitaškom",
+          "image": null
+         }
+        },
+        {
+         "user": {
+          "id": 113373,
+          "name": "Irina",
+          "surname": "Mačiulytė"
+         },
+         "team": {
+          "id": 3408,
+          "title": "Pasitaškom",
+          "image": null
+         }
+        }
+       ],
+       "team2Entry": [
+        {
+         "user": {
+          "id": 60844,
+          "name": "Austėja",
+          "surname": "Daunytė"
+         },
+         "team": {
+          "id": 3405,
+          "title": "Slėnio Padelio Klubas",
+          "image": null
+         }
+        },
+        {
+         "user": {
+          "id": 77808,
+          "name": "Asta ",
+          "surname": "Vaičkė"
+         },
+         "team": {
+          "id": 3405,
+          "title": "Slėnio Padelio Klubas",
+          "image": null
+         }
+        }
+       ],
+       "teamWinner": [
+        {
+         "user": {
+          "id": 113373
+         }
+        },
+        {
+         "user": {
+          "id": 86334
+         }
+        }
+       ]
+      },
+      {
+       "id": 1261848,
+       "date": "2026-09-12T00:00:00.000Z",
+       "time": "10:00",
+       "status": "completed",
+       "teamScore": "6:3 6:1",
+       "name": "Moterys B 1",
+       "isBye": false,
+       "isWalkover": false,
+       "isDisqualified": false,
+       "isMatchInProgress": false,
+       "isMatchTie": false,
+       "court": {
+        "id": 56657,
+        "name": "Court 1"
+       },
+       "group": {
+        "id": 27809,
+        "name": "Bendra",
+        "segment": "MD"
+       },
+       "team1Entry": [
+        {
+         "user": {
+          "id": 92840,
+          "name": "Laura",
+          "surname": "Butkiene"
+         },
+         "team": {
+          "id": 3408,
+          "title": "Pasitaškom",
+          "image": null
+         }
+        },
+        {
+         "user": {
+          "id": 92838,
+          "name": "Laima",
+          "surname": "Šacauskienė"
+         },
+         "team": {
+          "id": 3408,
+          "title": "Pasitaškom",
+          "image": null
+         }
+        }
+       ],
+       "team2Entry": [
+        {
+         "user": {
+          "id": 75088,
+          "name": "Guste",
+          "surname": "Simkeviciute "
+         },
+         "team": {
+          "id": 3405,
+          "title": "Slėnio Padelio Klubas",
+          "image": null
+         }
+        },
+        {
+         "user": {
+          "id": 77685,
+          "name": "Viktorija",
+          "surname": "Praleikiene"
+         },
+         "team": {
+          "id": 3405,
+          "title": "Slėnio Padelio Klubas",
+          "image": null
+         }
+        }
+       ],
+       "teamWinner": [
+        {
+         "user": {
+          "id": 75088
+         }
+        },
+        {
+         "user": {
+          "id": 77685
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

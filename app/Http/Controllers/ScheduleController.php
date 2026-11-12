@@ -8,9 +8,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Public schedule / results / group-tables page for a tournament, fed by the
- * `schedule-push.js` relay (the production host cannot reach api.tournated.com
- * directly, same constraint as the OBS overlays — see docs/overlays.md).
+ * Public schedule / results / group-tables page for a tournament. The snapshot
+ * is filled by the site itself (`tournated:sync`, App\Services\Tournated) or,
+ * as a fallback, pushed by the PC-side `schedule-push.js` relay via ingest().
  *
  * "Division" labels (e.g. "Moterys TOP") are NOT a Tournated concept for this
  * club-league format (Tournated only has one catch-all category). They come
