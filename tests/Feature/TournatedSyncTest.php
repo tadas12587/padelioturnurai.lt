@@ -165,6 +165,64 @@ class TournatedSyncTest extends TestCase
         $this->assertStringContainsString('Mačų gauti nepavyko', TournatedSync::first()->last_error);
     }
 
+    public function test_result_arrival_time_is_recorded_only_when_seen_live(): void
+    {
+        $api = $this->fixture('matches-10210');
+        $unplayed = $api;
+        foreach ($unplayed['data'] as &$row) {
+            $row['sets'] = [];
+            $row['winner_side'] = null;
+            $row['final_score'] = null;
+        }
+        unset($row);
+
+        // first sync already sees results → unknown arrival time
+        $this->fakeApi();
+        $this->artisan('tournated:sync', ['tournament' => ['10210']])->assertSuccessful();
+        $first = collect(ScheduleSnapshot::first()->payload['matches'])->firstWhere('match_id', 1301361);
+        $this->assertNull($first['result_seen_at']);
+
+        // a tournament whose results appear while we are watching
+        ScheduleSnapshot::query()->delete();
+        Http::swap(new HttpFactory);
+        $this->fakeApi(matches: $unplayed);
+        $this->artisan('tournated:sync', ['tournament' => ['10210']])->assertSuccessful();
+        Http::swap(new HttpFactory);
+        $this->fakeApi();
+        $this->travelTo(now()->addMinutes(3));
+        $this->artisan('tournated:sync', ['tournament' => ['10210']])->assertSuccessful();
+
+        $m = collect(ScheduleSnapshot::first()->payload['matches'])->keyBy('match_id');
+        $this->assertSame(now()->toIso8601String(), $m[1301361]['result_seen_at']);
+        $this->assertFalse($m[1301361]['result_batch']);
+        $this->assertSame('2026-11-07', ScheduleSnapshot::first()->payload['tournament']['date']);
+    }
+
+    public function test_data_endpoint_returns_estimated_times_and_manual_delay_wins(): void
+    {
+        $tz = 'Europe/Vilnius';
+        $today = now($tz)->toDateString();
+        $seen = now($tz)->setTime(11, 2)->toIso8601String();
+        $this->travelTo(now($tz)->setTime(11, 3));
+        $mk = fn ($id, $time, $court, $played = false) => [
+            'match_id' => $id, 'date' => $today, 'time' => $time, 'court' => ['court_id' => 1, 'name' => $court],
+            'participants' => [], 'sets' => $played ? [['side1' => 6, 'side2' => 3]] : [], 'winner_side' => $played ? 1 : null,
+            'result_seen_at' => $played ? $seen : null, 'result_batch' => false,
+        ];
+        ScheduleSnapshot::create(['tournament_external_id' => '777', 'payload' => [
+            'tournament' => ['tz' => $tz],
+            'matches' => [$mk(1, '10:00', 'Court 1', true), $mk(2, '10:50', 'Court 1'), $mk(3, '10:00', 'Court 2', true), $mk(4, '10:50', 'Court 2')],
+            'court_delays' => ['Court 2' => 30],
+        ]]);
+
+        $json = $this->getJson('/grafikas/777/data')->assertOk()->json();
+        $m = collect($json['matches'])->keyBy('match_id');
+        $this->assertSame('11:07', $m[2]['eta']);   // automatic
+        $this->assertSame(17, $json['court_delays']['Court 1']);
+        $this->assertSame('11:20', $m[4]['eta']);   // manual 30 min overrides
+        $this->assertSame(30, $json['court_delays']['Court 2']);
+    }
+
     public function test_public_schedule_page_renders_synced_tournament(): void
     {
         $this->fakeApi();

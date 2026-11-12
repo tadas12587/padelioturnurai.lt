@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\EntryList;
 use App\Models\ScheduleSnapshot;
+use App\Services\Tournated\CourtDelays;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -78,6 +80,7 @@ class ScheduleController extends Controller
 
         $divisionByPair = $this->divisionLookup($tournamentExternalId);
         $matches = array_map(fn (array $m) => $this->tagDivision($m, $divisionByPair), $matches);
+        [$matches, $courtDelays] = $this->withDelays($payload, $matches);
 
         // Sort by date+time, then court, so the grid renders in a stable order.
         usort($matches, function (array $a, array $b) {
@@ -122,8 +125,36 @@ class ScheduleController extends Controller
             'divisionList' => $divisions,
             'clubList'     => $clubs,
             'matchesByClub' => $this->groupByClub($matches, $clubs),
-            'courtDelays'  => $payload['court_delays'] ?? [],
+            'courtDelays'  => $courtDelays,
         ]);
+    }
+
+    /**
+     * Automatic per-court estimate (CourtDelays) for today's matches, with a
+     * delay the organizer set by hand on the delays page taking precedence.
+     *
+     * @return array{0: array, 1: array<string,int>}
+     */
+    private function withDelays(array $payload, array $matches): array
+    {
+        $manual = array_filter($payload['court_delays'] ?? [], fn ($v) => (int) $v > 0);
+        $auto = CourtDelays::apply($matches, CarbonImmutable::now(), $payload['tournament']['tz'] ?? 'Europe/Vilnius');
+
+        $matches = array_map(function (array $m) use ($manual) {
+            $court = $m['court']['name'] ?? '';
+            if (isset($manual[$court])) {
+                unset($m['eta'], $m['eta_delay']);
+                if (! $this->isPlayed($m) && ! empty($m['time'])) {
+                    $t = CarbonImmutable::createFromFormat('H:i', substr($m['time'], 0, 5))->addMinutes((int) $manual[$court]);
+                    $m['eta'] = $t->format('H:i');
+                    $m['eta_delay'] = (int) $manual[$court];
+                }
+            }
+
+            return $m;
+        }, $auto['matches']);
+
+        return [$matches, array_replace($auto['courts'], $manual)];
     }
 
     /** JSON the page polls while open, to pick up new results without a full reload. */
@@ -136,13 +167,14 @@ class ScheduleController extends Controller
         $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));
         $divisionByPair = $this->divisionLookup($tournamentExternalId);
         $matches = array_map(fn (array $m) => $this->tagDivision($m, $divisionByPair), $matches);
+        [$matches, $courtDelays] = $this->withDelays($payload, $matches);
 
         return response()->json([
             'matches'      => $matches,
             'groups'       => $payload['groups'] ?? [],
             'standings'    => $payload['standings'] ?? [],
             'synced_at'    => $payload['synced_at'] ?? null,
-            'court_delays' => $payload['court_delays'] ?? [],
+            'court_delays' => $courtDelays,
         ]);
     }
 

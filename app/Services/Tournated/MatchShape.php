@@ -26,11 +26,7 @@ class MatchShape
             'division' => $m['category']['name'] ?? null,
             'team1' => self::team($m['team1'] ?? null),
             'team2' => self::team($m['team2'] ?? null),
-            'participants' => array_map(fn ($p) => [
-                'side' => $p['side'] ?? null,
-                'name' => trim((string) ($p['name'] ?? '')),
-                'surname' => trim((string) ($p['surname'] ?? '')),
-            ], $m['participants'] ?? []),
+            'participants' => array_map(fn ($p) => self::person($p['side'] ?? null, $p['name'] ?? '', $p['surname'] ?? ''), $m['participants'] ?? []),
             'sets' => $sets,
             'winner_side' => $m['winner_side'] ?? self::winnerFromSets($sets),
             'is_bye' => (bool) ($m['is_bye'] ?? false),
@@ -43,6 +39,22 @@ class MatchShape
             'bracket_type' => $m['bracket_type'] ?? null,
             'updated_at' => $m['updated_at'] ?? now()->toIso8601String(),
         ];
+    }
+
+    /**
+     * Some Tournated profiles store the full name in `name` as well
+     * ("Simona Diržinskaitė" + "Diržinskaitė") — drop the repeated surname.
+     */
+    public static function person(?int $side, ?string $name, ?string $surname): array
+    {
+        $name = trim((string) $name);
+        $surname = trim((string) $surname);
+        if ($surname !== '' && mb_strtolower($name) !== mb_strtolower($surname)
+            && str_ends_with(mb_strtolower($name), ' '.mb_strtolower($surname))) {
+            $name = trim(mb_substr($name, 0, mb_strlen($name) - mb_strlen($surname)));
+        }
+
+        return ['side' => $side, 'name' => $name, 'surname' => $surname];
     }
 
     public static function winnerFromSets(array $sets): ?int

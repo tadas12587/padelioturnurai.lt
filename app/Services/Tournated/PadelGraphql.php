@@ -138,10 +138,6 @@ GQL;
 
     private static function entryPlayers(array $entry, int $side): array
     {
-        return array_map(fn ($e) => [
-            'side' => $side,
-            'name' => trim((string) ($e['user']['name'] ?? '')),
-            'surname' => trim((string) ($e['user']['surname'] ?? '')),
-        ], $entry);
+        return array_map(fn ($e) => MatchShape::person($side, $e['user']['name'] ?? '', $e['user']['surname'] ?? ''), $entry);
     }
 }

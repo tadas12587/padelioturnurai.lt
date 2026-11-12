@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="lt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grafiko maketas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground: #0A2226; --surface: #0E2C30; --surface-2: #123539;
+    --line: rgba(238,244,242,0.09); --ink: #EAF3F1; --ink-soft: #A9C4BE;
+    --muted: #8BA7A1; --ball: #D9F45A; --ball-ink: #17230a;
+    --late: #F5B54A; --late-bg: rgba(245,181,74,0.14);
+    --early: #7FD6E8; --early-bg: rgba(127,214,232,0.13);
+    --sans: 'Inter', -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: 'Archivo', var(--sans);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #061719; color: var(--ink); font-family: var(--sans); padding: 24px 16px 48px; }
+  .intro { max-width: 1180px; margin: 0 auto 22px; }
+  .intro h1 { font-family: var(--display); font-size: 1.4rem; margin: 0 0 6px; }
+  .intro p { color: var(--ink-soft); margin: 0; font-size: 0.92rem; line-height: 1.5; max-width: 70ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 0.8rem; color: var(--ink-soft); }
+  .phones { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; max-width: 1180px; margin: 0 auto; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .col > h2 { font-family: var(--display); font-size: 0.95rem; margin: 0; color: var(--ink-soft); font-weight: 600; }
+  .phone { width: 360px; max-width: 100%; height: 760px; background: var(--ground); border-radius: 34px; border: 8px solid #1d3236;
+    position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  .scroll { flex: 1; overflow-y: auto; padding: 0 14px 90px; }
+  .note { max-width: 360px; font-size: 0.8rem; color: var(--ink-soft); line-height: 1.45; }
+
+  /* compact header */
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 0 10px; }
+  .top b { font-family: var(--display); font-size: 0.86rem; line-height: 1.2; }
+  .fresh { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ball); box-shadow: 0 0 0 3px rgba(217,244,90,.18); }
+
+  .search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 0 12px; height: 46px; color: var(--muted); font-size: 0.92rem; }
+  .me { display: flex; align-items: center; justify-content: space-between; margin: 14px 0 8px; }
+  .me .name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
+  .me .sub { font-size: 0.78rem; color: var(--muted); }
+  .chip { border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); border-radius: 999px;
+    padding: 0 14px; height: 36px; display: inline-flex; align-items: center; font-size: 0.8rem; }
+
+  /* next match hero */
+  .next { background: linear-gradient(160deg, #15444a, var(--surface)); border: 1px solid rgba(217,244,90,.35);
+    border-radius: 18px; padding: 16px; margin-bottom: 14px; }
+  .label { font-size: 0.7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ball); font-weight: 700; }
+  .bigtime { display: flex; align-items: baseline; gap: 10px; margin: 6px 0 2px; }
+  .bigtime .t { font-family: var(--display); font-weight: 800; font-size: 3rem; line-height: 1; font-variant-numeric: tabular-nums; }
+  .planned { font-size: 0.82rem; color: var(--muted); }
+  .planned s { color: var(--muted); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 9px; font-size: 0.74rem; font-weight: 700; }
+  .late { background: var(--late-bg); color: var(--late); }
+  .early { background: var(--early-bg); color: var(--early); }
+  .ontime { background: rgba(234,243,241,.07); color: var(--ink-soft); }
+  .court-big { font-family: var(--display); font-weight: 700; font-size: 1.15rem; margin: 10px 0 2px; }
+  .vs { font-size: 0.88rem; color: var(--ink-soft); line-height: 1.45; }
+  .vs b { color: var(--ink); font-weight: 600; }
+  .queue { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 0.8rem; color: var(--ink-soft); display: flex; gap: 8px; align-items: center; }
+  .hint { margin-top: 8px; font-size: 0.74rem; color: var(--muted); }
+
+  .section { font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 18px 2px 8px; display: flex; justify-content: space-between; }
+
+  /* match card */
+  .m { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .mhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+  .when { display: flex; align-items: baseline; gap: 8px; }
+  .when .t { font-family: var(--display); font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+  .when .p { font-size: 0.74rem; color: var(--muted); }
+  .courttag { font-weight: 700; font-size: 0.82rem; color: var(--ink); }
+  .div { font-size: 0.7rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
+  .side { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+  .side .who { font-size: 0.86rem; line-height: 1.35; }
+  .side .club { font-weight: 700; font-size: 0.86rem; }
+  .side .pl { color: var(--ink-soft); font-size: 0.8rem; }
+  .side.lose .club, .side.lose .pl { color: var(--muted); }
+  .hl { color: var(--ball) !important; font-weight: 600; }
+  .sets { display: flex; gap: 12px; font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sets .w { color: var(--ball); }
+  .collapsed { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 0 14px; height: 50px; font-size: 0.86rem; color: var(--ink-soft); }
+
+  /* now tab */
+  .court { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .court .ch { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .court .ch b { font-family: var(--display); font-size: 1rem; }
+  .row { display: grid; grid-template-columns: 62px 1fr; gap: 10px; align-items: start; padding: 6px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .k { font-size: 0.7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; padding-top: 3px; }
+  .row .k.live { color: var(--ball); }
+  .row .v { font-size: 0.84rem; line-height: 1.4; min-width: 0; }
+  .row .v .tt { font-family: var(--display); font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums; margin-right: 6px; }
+  .pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ball); margin-right: 6px; vertical-align: middle; }
+  .over { font-size: 0.72rem; color: var(--late); }
+
+  .unsched { border: 1px dashed rgba(234,243,241,.18); border-radius: 14px; padding: 12px 14px; font-size: 0.82rem; color: var(--ink-soft); }
+
+  /* bottom nav */
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr);
+    background: rgba(10,34,38,.96); border-top: 1px solid var(--line); padding: 6px 4px 12px; }
+  .nav a { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.66rem; color: var(--muted);
+    text-decoration: none; padding: 6px 0; border-radius: 12px; min-height: 48px; justify-content: center; }
+  .nav a.on { color: var(--ball); background: rgba(217,244,90,.08); }
+  .nav svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Grafiko maketas: kitas turnyras (klubų lyga)</h1>
+  <p>Trys telefono ekranai. Laikai pavyzdiniai, kad matytųsi automatinis vėlavimas: kai teisėjas įveda rezultatą, kito mačo korte laikas = įvedimo laikas + 5 min, toliau + planinis tarpas.</p>
+  <div class="legend">
+    <span class="badge late">+17 min vėluoja</span>
+    <span class="badge early">−10 min gali anksčiau</span>
+    <span class="badge ontime">laiku</span>
+  </div>
+</div>
+
+<div class="phones">
+  <!-- 1: Mano mačai -->
+  <div class="col">
+    <h2>1. „Mano“ (žaidėjas įsimenamas)</h2>
+    <div class="phone">
+      <div class="scroll">
+        <div class="top"><b>Klaipėdos klubų lyga – III etapas</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
+        <div class="me">
+          <div><div class="name">Robertas Šimkus</div><div class="sub">Pasitaškom · Vyrai B- 1</div></div>
+          <span class="chip">Keisti</span>
+        </div>
+
+        <div class="next">
+          <div class="label">Kitas tavo mačas</div>
+          <div class="bigtime"><span class="t">~13:37</span><span class="badge late">+17 min</span></div>
+          <div class="planned">planuota <s>13:20</s> · gali keistis ±</div>
+          <div class="court-big">Kortas 4</div>
+          <div class="vs">su <b>Agnius Čiapas</b><br>prieš <b>BTC Klubas</b> – M. Povilavičius, I. Riauba</div>
+          <div class="queue"><span class="pulse"></span>Korte 4 dabar žaidžia Slėnio – 4Padel (nuo 12:47), tu – po jų</div>
+        </div>
+
+        <div class="section"><span>Vėliau</span></div>
+        <div class="m">
+          <div class="mhead"><div class="when"><span class="t">~15:17</span><span class="badge late">+17</span></div><span class="courttag">Kortas 4</span></div>
+          <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl"><span class="hl">R. Šimkus</span>, A. Čiapas</div></div></div>
+          <div class="side"><div class="who"><div class="club">4Padel</div><div class="pl">E. Sileika, G. Skirutis</div></div></div>
+        </div>
+
+        <div class="section"><span>Sužaista</span></div>
+        <div class="collapsed"><span>1 mačas · laimėtas 3-6 6-4 10-8</span><span>▾</span></div>
+      </div>
+      <nav class="nav">
+        <a class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="11" r="2.5"/><path d="M3 20c.8-3 3-5 6-5s5 2 6 5"/></svg>Klubai</a>
+        <a><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 01-8 0zM12 13v4M8 20h8"/></svg>Lentelės</a>
+      </nav>
+    </div>
+    <p class="note">Pirmą kartą: paieška (veikia ir be lietuviškų raidžių – „simkus“, „dirzin“). Paskui telefonas prisimena žaidėją ir iškart rodo šį ekraną.</p>
+  </div>
+
+  <!-- 2: Dabar -->
+  <div class="col">
+    <h2>2. „Dabar“ – visi kortai</h2>
+    <div class="phone">
+      <div class="scroll">
+        <div class="top"><b>Klaipėdos klubų lyga – III etapas</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
+        <div class="section" style="margin-top:6px"><span>Kortai · 12:58</span><span>vidutiniškai +9 min</span></div>
+
+        <div class="court">
+          <div class="ch"><b>Kortas 1</b><span class="badge ontime">laiku</span></div>
+          <div class="row"><span class="k">Laisvas</span><span class="v">Paskutinis baigtas 12:52</span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">13:20</span>BTC – Pasitaškom <span style="color:var(--muted)">· Moterys B 2</span></span></div>
+        </div>
+
+        <div class="court">
+          <div class="ch"><b>Kortas 2</b><span class="badge early">−10 min</span></div>
+          <div class="row"><span class="k live">Žaidžia</span><span class="v"><span class="pulse"></span>4Padel – BTC <span style="color:var(--muted)">· Vyrai TOP 1 · nuo 12:20</span></span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:10</span>Slėnio – Pasitaškom <span style="color:var(--muted)">(pl. 13:20, gali anksčiau)</span></span></div>
+        </div>
+
+        <div class="court">
+          <div class="ch"><b>Kortas 3</b><span class="badge late">+25 min</span></div>
+          <div class="row"><span class="k live">Žaidžia</span><span class="v"><span class="pulse"></span>Pasitaškom – Slėnio <span style="color:var(--muted)">· nuo 12:05</span><br><span class="over">Užsitęsė: planuota baigti 12:50</span></span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:45</span>4Padel – BTC <span style="color:var(--muted)">(pl. 13:20)</span></span></div>
+        </div>
+
+        <div class="court">
+          <div class="ch"><b>Kortas 4</b><span class="badge late">+17 min</span></div>
+          <div class="row"><span class="k live">Žaidžia</span><span class="v"><span class="pulse"></span>Slėnio – 4Padel <span style="color:var(--muted)">· Vyrai B- 1 · nuo 12:47</span></span></div>
+          <div class="row"><span class="k">Toliau</span><span class="v"><span class="tt">~13:37</span>BTC – Pasitaškom <span style="color:var(--muted)">· Vyrai B- 1 (pl. 13:20)</span></span></div>
+        </div>
+        <p class="hint">Laikai numatomi automatiškai pagal tai, kada teisėjas įveda rezultatus. Anksčiau nei 15 min iki planuoto laiko nerodoma.</p>
+      </div>
+      <nav class="nav">
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a class="on"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="11" r="2.5"/><path d="M3 20c.8-3 3-5 6-5s5 2 6 5"/></svg>Klubai</a>
+        <a><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 01-8 0zM12 13v4M8 20h8"/></svg>Lentelės</a>
+      </nav>
+    </div>
+    <p class="note">Kiekvienas kortas: kas žaidžia dabar, kas toliau ir kiek kortas vėluoja ar lenkia. Užsitęsęs mačas perspėja ir stumia kitą laiką gyvai.</p>
+  </div>
+
+  <!-- 3: Mačai -->
+  <div class="col">
+    <h2>3. „Mačai“ – visas grafikas</h2>
+    <div class="phone">
+      <div class="scroll">
+        <div class="top"><b>Klaipėdos klubų lyga – III etapas</b><span class="fresh"><span class="dot"></span>prieš 1 min</span></div>
+        <div class="search">⌕ Ieškok žaidėjo ar klubo…</div>
+        <div style="display:flex;gap:8px;margin:10px 0;overflow:hidden"><span class="chip" style="background:var(--ball);color:var(--ball-ink);border-color:var(--ball)">Visi lygiai</span><span class="chip">Moterys B</span><span class="chip">Vyrai TOP</span></div>
+        <div class="collapsed" style="height:44px;margin-bottom:6px"><span>Sužaista 24 mačai</span><span>▸ rodyti</span></div>
+
+        <div class="section"><span>Šeštadienis, 13:20 planas</span><span>4 mačai</span></div>
+        <div class="m">
+          <div class="mhead"><div class="when"><span class="t">13:20</span><span class="badge ontime">laiku</span></div><span class="courttag">Kortas 1</span></div>
+          <div class="side"><div class="who"><div class="club">BTC Klubas</div><div class="pl">D. Lomsargienė, A. Mordvinukienė</div></div></div>
+          <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl">L. Butkienė, L. Šacauskienė</div></div></div>
+        </div>
+        <div class="m">
+          <div class="mhead"><div class="when"><span class="t">~13:10</span><span class="p">pl. 13:20</span><span class="badge early">−10</span></div><span class="courttag">Kortas 2</span></div>
+          <div class="side"><div class="who"><div class="club">Slėnio Padelio Klubas</div><div class="pl">G. Simkevičiūtė, V. Praleikienė</div></div></div>
+          <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl">E. Čerbienė, K. Sparnauskaitė</div></div></div>
+        </div>
+        <div class="m">
+          <div class="mhead"><div class="when"><span class="t">~13:37</span><span class="p">pl. 13:20</span><span class="badge late">+17</span></div><span class="courttag">Kortas 4</span></div>
+          <div class="side"><div class="who"><div class="club">BTC Klubas</div><div class="pl">M. Povilavičius, I. Riauba</div></div></div>
+          <div class="side"><div class="who"><div class="club">Pasitaškom</div><div class="pl"><span class="hl">R. Šimkus</span>, A. Čiapas</div></div></div>
+        </div>
+
+        <div class="section"><span>Laikas dar nepaskirtas</span><span>2</span></div>
+        <div class="unsched">Finalinis susitikimas · Kortas – · laikas bus paskelbtas</div>
+      </div>
+      <nav class="nav">
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>Mano</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Dabar</a>
+        <a class="on"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>Mačai</a>
+        <a><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="11" r="2.5"/><path d="M3 20c.8-3 3-5 6-5s5 2 6 5"/></svg>Klubai</a>
+        <a><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 01-8 0zM12 13v4M8 20h8"/></svg>Lentelės</a>
+      </nav>
+    </div>
+    <p class="note">Sužaisti mačai suskleisti viršuje, sąrašas atsidaro nuo dabarties. Grupuojama pagal dieną ir planinį laiką, šalia rodomas numatomas laikas. Mačai be laiko – atskiroje skiltyje, nedingsta.</p>
+  </div>
+</div>
+</body>
+</html>

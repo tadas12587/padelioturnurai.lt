@@ -521,11 +521,11 @@
       '</div>';
   }
 
-  // Court delays only affect matches that have no result yet — a match that
-  // already has a score keeps showing the real time it was actually played.
+  // The server sets eta_delay on not-yet-played matches: the automatic court
+  // estimate (CourtDelays) or the organizer's manual court delay. A match
+  // that already has a score keeps showing the time it was actually played.
   function courtDelayMinutes(m) {
-    var courtName = (m.court && m.court.name) || '';
-    return (state.courtDelays && state.courtDelays[courtName]) || 0;
+    return m.eta_delay || 0;
   }
 
   function addMinutes(hhmm, minutes) {
@@ -540,8 +540,7 @@
   function timeOf(m) {
     if (!m.time) return '—';
     if (isPlayed(m)) return m.time;
-    var delay = courtDelayMinutes(m);
-    return delay ? addMinutes(m.time, delay) : m.time;
+    return m.eta || m.time;
   }
 
   // Numeric court number parsed out of the court name ("Court 2" -> 2), so
@@ -626,6 +625,11 @@
 
   var selectedPlayer = null;
 
+  // Lower-case and strip Lithuanian diacritics, so "dirzin" finds "Diržinskaitė".
+  function fold(s) {
+    return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+
   function renderSearch(query) {
     var box = document.getElementById('search-results');
 
@@ -638,12 +642,14 @@
     }
 
     if (!query) { box.innerHTML = '<p class="empty">Įvesk žaidėjo arba klubo vardą.</p>'; return; }
-    var q = query.toLowerCase();
+    var words = fold(query).split(/\s+/).filter(Boolean);
+    // every typed word must appear, in any order ("simkus rob" finds Robertas Šimkus)
+    var hit = function (text) { var t = fold(text); return words.every(function (w) { return t.indexOf(w) !== -1; }); };
 
-    var players = buildPlayerIndex().filter(function (p) { return p.name.toLowerCase().indexOf(q) !== -1; }).slice(0, 8);
-    var matchList = state.matches.filter(function (m) {
-      var hay = [(m.team1 || {}).title, (m.team2 || {}).title, m.division].join(' ').toLowerCase();
-      return hay.indexOf(q) !== -1;
+    var players = buildPlayerIndex().filter(function (p) { return hit(p.name); }).slice(0, 8);
+    // single letters would list every match — clubs/divisions only from 2 characters
+    var matchList = query.trim().length < 2 ? [] : state.matches.filter(function (m) {
+      return hit([(m.team1 || {}).title, (m.team2 || {}).title, m.division].join(' '));
     });
 
     var html = '';

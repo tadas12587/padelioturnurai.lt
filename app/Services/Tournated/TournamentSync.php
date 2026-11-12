@@ -3,6 +3,7 @@
 namespace App\Services\Tournated;
 
 use App\Models\ScheduleSnapshot;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
@@ -78,6 +79,12 @@ class TournamentSync
         ], $this->api->list('teams', $tournamentId)));
 
         [$matches, $source] = $this->matches($tournamentId, ! empty($teams), $warnings);
+        $matches = self::stampResults($matches, $existing['matches'] ?? [], ! empty($existing));
+
+        $dates = array_filter(array_column($matches, 'date'));
+        $tournament['date'] = $dates ? min($dates) : (isset($tournament['start'])
+            ? CarbonImmutable::parse($tournament['start'])->setTimezone($tournament['tz'] ?? 'Europe/Vilnius')->toDateString()
+            : null);
 
         ScheduleSnapshot::updateOrCreate(
             ['tournament_external_id' => $tournamentId],
@@ -99,6 +106,51 @@ class TournamentSync
         }
 
         return ['source' => $source, 'matches' => count($matches), 'warnings' => $warnings];
+    }
+
+    /**
+     * Remember when each result first appeared — that moment, not Tournated's
+     * updated_at (which moves on later edits), drives CourtDelays. Results
+     * present on the very first sync, or several on one court in the same
+     * cycle (entered in a batch), are flagged so they are not trusted.
+     */
+    private static function stampResults(array $matches, array $previous, bool $hadSnapshot): array
+    {
+        $before = [];
+        foreach ($previous as $p) {
+            $before[$p['match_id']] = $p;
+        }
+        $now = now()->toIso8601String();
+        $newPerCourt = [];
+
+        foreach ($matches as $i => $m) {
+            $played = ! empty($m['sets']) || ! empty($m['winner_side']) || ! empty($m['is_walkover']);
+            $old = $before[$m['match_id']] ?? null;
+            if (! $played) {
+                continue;
+            }
+            if ($old && array_key_exists('result_seen_at', $old)) {
+                $matches[$i]['result_seen_at'] = $old['result_seen_at'];
+                $matches[$i]['result_batch'] = $old['result_batch'] ?? false;
+                continue;
+            }
+            $wasPlayed = $old && (! empty($old['sets']) || ! empty($old['winner_side']) || ! empty($old['is_walkover']));
+            $live = $hadSnapshot && ! $wasPlayed;
+            $matches[$i]['result_seen_at'] = $live ? $now : null;
+            $matches[$i]['result_batch'] = false;
+            if ($live) {
+                $newPerCourt[$m['court']['name'] ?? '?'][] = $i;
+            }
+        }
+        foreach ($newPerCourt as $idx) {
+            if (count($idx) > 1) {
+                foreach ($idx as $i) {
+                    $matches[$i]['result_batch'] = true;
+                }
+            }
+        }
+
+        return $matches;
     }
 
     private function tournamentInfo(string $id): array
