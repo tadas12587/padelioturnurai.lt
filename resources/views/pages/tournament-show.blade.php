@@ -168,6 +168,18 @@
                 ])
             @endif
 
+            {{-- Live schedule & results — when the tournament is linked to Tournated --}}
+            @if($tournament->tournated_id)
+                <a href="{{ route('schedule.show', $tournament->tournated_id) }}"
+                   class="inline-flex items-center gap-2 px-8 py-4 bg-gold border border-gold text-dark font-bold text-lg hover:bg-dark-card hover:text-gold transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="17" rx="2" stroke-width="2"/>
+                        <path stroke-linecap="round" stroke-width="2" d="M3 9h18M8 2v4M16 2v4"/>
+                    </svg>
+                    {{ __('messages.schedule_btn') }}
+                </a>
+            @endif
+
             {{-- Groups / Tables button — shown only when results_url is set --}}
             @if($tournament->results_url)
                 <a href="{{ $tournament->results_url }}" target="_blank" rel="noopener"

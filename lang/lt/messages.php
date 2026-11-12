@@ -45,6 +45,7 @@ return [
     'registration_closed' => 'Registracija uždaryta',
     'date' => 'Data',
     'groups_tables_btn'      => 'Grupės / Lentelės',
+    'schedule_btn'           => 'Grafikas ir rezultatai',
     'gallery_photos_count'   => 'nuotraukos',
     'gallery_more'           => 'daugiau',
     'gallery_show_all'       => 'Rodyti visas nuotraukas',

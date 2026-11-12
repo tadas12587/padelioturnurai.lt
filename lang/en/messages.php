@@ -45,6 +45,7 @@ return [
     'registration_closed' => 'Registration closed',
     'date' => 'Date',
     'groups_tables_btn'      => 'Groups / Tables',
+    'schedule_btn'           => 'Schedule & results',
     'gallery_photos_count'   => 'photos',
     'gallery_more'           => 'more',
     'gallery_show_all'       => 'Show all photos',

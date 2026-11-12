@@ -3,7 +3,17 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\TournamentResource\Pages;
+use App\Http\Controllers\PushController;
+use App\Models\PushSubscription;
+use App\Models\ScheduleSnapshot;
 use App\Models\Tournament;
+use App\Models\TournatedSync;
+use Filament\Forms\Components\Placeholder;
+use Filament\Notifications\Notification;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -35,6 +45,58 @@ class TournamentResource extends Resource
     {
         return $form
             ->schema([
+                // ── Tournated: schedule, results, phone notifications ─────
+                Section::make('Tournated: grafikas, rezultatai ir pranešimai')
+                    ->description('Įrašius Tournated turnyro ID, svetainė pati kas minutę (turnyro dienomis) atsisiunčia grafiką ir rezultatus, skaičiuoja vėlavimus ir siunčia pranešimus žaidėjams. Turnyro puslapyje atsiranda mygtukas „Grafikas ir rezultatai".')
+                    ->schema([
+                        TextInput::make('tournated_id')
+                            ->label('Tournated turnyro ID arba nuoroda')
+                            ->placeholder('pvz. 11532 arba https://play.padel.lt/tournament/11532')
+                            ->nullable()
+                            ->formatStateUsing(fn ($state) => $state)
+                            ->dehydrateStateUsing(fn ($state) => Tournament::parseTournatedId($state))
+                            ->rule(fn ($record) => function (string $attribute, $value, \Closure $fail) use ($record) {
+                                if (! $value) {
+                                    return;
+                                }
+                                $id = Tournament::parseTournatedId($value);
+                                if (! $id) {
+                                    $fail('Įrašyk skaičių (pvz. 11532) arba play.padel.lt turnyro nuorodą.');
+                                } elseif (Tournament::where('tournated_id', $id)->when($record, fn ($q) => $q->whereKeyNot($record->getKey()))->exists()) {
+                                    $fail('Šis Tournated turnyras jau priskirtas kitam turnyrui.');
+                                }
+                            })
+                            ->suffixAction(
+                                \Filament\Forms\Components\Actions\Action::make('fillFromTournated')
+                                    ->icon('heroicon-o-arrow-down-tray')
+                                    ->tooltip('Užpildyti datas iš Tournated')
+                                    ->action(function ($state, $set) {
+                                        $id = Tournament::parseTournatedId($state);
+                                        try {
+                                            $t = \App\Services\Tournated\TournatedApi::fromConfig()->tournament((string) $id);
+                                        } catch (\Throwable $e) {
+                                            Notification::make()->title('Nepavyko gauti iš Tournated')->body($e->getMessage())->danger()->send();
+
+                                            return;
+                                        }
+                                        $tz = $t['tournament_tz'] ?? 'Europe/Vilnius';
+                                        $set('tournated_id', $id);
+                                        if (! empty($t['tournament_start_date'])) {
+                                            $set('date_start', \Carbon\Carbon::parse($t['tournament_start_date'])->setTimezone($tz)->toDateString());
+                                        }
+                                        if (! empty($t['tournament_end_date'])) {
+                                            $set('date_end', \Carbon\Carbon::parse($t['tournament_end_date'])->setTimezone($tz)->toDateString());
+                                        }
+                                        Notification::make()->title($t['tournament_name'] ?? 'Rasta')->body('Datos užpildytos. Pavadinimą įrašyk skiltyje „Tekstai".')->success()->send();
+                                    })
+                            ),
+
+                        Placeholder::make('tournated_status')
+                            ->label('Būsena')
+                            ->content(fn (?Tournament $record) => new HtmlString(self::syncStatusHtml($record)))
+                            ->visible(fn (?Tournament $record) => (bool) $record?->tournated_id),
+                    ]),
+
                 // ── Core fields ───────────────────────────────────────────
                 Section::make('Pagrindinė informacija')
                     ->schema([
@@ -282,14 +344,13 @@ class TournamentResource extends Resource
                 TextColumn::make('participants_count')
                     ->label('Dalyviai'),
 
-                IconColumn::make('results_url')
-                    ->label('Grupės/Lentelės')
-                    ->boolean()
-                    ->trueIcon('heroicon-o-link')
-                    ->falseIcon('heroicon-o-minus')
-                    ->trueColor('success')
-                    ->falseColor('gray')
-                    ->getStateUsing(fn ($record) => (bool) $record->results_url),
+                TextColumn::make('tournated_id')
+                    ->label('Tournated')
+                    ->badge()
+                    ->formatStateUsing(fn ($state, Tournament $record) => self::syncBadge($record)[0])
+                    ->color(fn (Tournament $record) => self::syncBadge($record)[1])
+                    ->description(fn (Tournament $record) => $record->tournated_id ? '#'.$record->tournated_id : null)
+                    ->placeholder('—'),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -300,9 +361,94 @@ class TournamentResource extends Resource
                     ]),
             ])
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                Action::make('schedule')
+                    ->label('Grafikas')
+                    ->icon('heroicon-o-calendar-days')
+                    ->url(fn (Tournament $record) => route('schedule.show', $record->tournated_id), shouldOpenInNewTab: true)
+                    ->visible(fn (Tournament $record) => $record->tournated_id && ScheduleSnapshot::where('tournament_external_id', $record->tournated_id)->exists()),
+                ActionGroup::make([
+                    Action::make('syncNow')
+                        ->label('Atnaujinti iš Tournated dabar')
+                        ->icon('heroicon-o-arrow-path')
+                        ->visible(fn (Tournament $record) => (bool) $record->tournated_id)
+                        ->action(function (Tournament $record) {
+                            $code = Artisan::call('tournated:sync', ['tournament' => [$record->tournated_id]]);
+                            $sync = TournatedSync::where('tournament_external_id', $record->tournated_id)->first();
+                            Notification::make()
+                                ->title($code === 0 ? 'Atnaujinta: '.($sync?->match_count ?? 0).' mačų' : 'Nepavyko atnaujinti')
+                                ->body($sync?->last_error)
+                                ->{$code === 0 ? 'success' : 'danger'}()
+                                ->send();
+                        }),
+                    Action::make('testPush')
+                        ->label('Bandomasis pranešimas')
+                        ->icon('heroicon-o-bell-alert')
+                        ->visible(fn (Tournament $record) => (bool) $record->tournated_id)
+                        ->modalDescription('Išsiunčia „Tavo eilė! Eik į Kortą 1" telefonams, kurie šiame turnyre įsijungė pranešimus. Pasirink žaidėją arba palik tuščią – gaus visi.')
+                        ->form(fn (Tournament $record) => [
+                            Select::make('player')
+                                ->label('Žaidėjas')
+                                ->placeholder('Visi įsijungę pranešimus')
+                                ->options(PushSubscription::where('tournament_external_id', $record->tournated_id)->pluck('player', 'player_key'))
+                                ->helperText(PushSubscription::where('tournament_external_id', $record->tournated_id)->count().' telefon(-ai) įsijungę pranešimus.'),
+                        ])
+                        ->action(function (Tournament $record, array $data) {
+                            $subs = PushSubscription::where('tournament_external_id', $record->tournated_id)
+                                ->when($data['player'] ?? null, fn ($q, $key) => $q->where('player_key', $key))->get();
+                            $push = PushController::webPush();
+                            $ok = 0;
+                            foreach ($subs as $sub) {
+                                $res = $push->send($sub->toWebPush(), json_encode([
+                                    'title' => 'Tavo eilė! Eik į Kortą 1',
+                                    'body' => 'Bandomasis pranešimas · padelioturnyrai.lt',
+                                    'url' => '/grafikas/'.$record->tournated_id.'?z='.rawurlencode($sub->player),
+                                    'tag' => 'test:'.now()->timestamp,
+                                ], JSON_UNESCAPED_UNICODE), 300);
+                                $res['gone'] ? $sub->delete() : null;
+                                $ok += $res['ok'] ? 1 : 0;
+                            }
+                            Notification::make()->title("Išsiųsta: {$ok} iš {$subs->count()}")->{$ok ? 'success' : 'warning'}()->send();
+                        }),
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ]);
+    }
+
+    /** @return array{0: string, 1: string} label + colour for the Tournated sync state */
+    private static function syncBadge(Tournament $record): array
+    {
+        if (! $record->tournated_id) {
+            return ['—', 'gray'];
+        }
+        $s = $record->tournatedSync;
+        if (! $s || ! $s->last_attempt_at) {
+            return ['Laukia', 'gray'];
+        }
+        if (! $s->last_success_at || ($s->last_attempt_at > $s->last_success_at)) {
+            return ['Klaida', 'danger'];
+        }
+
+        return [$s->last_error ? 'Veikia (su įspėjimu)' : 'Veikia', $s->last_error ? 'warning' : 'success'];
+    }
+
+    private static function syncStatusHtml(?Tournament $record): string
+    {
+        $s = $record?->tournatedSync;
+        if (! $s || ! $s->last_attempt_at) {
+            return 'Dar nesinchronizuota – pirmas atnaujinimas per kelias minutes (arba „Atnaujinti iš Tournated dabar" sąraše).';
+        }
+        $lines = [
+            'Paskutinis sėkmingas: <b>'.e($s->last_success_at?->timezone('Europe/Vilnius')->format('Y-m-d H:i') ?? '—').'</b>',
+            'Mačų: <b>'.(int) $s->match_count.'</b> · šaltinis: '.e($s->last_source === 'graphql' ? 'play.padel.lt (atsarginis)' : 'Tournated API'),
+            'Pranešimus įsijungę telefonai: <b>'.PushSubscription::where('tournament_external_id', $record->tournated_id)->count().'</b>',
+        ];
+        if ($s->last_error) {
+            $lines[] = '<span style="color:#d97706">Įspėjimas: '.e(mb_substr($s->last_error, 0, 300)).'</span>';
+        }
+        $lines[] = '<a href="'.e(route('schedule.show', $record->tournated_id)).'" target="_blank" style="text-decoration:underline">Atidaryti grafiką ↗</a>';
+
+        return implode('<br>', $lines);
     }
 
     public static function getPages(): array

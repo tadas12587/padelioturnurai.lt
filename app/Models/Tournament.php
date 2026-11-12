@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tournament extends Model
 {
     protected $fillable = [
         'slug',
+        'tournated_id',
         'status',
         'date_start',
         'date_end',
@@ -34,6 +36,46 @@ class Tournament extends Model
             'registration_active' => 'boolean',
             'notify_enabled'      => 'boolean',
         ];
+    }
+
+    /**
+     * A Tournated ID turns on the site's own sync (tournated:sync) for it;
+     * removing or changing the ID turns the old one off.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (Tournament $t) {
+            $old = $t->getOriginal('tournated_id');
+            if ($t->wasChanged('tournated_id') && $old && $old !== $t->tournated_id) {
+                TournatedSync::where('tournament_external_id', $old)->update(['enabled' => false]);
+            }
+            if ($t->tournated_id) {
+                TournatedSync::updateOrCreate(['tournament_external_id' => $t->tournated_id], ['enabled' => true]);
+            }
+        });
+        static::deleted(function (Tournament $t) {
+            if ($t->tournated_id) {
+                TournatedSync::where('tournament_external_id', $t->tournated_id)->update(['enabled' => false]);
+            }
+        });
+    }
+
+    public function tournatedSync(): HasOne
+    {
+        return $this->hasOne(TournatedSync::class, 'tournament_external_id', 'tournated_id');
+    }
+
+    /** "11532", "#11532" or "https://play.padel.lt/tournament/11532/..." -> "11532" */
+    public static function parseTournatedId(?string $input): ?string
+    {
+        if (! $input) {
+            return null;
+        }
+        if (preg_match('~/tournament/(\d+)~', $input, $m) || preg_match('~^\s*#?(\d{3,9})\s*$~', $input, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 
     public function translations(): HasMany
