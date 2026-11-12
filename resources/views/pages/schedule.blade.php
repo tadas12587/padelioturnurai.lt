@@ -659,12 +659,12 @@ window.PushUI = (function () {
       return x !== m && !isPlayed(x) && x.date === m.date && x.court && m.court && x.court.name === m.court.name && toMin(x.time) < toMin(m.time);
     }).sort(byStart);
     var now = nowLocal();
-    if (!before.length) return 'Tu – kitas korte ' + court.replace('Kortas ', '') + '.';
+    if (!before.length) return 'Tu – kitas korte ' + esc(court.replace('Kortas ', '')) + '.';
     if (before.length === 1 && m.date === now.date && startMin(before[0]) <= now.min) {
-      return 'Korte ' + court.replace('Kortas ', '') + ' dabar žaidžia ' + esc(sideTitle(before[0], 1)) + ' – ' + esc(sideTitle(before[0], 2)) +
+      return 'Korte ' + esc(court.replace('Kortas ', '')) + ' dabar žaidžia ' + esc(sideTitle(before[0], 1)) + ' – ' + esc(sideTitle(before[0], 2)) +
         ' (nuo ' + esc(before[0].eta || before[0].time) + '), tu – po jų.';
     }
-    return 'Prieš tave korte ' + court.replace('Kortas ', '') + ' dar ' + plural(before.length, 'mačas', 'mačai', 'mačų') + '.';
+    return 'Prieš tave korte ' + esc(court.replace('Kortas ', '')) + ' dar ' + plural(before.length, 'mačas', 'mačai', 'mačų') + '.';
   }
 
   var showPlayedMine = false;

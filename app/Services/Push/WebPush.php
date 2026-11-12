@@ -51,7 +51,7 @@ final class WebPush
         );
 
         try {
-            $response = Http::timeout(10)
+            $response = Http::timeout(10)->withoutRedirecting()
                 ->withHeaders([
                     'Authorization' => 'vapid t='.$this->vapidJwt($endpoint).', k='.$this->vapidPublicKeyB64Url,
                     'TTL' => (string) $ttl,

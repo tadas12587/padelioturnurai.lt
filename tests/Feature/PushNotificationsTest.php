@@ -154,6 +154,23 @@ class PushNotificationsTest extends TestCase
         @unlink($pem);
     }
 
+    public function test_subscribe_only_accepts_real_push_services_and_valid_keys(): void
+    {
+        ScheduleSnapshot::create(['tournament_external_id' => '900', 'payload' => ['matches' => []]]);
+        $keys = ['p256dh' => WebPush::b64urlEncode(WebPush::rawPublicKey(WebPush::newEcKey())), 'auth' => WebPush::b64urlEncode(random_bytes(16))];
+        $post = fn ($endpoint, $k = null) => $this->postJson('/grafikas/900/push/subscribe', ['player' => 'Ona Onaitė', 'subscription' => ['endpoint' => $endpoint, 'keys' => $k ?? $keys]]);
+
+        $post('https://169.254.169.254/latest/meta-data')->assertStatus(422);
+        $post('https://evil.example.com/fcm.googleapis.com')->assertStatus(422);
+        $post('https://fcm.googleapis.com:8443/x')->assertStatus(422);
+        $post('https://fcm.googleapis.com/fcm/send/abc', ['p256dh' => 'AAAA', 'auth' => 'BBBB'])->assertStatus(422);
+        $this->assertSame(0, PushSubscription::count());
+
+        $post('https://web.push.apple.com/QF1')->assertOk();
+        $post('https://wns2-par02p.notify.windows.com/w/?token=x')->assertOk();
+        $this->assertSame(2, PushSubscription::count());
+    }
+
     public function test_service_worker_manifest_and_icon_are_served(): void
     {
         ScheduleSnapshot::create(['tournament_external_id' => '900', 'payload' => ['tournament' => ['name' => 'Klubų lyga']]]);

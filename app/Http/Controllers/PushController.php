@@ -29,6 +29,12 @@ class PushController extends Controller
             'subscription.keys.auth' => 'required|string|max:100',
         ]);
         $endpoint = $data['subscription']['endpoint'];
+        // Only real browser push services (we POST to this URL), and keys
+        // with the exact shape Web Push needs, so a bad record can't be stored.
+        abort_unless(self::isPushService($endpoint), 422, 'Nepalaikomas pranešimų adresas');
+        $p256dh = WebPush::b64urlDecode($data['subscription']['keys']['p256dh']);
+        $auth = WebPush::b64urlDecode($data['subscription']['keys']['auth']);
+        abort_unless(strlen($p256dh) === 65 && $p256dh[0] === "\x04" && strlen($auth) === 16, 422, 'Netinkami pranešimų raktai');
 
         PushSubscription::updateOrCreate(
             ['endpoint_hash' => hash('sha256', $endpoint)],
@@ -70,12 +76,20 @@ class PushController extends Controller
                 $msg->update(['status' => 'expired']);
                 continue;
             }
-            $res = $push->send($msg->subscription->toWebPush(), json_encode([
-                'title' => $msg->title,
-                'body' => $msg->body,
-                'url' => $msg->url,
-                'tag' => $msg->dedupe_key,
-            ], JSON_UNESCAPED_UNICODE), 900);
+            try {
+                $res = $push->send($msg->subscription->toWebPush(), json_encode([
+                    'title' => $msg->title,
+                    'body' => $msg->body,
+                    'url' => $msg->url,
+                    'tag' => $msg->dedupe_key,
+                ], JSON_UNESCAPED_UNICODE), 900);
+            } catch (\Throwable $e) {
+                // a broken subscription must not block everyone else's messages
+                report($e);
+                $msg->subscription->delete();
+                $failed++;
+                continue;
+            }
 
             if ($res['gone']) {
                 $msg->subscription->delete(); // cascades its messages
@@ -127,6 +141,19 @@ class PushController extends Controller
             'Content-Type' => 'image/png',
             'Cache-Control' => 'public, max-age=604800',
         ]);
+    }
+
+    /** Push services of Chrome/Android, Firefox, Edge/Windows and Safari/iOS. */
+    public static function isPushService(string $endpoint): bool
+    {
+        $parts = parse_url($endpoint);
+        if (($parts['scheme'] ?? '') !== 'https' || isset($parts['port']) || isset($parts['user'])) {
+            return false;
+        }
+        $host = strtolower($parts['host'] ?? '');
+
+        return in_array($host, ['fcm.googleapis.com', 'updates.push.services.mozilla.com', 'web.push.apple.com'], true)
+            || (bool) preg_match('/\.(push\.services\.mozilla\.com|notify\.windows\.com|push\.apple\.com)$/', $host);
     }
 
     public static function webPush(): WebPush
