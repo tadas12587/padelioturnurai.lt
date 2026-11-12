@@ -22,7 +22,7 @@ class PushController extends Controller
 {
     public function subscribe(Request $request, string $tournament): JsonResponse
     {
-        abort_unless(ScheduleSnapshot::where('tournament_external_id', $tournament)->exists(), 404);
+        abort_unless(AppApiController::acceptsPush($tournament), 404);
         $data = $request->validate([
             'player' => 'required|string|max:120',
             'subscription.endpoint' => 'required|url|starts_with:https://|max:1000',

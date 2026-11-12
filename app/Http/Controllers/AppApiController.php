@@ -58,7 +58,7 @@ class AppApiController extends Controller
             'follows.*' => 'string|max:120',
         ]);
         abort_unless(ExpoPush::isToken($data['token']), 422, 'Netinkamas pranešimų žetonas');
-        abort_unless(ScheduleSnapshot::where('tournament_external_id', $data['tournament'])->exists(), 404);
+        abort_unless(self::acceptsPush($data['tournament']), 404);
 
         $follows = array_values(array_unique($data['follows'] ?? []));
         AppDevice::updateOrCreate(['expo_token' => $data['token']], [
@@ -72,6 +72,17 @@ class AppApiController extends Controller
         ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    /** Synced, not hidden by the organizer, notifications not switched off. */
+    public static function acceptsPush(string $tournamentId): bool
+    {
+        if (! ScheduleSnapshot::where('tournament_external_id', $tournamentId)->exists()) {
+            return false;
+        }
+        $site = Tournament::where('tournated_id', $tournamentId)->first();
+
+        return ! $site || ($site->show_schedule && $site->push_enabled);
     }
 
     public function deleteDevice(Request $request): JsonResponse
