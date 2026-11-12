@@ -17,10 +17,17 @@
 //  svetainė); (c) jau turi lygio pavadinimą (`name`, pvz. "Moterys
 //  B 1") tiesiai laukelyje — nebereikia Excel entry_lists susiejimo.
 //
+//  2026-11-12 Tournated sutaisė /api/v2/matches — vėl pagrindinis
+//  šaltinis (SOURCE=auto): view=full duoda kortą, laiką, žaidėjus ir
+//  setus, kurių pusės sutampa su team1/team2. Jei oficialus API lūžta
+//  (pvz. klubų lyga 11532 vis dar 502), tą ciklą imama iš GraphQL.
+//  SOURCE=api arba SOURCE=graphql priverstinai renkasi vieną šaltinį.
+//
 //  Reikia: Node.js 18+ (turi įmontuotą fetch).
 //  Paleidimas:
 //      TOURNAMENT_ID=11532 INGEST_TOKEN=xxxx node schedule-push.js
-//  arba įrašius tokeną į tools/overlay-push/.ingest-token:
+//  arba įrašius tokeną į tools/overlay-push/.ingest-token, o API raktą
+//  į tools/overlay-push/.api-key (abu gitignore):
 //      TOURNAMENT_ID=11532 node schedule-push.js
 // ============================================================
 
@@ -32,7 +39,10 @@ const SITE_URL      = process.env.SITE_URL      || 'https://padelioturnyrai.lt';
 const TOURNAMENT_ID  = process.env.TOURNAMENT_ID || '';
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 180000);
 
+const SOURCE = (process.env.SOURCE || 'auto').toLowerCase();
+
 const GRAPHQL_URL = 'https://play.padel.lt/api/graphql';
+const API_BASE    = 'https://api.tournated.com/api/v2';
 
 const IS_COMPILED = !/[\\/](node|bun)(\.exe)?$/i.test(process.execPath || '');
 const secretDir = (() => {
@@ -47,6 +57,7 @@ function readSecretFile(path) {
 }
 
 const INGEST_TOKEN = process.env.INGEST_TOKEN || readSecretFile(INGEST_TOKEN_FILE);
+const API_KEY = process.env.TOURNATED_API_KEY || readSecretFile(join(secretDir, '.api-key'));
 
 if (!TOURNAMENT_ID) {
   console.error('❌ Reikia TOURNAMENT_ID (Tournated turnyro ID, pvz. 11532).');
@@ -54,6 +65,10 @@ if (!TOURNAMENT_ID) {
 }
 if (!INGEST_TOKEN) {
   console.error(`❌ Reikia ingest tokeno (turi sutapti su serverio .env OVERLAY_INGEST_TOKEN). Nustatyk INGEST_TOKEN arba įrašyk į ${INGEST_TOKEN_FILE}`);
+  process.exit(1);
+}
+if (SOURCE === 'api' && !API_KEY) {
+  console.error(`❌ SOURCE=api reikia Tournated API rakto: TOURNATED_API_KEY arba ${join(secretDir, '.api-key')}`);
   process.exit(1);
 }
 
@@ -115,6 +130,72 @@ async function fetchAllMatches(tournamentId, timeoutMs = 20000) {
   const groups = json.data?.tournamentAllMatches?.matchesArray || [];
   const raw = groups.flatMap((g) => g.matches || []);
   return raw.map(normaliseMatch);
+}
+
+async function apiGet(path, timeoutMs = 20000) {
+  for (let attempt = 1; ; attempt++) {
+    let res;
+    try {
+      res = await fetch(API_BASE + path, { headers: { 'x-api-key': API_KEY }, signal: AbortSignal.timeout(timeoutMs) });
+    } catch (e) {
+      throw new Error(e.name === 'TimeoutError' ? `API neatsakė per ${timeoutMs / 1000}s` : `Tinklo klaida: ${e.message}`);
+    }
+    // 100 užklausų / 60 s rakto limitas: palaukti tiek, kiek liepia Retry-After
+    if (res.status === 429 && attempt < 3) {
+      await sleep(Number(res.headers.get('retry-after') || 10) * 1000);
+      continue;
+    }
+    const text = await res.text();
+    if (!res.ok) throw new Error(`API HTTP ${res.status}${text.startsWith('<') ? ' (Cloudflare)' : ': ' + text.slice(0, 200)}`);
+    return JSON.parse(text);
+  }
+}
+
+// Cursor puslapiavimas be pradinio cursor'io grąžina dublikatus (pirmas
+// puslapis nesurikiuotas pagal id — 2026-11-12, 10210: 215 eilučių, 189
+// unikalių). Pradedant nuo "id:0" visi mačai gaunami po vieną kartą.
+const FIRST_CURSOR = Buffer.from('id:0').toString('base64').replace(/=+$/, '');
+
+async function fetchAllMatchesApi(tournamentId) {
+  const byId = new Map();
+  let cursor = FIRST_CURSOR;
+  for (let page = 0; cursor && page < 50; page++) {
+    const json = await apiGet(`/matches?tournamentId=${Number(tournamentId)}&view=full&limit=100&cursor=${cursor}`);
+    for (const m of json.data || []) byId.set(m.match_id, m);
+    cursor = json.meta?.next_cursor || null;
+  }
+  return [...byId.values()].filter((m) => !m.is_bye).map(normaliseApiMatch);
+}
+
+function apiTeam(t) {
+  if (!t) return null;
+  return { team_id: t.team_id ?? t.id ?? null, title: t.title ?? t.name ?? t.team_name ?? null, image: t.image || null };
+}
+
+// Oficialaus view=full eilutė -> ta pati vidinė forma kaip normaliseMatch().
+function normaliseApiMatch(m) {
+  const sets = (m.sets || [])
+    .filter((s) => s.side1 !== null && s.side2 !== null)
+    .map((s) => ({ side1: s.side1, side2: s.side2 }));
+  return {
+    match_id: m.match_id,
+    date: m.date || null,
+    time: m.time || null,
+    court: m.court ? { court_id: m.court.court_id, name: m.court.name } : null,
+    division: m.category?.name || null,
+    team1: apiTeam(m.team1),
+    team2: apiTeam(m.team2),
+    participants: (m.participants || []).map((p) => ({ side: p.side, name: (p.name || '').trim(), surname: (p.surname || '').trim() })),
+    sets,
+    winner_side: m.winner_side ?? winnerFromSets(sets),
+    is_bye: !!m.is_bye,
+    is_walkover: !!m.is_walkover,
+    is_disqualified: !!m.is_disqualified,
+    is_match_tie: !!m.is_match_tie,
+    is_match_in_progress: !!m.is_match_in_progress,
+    updated_at: m.updated_at || new Date().toISOString(),
+    _group: null,
+  };
 }
 
 // "6:3 6:1" arba "7:5 6:7 [10:5]" -> [{side1,side2}, ...]
@@ -216,19 +297,32 @@ async function pushSnapshot(tournamentId, matches) {
   if (!res.ok) throw new Error(`Ingest atmetė: HTTP ${res.status} — ${(await res.text()).slice(0, 200)}`);
 }
 
+async function fetchMatches(tournamentId) {
+  if (SOURCE === 'graphql' || (SOURCE === 'auto' && !API_KEY)) return { matches: await fetchAllMatches(tournamentId), via: 'GraphQL' };
+  try {
+    return { matches: await fetchAllMatchesApi(tournamentId), via: 'API' };
+  } catch (e) {
+    if (SOURCE === 'api') throw e;
+    console.error(`⚠️  Oficialus API: ${e.message} — šį ciklą imama iš GraphQL`);
+    return { matches: await fetchAllMatches(tournamentId), via: 'GraphQL' };
+  }
+}
+
 async function cycle() {
   const started = Date.now();
-  const matches = await fetchAllMatches(TOURNAMENT_ID);
-  await pushSnapshot(TOURNAMENT_ID, matches);
+  const { matches, via } = await fetchMatches(TOURNAMENT_ID);
+  // DRY_RUN=1: tik nuskaityti ir parodyti, į svetainę nesiųsti
+  if (process.env.DRY_RUN === '1') console.log(JSON.stringify(matches.find((m) => m.sets.length) || matches[0] || null));
+  else await pushSnapshot(TOURNAMENT_ID, matches);
   const played = matches.filter((m) => m.sets.length || m.winner_side).length;
   const secs = ((Date.now() - started) / 1000).toFixed(1);
-  console.log(`✅ [${new Date().toLocaleTimeString()}] ${matches.length} mačų (${played} sužaista) — ${secs}s`);
+  console.log(`✅ [${new Date().toLocaleTimeString()}] ${matches.length} mačų (${played} sužaista) per ${via} — ${secs}s`);
 }
 
 const RUN_ONCE = process.env.ONCE === '1' || process.argv.includes('--once');
 
 async function main() {
-  console.log('📅 Grafikas push paleistas (play.padel.lt GraphQL, be API rakto)');
+  console.log(`📅 Grafikas push paleistas (šaltinis: ${SOURCE}${API_KEY ? '' : ', API rakto nėra – tik GraphQL'})`);
   console.log(`   Turnyras: ${TOURNAMENT_ID}`);
   console.log(`   Svetainė: ${SITE_URL}`);
   if (RUN_ONCE) {
