@@ -57,6 +57,7 @@ class TournamentResource extends Resource
                             ->label('Tournated turnyro ID arba nuoroda')
                             ->placeholder('pvz. 11532 arba https://play.padel.lt/tournament/11532')
                             ->nullable()
+                            ->live(onBlur: true) // shows the switches below as soon as an ID is typed
                             ->formatStateUsing(fn ($state) => $state)
                             ->dehydrateStateUsing(fn ($state) => Tournament::parseTournatedId($state))
                             ->rule(fn ($record) => function (string $attribute, $value, \Closure $fail) use ($record) {
