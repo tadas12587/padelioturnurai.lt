@@ -19,14 +19,29 @@ class ExpoPush
     }
 
     /**
-     * @param  array<int, array{to: string, title: string, body: string, data?: array}>  $messages
+     * "Tavo eilė" for the player goes out loud: the app's own sound, the
+     * Android "eile" channel (max importance) and iOS Time Sensitive, which
+     * breaks through Focus modes. Everything else is a normal notification.
+     */
+    public static function payload(array $m): array
+    {
+        $urgent = (bool) ($m['urgent'] ?? false);
+        unset($m['urgent']);
+
+        return $m + ($urgent
+            ? ['sound' => 'eile.wav', 'priority' => 'high', 'channelId' => 'eile', 'interruptionLevel' => 'time-sensitive']
+            : ['sound' => 'default', 'priority' => 'high', 'channelId' => 'default']);
+    }
+
+    /**
+     * @param  array<int, array{to: string, title: string, body: string, data?: array, urgent?: bool}>  $messages
      * @return array<int, array{ok: bool, gone: bool}> one result per message, same order
      */
     public static function send(array $messages): array
     {
         $out = [];
         foreach (array_chunk($messages, 100) as $chunk) {
-            $payload = array_map(fn ($m) => $m + ['sound' => 'default', 'priority' => 'high', 'channelId' => 'default'], $chunk);
+            $payload = array_map([self::class, 'payload'], $chunk);
             try {
                 $res = Http::acceptJson()->timeout(15)->post(self::URL, $payload);
                 $tickets = $res->successful() ? ($res->json('data') ?? []) : [];

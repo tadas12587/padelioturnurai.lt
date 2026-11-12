@@ -555,7 +555,7 @@ window.PushUI = (function () {
 
   function matchCard(m, me) {
     var badges = '';
-    if (m.is_match_in_progress) badges += '<span class="badge live">● Vyksta</span>';
+    if (m.is_match_in_progress && !isPlayed(m) && m.date === nowLocal().date) badges += '<span class="badge live">● Vyksta</span>';
     if (m.division) badges += '<span class="badge division">' + esc(m.division) + '</span>';
     if (m.is_walkover) badges += '<span class="badge">Be žaidimo (W.O.)</span>';
     var cls = 'match' + (me && sideOf(m, me) ? ' mine' : '') + (isScheduled(m) ? '' : ' unsched');

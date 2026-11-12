@@ -112,4 +112,17 @@ class AppApiTest extends TestCase
         $this->assertFalse(AppDevice::whereKey($gone->id)->exists());
         Http::assertSent(fn ($r) => $r->url() === 'https://exp.host/--/api/v2/push/send' && $r[0]['to'] === 'ExponentPushToken[ok00000000001]' && $r[0]['sound'] === 'default');
     }
+
+    public function test_turn_alert_for_the_player_is_loud_and_others_are_normal(): void
+    {
+        $loud = \App\Services\Push\ExpoPush::payload(['to' => 'x', 'title' => 'Tavo eilė!', 'body' => 'b', 'urgent' => true]);
+        $this->assertSame('eile.wav', $loud['sound']);
+        $this->assertSame('eile', $loud['channelId']);
+        $this->assertSame('time-sensitive', $loud['interruptionLevel']);
+        $this->assertArrayNotHasKey('urgent', $loud);
+
+        $normal = \App\Services\Push\ExpoPush::payload(['to' => 'x', 'title' => 'Kortas pasikeitė', 'body' => 'b']);
+        $this->assertSame('default', $normal['channelId']);
+        $this->assertArrayNotHasKey('interruptionLevel', $normal);
+    }
 }

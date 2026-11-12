@@ -82,6 +82,7 @@ class PushController extends Controller
                 'title' => $m->title,
                 'body' => $m->body,
                 'data' => ['kind' => $m->kind, 'matchId' => $m->url, 'tournament' => $m->device->tournament_external_id],
+                'urgent' => $m->kind === 'turn' && $m->device->role === 'player',
             ])->all());
             foreach ($live as $i => $msg) {
                 $res = $results[$i];
