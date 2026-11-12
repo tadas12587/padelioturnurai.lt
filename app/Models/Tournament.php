@@ -13,6 +13,10 @@ class Tournament extends Model
     protected $fillable = [
         'slug',
         'tournated_id',
+        'sync_enabled',
+        'show_schedule',
+        'push_enabled',
+        'participants_auto',
         'status',
         'date_start',
         'date_end',
@@ -35,6 +39,10 @@ class Tournament extends Model
             'date_end'            => 'date',
             'registration_active' => 'boolean',
             'notify_enabled'      => 'boolean',
+            'sync_enabled'        => 'boolean',
+            'show_schedule'       => 'boolean',
+            'push_enabled'        => 'boolean',
+            'participants_auto'   => 'boolean',
         ];
     }
 
@@ -50,7 +58,7 @@ class Tournament extends Model
                 TournatedSync::where('tournament_external_id', $old)->update(['enabled' => false]);
             }
             if ($t->tournated_id) {
-                TournatedSync::updateOrCreate(['tournament_external_id' => $t->tournated_id], ['enabled' => true]);
+                TournatedSync::updateOrCreate(['tournament_external_id' => $t->tournated_id], ['enabled' => $t->sync_enabled ?? true]);
             }
         });
         static::deleted(function (Tournament $t) {

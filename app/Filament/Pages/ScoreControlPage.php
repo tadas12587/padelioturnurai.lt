@@ -14,6 +14,10 @@ class ScoreControlPage extends Page
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
     protected static ?string $navigationGroup = 'Transliacijos';
     protected static ?string $navigationLabel = 'Rezultatas';
+
+    // Old OBS overlay tools (last used 2026-07); broadcasts now run on the
+    // cloud court-node system. Still reachable by URL, hidden from the menu.
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $title = 'Rezultatas (gyvas)';
     protected static string $view = 'filament.pages.score-control';
 

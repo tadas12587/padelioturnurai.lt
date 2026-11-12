@@ -3,6 +3,7 @@
 namespace App\Services\Tournated;
 
 use App\Models\ScheduleSnapshot;
+use App\Models\Tournament;
 use App\Services\Push\PushEvents;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
@@ -81,7 +82,8 @@ class TournamentSync
 
         [$matches, $source] = $this->matches($tournamentId, ! empty($teams), $warnings);
         $matches = self::stampResults($matches, $existing['matches'] ?? [], ! empty($existing));
-        if (! empty($existing['matches'])) {
+        $pushOn = Tournament::where('tournated_id', $tournamentId)->value('push_enabled') ?? true;
+        if ($pushOn && ! empty($existing['matches'])) {
             try {
                 $matches = PushEvents::detect($tournamentId, $existing['matches'], $matches,
                     ($existing['source'] ?? null) === $source, $tournament['tz'] ?? 'Europe/Vilnius');
@@ -109,6 +111,16 @@ class TournamentSync
                 'synced_at' => now()->toIso8601String(),
             ]],
         );
+
+        // Participant count for the homepage statistics, unless typed by hand.
+        $people = [];
+        foreach ($matches as $m) {
+            foreach ($m['participants'] ?? [] as $p) {
+                $people[mb_strtolower(trim(($p['name'] ?? '').' '.($p['surname'] ?? '')))] = true;
+            }
+        }
+        Tournament::where('tournated_id', $tournamentId)->where('participants_auto', true)
+            ->update(['participants_count' => count(array_filter(array_keys($people), fn ($k) => $k !== ''))]);
 
         if ($warnings) {
             Log::warning("tournated:sync {$tournamentId}", $warnings);

@@ -18,8 +18,11 @@ class SeoSettingsPage extends Page implements HasForms
 
     protected static ?string $navigationIcon  = 'heroicon-o-magnifying-glass';
     protected static ?string $navigationLabel = 'SEO ir svetainė';
+
+    protected static ?string $navigationGroup = 'Nustatymai';
+
+    protected static ?int $navigationSort = 1;
     protected static ?string $title           = 'SEO ir svetainės nustatymai';
-    protected static ?int    $navigationSort  = 98;
     protected static string  $view            = 'filament.pages.seo-settings';
 
     public ?array $data = [];

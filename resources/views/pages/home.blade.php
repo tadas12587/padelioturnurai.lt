@@ -211,7 +211,7 @@ $featuredTrans = $featuredTournament?->translation(app()->getLocale());
         <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
             @foreach($stats as $stat)
             <div class="text-center" data-aos="fade-up" data-aos-delay="{{ $loop->index * 100 }}">
-                <div class="text-6xl md:text-7xl font-black text-white mb-3" data-target="{{ $stat->value }}">0</div>
+                <div class="text-6xl md:text-7xl font-black text-white mb-3" data-target="{{ $stat->display_value }}">0</div>
                 <div class="text-gold text-sm font-semibold tracking-widest uppercase">
                     {{ app()->getLocale() === 'en' ? $stat->label_en : $stat->label_lt }}
                 </div>

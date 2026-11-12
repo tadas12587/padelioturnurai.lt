@@ -14,8 +14,11 @@ use Illuminate\Support\Facades\Storage;
 class EntryImportPage extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
-    protected static ?string $navigationGroup = 'Transliacijos';
     protected static ?string $navigationLabel = 'Dalyvių importas (Excel)';
+
+    protected static ?string $navigationGroup = 'Turnyrai';
+
+    protected static ?int $navigationSort = 9;
     protected static ?string $title = 'Dalyvių importas iš Excel';
     protected static string $view = 'filament.pages.entry-import';
 

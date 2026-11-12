@@ -23,9 +23,12 @@ class ProposalTierResource extends Resource
 
     protected static ?string $navigationIcon   = 'heroicon-o-currency-euro';
     protected static ?string $navigationLabel  = 'Rėmimo paketai';
+
+    protected static ?string $navigationGroup = 'Rėmimas';
+
+    protected static ?int $navigationSort = 1;
     protected static ?string $modelLabel       = 'Paketas';
     protected static ?string $pluralModelLabel = 'Paketai';
-    protected static ?int    $navigationSort   = 51;
 
     public static function form(Form $form): Form
     {

@@ -22,6 +22,10 @@ class PlayerPhotoResource extends Resource
 
     protected static ?string $navigationLabel = 'Žaidėjų nuotraukos';
 
+    // Old OBS overlay tools (last used 2026-07); broadcasts now run on the
+    // cloud court-node system. Still reachable by URL, hidden from the menu.
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $modelLabel = 'Žaidėjo nuotrauka';
 
     protected static ?string $pluralModelLabel = 'Žaidėjų nuotraukos';

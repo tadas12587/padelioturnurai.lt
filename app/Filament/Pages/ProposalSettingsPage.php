@@ -24,8 +24,11 @@ class ProposalSettingsPage extends Page implements HasForms
 
     protected static ?string $navigationIcon  = 'heroicon-o-star';
     protected static ?string $navigationLabel = 'Tapk rėmėju — nustatymai';
+
+    protected static ?string $navigationGroup = 'Rėmimas';
+
+    protected static ?int $navigationSort = 2;
     protected static ?string $title           = 'Tapk rėmėju — puslapio nustatymai';
-    protected static ?int    $navigationSort  = 50;
     protected static string  $view            = 'filament.pages.proposal-settings';
 
     public ?array $data = [];

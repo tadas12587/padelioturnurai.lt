@@ -41,6 +41,10 @@ class TournamentResource extends Resource
 
     protected static ?string $navigationLabel = 'Turnyrai';
 
+    protected static ?string $navigationGroup = 'Turnyrai';
+
+    protected static ?int $navigationSort = 1;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -91,6 +95,17 @@ class TournamentResource extends Resource
                                     })
                             ),
 
+                        \Filament\Forms\Components\Grid::make(3)
+                            ->schema([
+                                Toggle::make('sync_enabled')->label('Atnaujinti iš Tournated')->default(true)
+                                    ->helperText('Išjungus duomenys nebeatnaujinami.'),
+                                Toggle::make('show_schedule')->label('Rodyti grafiką viešai')->default(true)
+                                    ->helperText('Išjungus grafiko puslapis ir mygtukas paslepiami.'),
+                                Toggle::make('push_enabled')->label('Pranešimai žaidėjams')->default(true)
+                                    ->helperText('„Tavo eilė", kortų ir laikų pakeitimai.'),
+                            ])
+                            ->visible(fn ($get) => filled($get('tournated_id'))),
+
                         Placeholder::make('tournated_status')
                             ->label('Būsena')
                             ->content(fn (?Tournament $record) => new HtmlString(self::syncStatusHtml($record)))
@@ -131,7 +146,16 @@ class TournamentResource extends Resource
                         TextInput::make('participants_count')
                             ->label('Dalyvių skaičius')
                             ->numeric()
-                            ->default(0),
+                            ->default(0)
+                            ->disabled(fn ($get) => filled($get('tournated_id')) && $get('participants_auto'))
+                            ->dehydrated()
+                            ->helperText(fn ($get) => filled($get('tournated_id')) && $get('participants_auto') ? 'Skaičiuojama automatiškai iš Tournated (skirtingi žaidėjai mačuose).' : null),
+
+                        Toggle::make('participants_auto')
+                            ->label('Dalyvių skaičių imti iš Tournated')
+                            ->default(true)
+                            ->live()
+                            ->visible(fn ($get) => filled($get('tournated_id'))),
                     ])
                     ->columns(2),
 

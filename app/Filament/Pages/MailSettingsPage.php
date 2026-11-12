@@ -21,8 +21,11 @@ class MailSettingsPage extends Page implements HasForms
 
     protected static ?string $navigationIcon  = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'El. pašto nustatymai';
+
+    protected static ?string $navigationGroup = 'Nustatymai';
+
+    protected static ?int $navigationSort = 2;
     protected static ?string $title           = 'El. pašto nustatymai';
-    protected static ?int    $navigationSort  = 99;
     protected static string  $view            = 'filament.pages.mail-settings';
 
     public ?array $data = [];

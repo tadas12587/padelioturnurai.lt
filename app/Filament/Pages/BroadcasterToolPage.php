@@ -11,6 +11,10 @@ class BroadcasterToolPage extends Page
     protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';
     protected static ?string $navigationGroup = 'Transliacijos';
     protected static ?string $navigationLabel = 'Transliacijos įrankis';
+
+    // Old OBS overlay tools (last used 2026-07); broadcasts now run on the
+    // cloud court-node system. Still reachable by URL, hidden from the menu.
+    protected static bool $shouldRegisterNavigation = false;
     protected static ?string $title = 'Transliacijos įrankis';
     protected static string $view = 'filament.pages.broadcaster-tool';
 

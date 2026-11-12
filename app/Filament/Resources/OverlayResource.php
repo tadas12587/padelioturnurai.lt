@@ -34,6 +34,10 @@ class OverlayResource extends Resource
 
     protected static ?string $navigationLabel = 'Overlay\'ai';
 
+    // Old OBS overlay tools (last used 2026-07); broadcasts now run on the
+    // cloud court-node system. Still reachable by URL, hidden from the menu.
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $navigationGroup = 'Transliacijos';
 
     public static function form(Form $form): Form

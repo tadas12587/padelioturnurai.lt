@@ -32,6 +32,10 @@ class NewsResource extends Resource
 
     protected static ?string $navigationLabel = 'Naujienos';
 
+    protected static ?string $navigationGroup = 'Svetainė';
+
+    protected static ?int $navigationSort = 2;
+
     public static function form(Form $form): Form
     {
         return $form

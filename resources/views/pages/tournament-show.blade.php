@@ -169,7 +169,7 @@
             @endif
 
             {{-- Live schedule & results — when the tournament is linked to Tournated --}}
-            @if($tournament->tournated_id)
+            @if($tournament->tournated_id && $tournament->show_schedule)
                 <a href="{{ route('schedule.show', $tournament->tournated_id) }}"
                    class="inline-flex items-center gap-2 px-8 py-4 bg-gold border border-gold text-dark font-bold text-lg hover:bg-dark-card hover:text-gold transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

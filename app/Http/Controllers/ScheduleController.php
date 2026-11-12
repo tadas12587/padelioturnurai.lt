@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EntryList;
 use App\Models\ScheduleSnapshot;
+use App\Models\Tournament;
 use App\Services\Tournated\CourtDelays;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -70,8 +71,9 @@ class ScheduleController extends Controller
     public function show(string $tournamentExternalId)
     {
         $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
+        $site = Tournament::where('tournated_id', $tournamentExternalId)->first();
 
-        abort_if(! $snapshot, 404);
+        abort_if(! $snapshot || ($site && ! $site->show_schedule), 404);
 
         $payload = $snapshot->payload ?? [];
         $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));
@@ -126,6 +128,7 @@ class ScheduleController extends Controller
             'clubList'     => $clubs,
             'matchesByClub' => $this->groupByClub($matches, $clubs),
             'courtDelays'  => $courtDelays,
+            'pushEnabled'  => ! $site || $site->push_enabled,
         ]);
     }
 
@@ -161,7 +164,7 @@ class ScheduleController extends Controller
     public function data(string $tournamentExternalId): JsonResponse
     {
         $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
-        abort_if(! $snapshot, 404);
+        abort_if(! $snapshot || Tournament::where('tournated_id', $tournamentExternalId)->where('show_schedule', false)->exists(), 404);
 
         $payload = $snapshot->payload ?? [];
         $matches = array_values(array_filter($payload['matches'] ?? [], [self::class, 'isUsableMatch']));

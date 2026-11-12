@@ -20,6 +20,10 @@ class StatResource extends Resource
 
     protected static ?string $navigationLabel = 'Statistika';
 
+    protected static ?string $navigationGroup = 'Svetainė';
+
+    protected static ?int $navigationSort = 4;
+
     public static function form(Form $form): Form
     {
         return $form
@@ -28,9 +32,29 @@ class StatResource extends Resource
                     ->required()
                     ->unique(ignoreRecord: true),
 
-                TextInput::make('value')
+                \Filament\Forms\Components\Radio::make('mode')
+                    ->label('Kaip skaičiuoti')
+                    ->options(['auto' => 'Automatiškai iš turnyrų', 'manual' => 'Įvesti ranka'])
+                    ->default('manual')
+                    ->live()
+                    ->disabled(fn ($get) => ! isset(Stat::AUTO_KEYS[$get('key')]))
+                    ->helperText(fn ($get) => isset(Stat::AUTO_KEYS[$get('key')])
+                        ? 'Automatiškai: '.Stat::AUTO_KEYS[$get('key')].' (dabar '.Stat::computed($get('key')).').'
+                        : 'Automatinis skaičiavimas galimas raktams: '.implode(', ', array_keys(Stat::AUTO_KEYS)).'.'),
+
+                TextInput::make('base_value')
+                    ->label('Pridėti prie automatinės reikšmės')
                     ->numeric()
-                    ->required(),
+                    ->default(0)
+                    ->helperText('Istorija, kurios nėra turnyrų sąraše (pvz. ankstesnių metų dalyviai).')
+                    ->visible(fn ($get) => $get('mode') === 'auto'),
+
+                TextInput::make('value')
+                    ->label('Reikšmė')
+                    ->numeric()
+                    ->required(fn ($get) => $get('mode') !== 'auto')
+                    ->default(0)
+                    ->visible(fn ($get) => $get('mode') !== 'auto'),
 
                 TextInput::make('label_lt')
                     ->required()
@@ -50,8 +74,9 @@ class StatResource extends Resource
                     ->label('Raktas')
                     ->searchable(),
 
-                TextColumn::make('value')
-                    ->label('Reikšmė'),
+                TextColumn::make('display_value')
+                    ->label('Rodoma reikšmė')
+                    ->description(fn (Stat $record) => $record->mode === 'auto' ? 'automatiškai'.($record->base_value ? ' (+'.$record->base_value.')' : '') : 'ranka'),
 
                 TextColumn::make('label_lt')
                     ->label('Etiketė (LT)'),

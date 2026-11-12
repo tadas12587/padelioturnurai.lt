@@ -25,7 +25,9 @@ class RegistrationInterestResource extends Resource
 
     protected static ?string $navigationGroup = 'Turnyrai';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
+
+
 
     public static function canCreate(): bool
     {

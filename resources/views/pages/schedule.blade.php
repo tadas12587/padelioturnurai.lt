@@ -339,7 +339,7 @@
 // Phone notifications ("Tavo eilė! Eik į Kortą 4"): one subscription per
 // phone, tied to the player chosen on the "Mano" tab.
 window.PushUI = (function () {
-  var VAPID = @json(config('services.push.vapid_public'));
+  var VAPID = @json($pushEnabled ? config('services.push.vapid_public') : null);
   var SUBSCRIBE_URL = @json(route('push.subscribe', $tournamentId));
   var UNSUBSCRIBE_URL = @json(route('push.unsubscribe'));
   var KEY = 'grafikas:' + @json($tournamentId) + ':push';

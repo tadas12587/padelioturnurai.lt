@@ -27,6 +27,10 @@ class ContactResource extends Resource
 
     protected static ?string $navigationLabel = 'Žinutės';
 
+    protected static ?string $navigationGroup = 'Svetainė';
+
+    protected static ?int $navigationSort = 1;
+
     public static function canCreate(): bool
     {
         return false;
