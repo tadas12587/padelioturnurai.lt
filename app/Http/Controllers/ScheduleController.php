@@ -189,8 +189,8 @@ class ScheduleController extends Controller
     public function tv(Request $request, string $tournamentExternalId)
     {
         $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
-        abort_if(! $snapshot, 404);
         $tournament = Tournament::with('translations')->where('tournated_id', $tournamentExternalId)->first();
+        abort_if(! $snapshot || ($tournament && ! $tournament->show_schedule), 404);
 
         return view('pages.tv', [
             'id' => $tournamentExternalId,
@@ -206,18 +206,50 @@ class ScheduleController extends Controller
         $payload = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->value('payload') ?? [];
         $tournament = Tournament::where('tournated_id', $tournamentExternalId)->first();
         $override = $request->query('kortai');
+        $courts = (new Tournament(['tv_courts' => $tournament?->tv_courts]))->tvCourtNumbers(is_string($override) && $override !== '' ? $override : null);
 
         return response()->json([
             'matches' => $base['matches'],
             'synced_at' => $base['synced_at'],
-            'courts' => (new Tournament(['tv_courts' => $tournament?->tv_courts]))->tvCourtNumbers(is_string($override) && $override !== '' ? $override : null),
-            'places' => ($tournament?->tv_show_place ?? true) ? (object) ($payload['places'] ?? []) : (object) [],
+            'courts' => $courts,
+            'places' => ($tournament?->tv_show_place ?? true) ? (object) self::tvPlaces($base['matches'], $payload['places'] ?? [], $courts) : (object) [],
             // ?colai=65&m=3 lets a TV of another size / distance override the admin values
             'font_share' => Tournament::tvFontShare(
                 (int) ($request->query('colai') ?: ($tournament?->tv_screen_inch ?? 55)),
                 (float) ($request->query('m') ?: ($tournament?->tv_distance_m ?? 2.0)),
             ),
         ])->header('Cache-Control', 'no-store');
+    }
+
+    /**
+     * Only the places of people on the screen right now (the day shown, the
+     * courts shown) — never the whole tournament's list.
+     */
+    private static function tvPlaces(array $matches, array $places, array $courts): array
+    {
+        if (! $places) {
+            return [];
+        }
+        $today = now('Europe/Vilnius')->toDateString();
+        $days = collect($matches)->filter(fn ($m) => ! empty($m['date']) && ! empty($m['time']) && ! empty($m['court']['name']))
+            ->pluck('date')->unique()->sort()->values();
+        $day = $days->contains($today) ? $today : ($days->first(fn ($d) => $d > $today) ?? $days->last());
+
+        $out = [];
+        foreach ($matches as $m) {
+            preg_match('/\d+/', (string) ($m['court']['name'] ?? ''), $n);
+            if (($m['date'] ?? null) !== $day || ($courts && ! in_array((int) ($n[0] ?? 0), $courts, true))) {
+                continue;
+            }
+            foreach ($m['participants'] ?? [] as $p) {
+                $key = \App\Services\Tournated\TournamentSync::personKey(trim(($p['name'] ?? '').' '.($p['surname'] ?? '')));
+                if (isset($places[$key])) {
+                    $out[$key] = $places[$key];
+                }
+            }
+        }
+
+        return $out;
     }
 
     private const ADMIN_COOKIE = 'overlay_admin_token';
