@@ -113,6 +113,7 @@ body {
 </style>
 </head>
 <body>
+@if(request()->has('demo'))<div style="position:fixed;bottom:1.6em;left:50%;translate:-50% 0;background:#F5B54A;color:#2a1b02;font:800 14px Inter,sans-serif;padding:4px 12px;border-radius:99px;z-index:9">BANDOMASIS REŽIMAS – laikai perkelti į dabar</div>@endif
 <header class="top">
   <img src="data:image/png;base64,{{ base64_encode(file_get_contents(resource_path('images/app-ball.png'))) }}" alt="">
   <h1>{{ $title }}</h1>
@@ -280,11 +281,38 @@ body {
     }
   }
 
+  /**
+   * ?demo=1 — for trying the screen on a TV when nothing is being played: the
+   * busiest day of the real schedule is moved to today (first match 100 min
+   * ago), later results are hidden. Only on this screen; nothing is saved.
+   */
+  const DEMO = new URLSearchParams(location.search).has('demo');
+  let demoShift = null;
+  function demo(d) {
+    const n = now();
+    const counts = {};
+    for (const m of d.matches) if (m.date && m.time && m.court) counts[m.date] = (counts[m.date] || 0) + 1;
+    const day = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
+    if (!day) return d;
+    const list = d.matches.filter(m => m.date === day && m.time && m.court);
+    const first = Math.min(...list.map(m => toMin(m.time)));
+    if (demoShift === null) demoShift = n.min - 100 - first; // fixed once, so the demo day moves on with the clock
+    const hm = v => `${String(Math.floor(((v % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((v % 60) + 60) % 60).padStart(2, '0')}`;
+    d.matches = list.map(m => {
+      const t = toMin(m.time) + demoShift;
+      const x = { ...m, date: n.date, time: hm(t), eta: m.eta ? hm(toMin(m.eta) + demoShift) : undefined, is_match_in_progress: false };
+      if (t > n.min - 35) Object.assign(x, { sets: [], winner_side: null, is_walkover: false });
+      return x;
+    });
+    return d;
+  }
+
   async function load() {
     try {
       const r = await fetch(DATA_URL, { cache: 'no-store', headers: { Accept: 'application/json' } });
       if (!r.ok) throw new Error(r.status);
       data = await r.json();
+      if (DEMO) data = demo(data);
       failed = false;
       render();
     } catch (e) {
