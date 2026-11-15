@@ -299,7 +299,8 @@ body {
     const first = Math.min(...list.map(m => toMin(m.time)));
     if (demoShift === null) demoShift = n.min - 100 - first; // fixed once, so the demo day moves on with the clock
     const hm = v => `${String(Math.floor(((v % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((v % 60) + 60) % 60).padStart(2, '0')}`;
-    d.matches = list.map(m => {
+    // whatever would run past midnight is left out instead of wrapping to 00:xx
+    d.matches = list.filter(m => toMin(m.time) + demoShift < 1440).map(m => {
       const t = toMin(m.time) + demoShift;
       const x = { ...m, date: n.date, time: hm(t), eta: m.eta ? hm(toMin(m.eta) + demoShift) : undefined, is_match_in_progress: false };
       if (t > n.min - 35) Object.assign(x, { sets: [], winner_side: null, is_walkover: false });
