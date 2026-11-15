@@ -29,7 +29,7 @@ body {
 .top { display: -webkit-flex; display: flex; -webkit-align-items: center; align-items: center; font-family: Archivo, Inter, Arial, sans-serif; font-size: .8em; margin-bottom: .45em; }
 .top img { width: 1.7em; height: 1.7em; margin-right: .6em; }
 /* logos come in any shape: keep the header height, let the width follow (up to ~4 squares) */
-.top img.logo { width: auto; max-width: 6.8em; height: 1.7em; -o-object-fit: contain; object-fit: contain; }
+.top img.logo { width: auto; max-width: 9em; height: 3em; -o-object-fit: contain; object-fit: contain; border-radius: .2em; }
 .top h1 { font-size: 1.15em; font-weight: 900; -webkit-flex: 1; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: .6em; }
 .clock { font-size: 1.6em; font-weight: 900; color: #D9F45A; line-height: 1; text-align: right; }
 .fresh { color: #9DB7B1; font-size: .7em; text-align: right; font-family: Inter, Arial, sans-serif; }
@@ -291,7 +291,7 @@ body {
     if (!data) return;
     var cols = columns(data);
     if (!cols.length) {
-      board.innerHTML = '<p class="msg">Šiandien mačų grafike nėra.</p>';
+      board.innerHTML = '<p class="msg">' + (data.matches.length ? 'Šiandien mačų grafike nėra.' : 'Grafikas dar nepaskelbtas.') + '</p>';
       lastKey = '';
       return;
     }
