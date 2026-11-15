@@ -49,6 +49,7 @@ Route::get('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'dela
 Route::post('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysSave'])->name('schedule.delays.save');
 Route::get('/grafikas/{tournament}', [ScheduleController::class, 'show'])->name('schedule.show');
 Route::get('/tv', [ScheduleController::class, 'tvHome'])->name('schedule.tv.home');
+Route::get('/tv/{screen}', [ScheduleController::class, 'tvScreen'])->where('screen', '[1-9]')->name('schedule.tv.screen');
 Route::get('/tv/{tournament}', [ScheduleController::class, 'tv'])->name('schedule.tv');
 Route::get('/tv/{tournament}/data', [ScheduleController::class, 'tvData'])->name('schedule.tv.data');
 

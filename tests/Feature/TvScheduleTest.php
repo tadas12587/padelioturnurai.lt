@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\ScheduleController;
 use App\Models\ScheduleSnapshot;
 use App\Models\Tournament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,5 +73,32 @@ class TvScheduleTest extends TestCase
 
         Tournament::where('tournated_id', '700')->update(['date_start' => now('Europe/Vilnius')->toDateString()]);
         $this->get('/tv')->assertRedirect('/tv/700');
+    }
+
+    public function test_admin_screens_pick_courts_by_tournated_id_across_venues(): void
+    {
+        $day = now('Europe/Vilnius')->toDateString();
+        $m = fn (int $id, int $courtId, string $court, string $who) => [
+            'match_id' => $id, 'date' => $day, 'time' => '10:00', 'court' => ['court_id' => $courtId, 'name' => $court],
+            'participants' => [['side' => 1, 'name' => $who, 'surname' => 'X']], 'sets' => [], 'winner_side' => null,
+        ];
+        ScheduleSnapshot::create(['tournament_external_id' => '800', 'payload' => [
+            'tournament' => ['name' => 'Dvi arenos'],
+            'matches' => [$m(1, 11, 'Vidus 1', 'Ana'), $m(2, 21, 'Skycop 1', 'Bea')],
+            'places' => ['ana x' => 'Klaipėda', 'bea x' => 'Vilnius'],
+        ]]);
+        Tournament::create(['slug' => 'd', 'tournated_id' => '800', 'status' => 'active', 'date_start' => $day, 'location' => 'X',
+            'tv_screens' => [['name' => 'Vidus', 'courts' => ['11']], ['name' => 'Skycop', 'courts' => [21]]]]);
+
+        $one = $this->getJson('/tv/800/data?ekranas=1')->assertOk()->json();
+        $this->assertSame([11], $one['court_ids']);
+        $this->assertSame(['ana x' => 'Klaipėda'], $one['places']);       // Skycop 1 is not on this screen
+        $this->assertSame([21], $this->getJson('/tv/800/data?ekranas=2')->json('court_ids'));
+        $this->assertIsInt($one['server_ms']);
+
+        // short addresses for the TVs on the tournament day
+        $this->get('/tv/2')->assertOk()->assertSee('Dvi arenos · Skycop')->assertSee('ekranas=2', false);
+        $this->get('/tv')->assertOk()->assertSee('ekranas=1', false)->assertSee('Vidus');   // 2 screens: a chooser, not a redirect
+        $this->assertSame([21 => 'Skycop 1', 11 => 'Vidus 1'], ScheduleController::courtNames('800')); // natural name order
     }
 }

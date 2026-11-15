@@ -182,34 +182,52 @@ class ScheduleController extends Controller
     }
 
     /**
-     * Full-screen TV schedule for the venue: every chosen court side by side —
-     * last result, playing now, next two (with the automatic start estimate).
-     * ?kortai=4,5,6 overrides the admin's court list (a second TV).
+     * Full-screen TV schedule for the venue: the chosen courts side by side —
+     * last result, playing now, then the next matches with their estimated start.
+     * ?ekranas=2 = the admin's 2nd screen; ?kortai=4,5,6 / ?colai= / ?m= override per TV.
      */
     public function tv(Request $request, string $tournamentExternalId)
+    {
+        return $this->tvPage($request, $tournamentExternalId, (int) $request->query('ekranas', 0));
+    }
+
+    /** padelioturnyrai.lt/tv/2 — screen 2 of today's tournament (short to type with a remote). */
+    public function tvScreen(Request $request, int $screen)
+    {
+        $t = $this->tvTournaments()->firstWhere('tv_phase', 'live');
+        if (! $t) {
+            return redirect()->route('schedule.tv.home');
+        }
+
+        return $this->tvPage($request, (string) $t->tournated_id, $screen);
+    }
+
+    private function tvPage(Request $request, string $tournamentExternalId, int $screen)
     {
         $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
         $tournament = Tournament::with('translations')->where('tournated_id', $tournamentExternalId)->first();
         abort_if(! $snapshot || ($tournament && ! $tournament->show_schedule), 404);
+        $screenName = $screen > 0 ? ($tournament?->tvScreens()[$screen - 1]['name'] ?? '') : '';
+
+        $query = array_filter($request->only(['kortai', 'colai', 'm']), fn ($v) => is_string($v) && $v !== '');
+        if ($screen > 0) {
+            $query['ekranas'] = $screen;
+        }
 
         return view('pages.tv', [
             'id' => $tournamentExternalId,
-            'title' => $tournament?->translation('lt')?->title ?? ($snapshot->payload['tournament']['name'] ?? 'Turnyras'),
-            // per-TV overrides travel on to the data URL: ?kortai=4,5,6&colai=65&m=3
-            'dataQuery' => http_build_query(array_filter($request->only(['kortai', 'colai', 'm']), fn ($v) => is_string($v) && $v !== '')),
+            'title' => ($tournament?->translation('lt')?->title ?? ($snapshot->payload['tournament']['name'] ?? 'Turnyras')).($screenName !== '' ? ' · '.$screenName : ''),
+            'dataQuery' => http_build_query($query),
         ]);
     }
 
-    /**
-     * padelioturnyrai.lt/tv — short enough to type with a TV remote. On a
-     * tournament day it opens that tournament's TV schedule straight away;
-     * otherwise a list with big buttons (incl. the demo mode).
-     */
-    public function tvHome()
+    /** Our tournaments with a public schedule, each tagged live / upcoming / past. */
+    private function tvTournaments()
     {
         $withSchedule = ScheduleSnapshot::pluck('tournament_external_id')->all();
         $today = now('Europe/Vilnius')->toDateString();
-        $all = Tournament::with('translations')
+
+        return Tournament::with('translations')
             ->whereNotNull('tournated_id')->where('show_schedule', true)
             ->whereIn('tournated_id', $withSchedule)
             ->get()
@@ -220,9 +238,18 @@ class ScheduleController extends Controller
 
                 return $t;
             });
+    }
 
+    /**
+     * padelioturnyrai.lt/tv — short enough to type with a TV remote. On a
+     * tournament day with one screen it opens that schedule straight away;
+     * otherwise a list with big buttons (screens, demo mode).
+     */
+    public function tvHome()
+    {
+        $all = $this->tvTournaments();
         $live = $all->where('tv_phase', 'live')->values();
-        if ($live->count() === 1) {
+        if ($live->count() === 1 && count($live->first()->tvScreens()) <= 1) {
             return redirect()->route('schedule.tv', $live->first()->tournated_id);
         }
 
@@ -231,7 +258,27 @@ class ScheduleController extends Controller
             ->concat($all->where('tv_phase', 'past')->sortByDesc('date_start')->take(4))
             ->values();
 
-        return view('pages.tv-home', ['tournaments' => $list]);
+        return view('pages.tv-home', ['tournaments' => $list, 'courtNames' => fn (Tournament $t) => self::courtNames((string) $t->tournated_id)]);
+    }
+
+    /** Tournated court ID => name ("52836" => "Vidus 1"), as in the schedule. */
+    public static function courtNames(string $tournamentExternalId): array
+    {
+        $payload = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->value('payload') ?? [];
+        $names = [];
+        foreach ($payload['tournament']['courts'] ?? [] as $c) {
+            if (isset($c['court_id'])) {
+                $names[(int) $c['court_id']] = (string) ($c['name'] ?? '');
+            }
+        }
+        foreach ($payload['matches'] ?? [] as $m) {
+            if (isset($m['court']['court_id'])) {
+                $names[(int) $m['court']['court_id']] ??= (string) ($m['court']['name'] ?? '');
+            }
+        }
+        uasort($names, fn ($a, $b) => strnatcasecmp($a, $b));
+
+        return $names;
     }
 
     public function tvData(Request $request, string $tournamentExternalId): JsonResponse
@@ -239,14 +286,41 @@ class ScheduleController extends Controller
         $base = $this->data($tournamentExternalId)->getData(true);
         $payload = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->value('payload') ?? [];
         $tournament = Tournament::where('tournated_id', $tournamentExternalId)->first();
+
+        // which courts: an admin screen (by Tournated court ID), else a typed number list
+        $courtIds = [];
+        $courtNumbers = [];
+        $screen = (int) $request->query('ekranas', 0);
         $override = $request->query('kortai');
-        $courts = (new Tournament(['tv_courts' => $tournament?->tv_courts]))->tvCourtNumbers(is_string($override) && $override !== '' ? $override : null);
+        if ($screen > 0 && $tournament) {
+            $courtIds = $tournament->tvScreens()[$screen - 1]['courts'] ?? [];
+        } elseif (is_string($override) && $override !== '') {
+            $courtNumbers = (new Tournament)->tvCourtNumbers($override);
+        } elseif ($tournament && ! $tournament->tvScreens()) {
+            $courtNumbers = $tournament->tvCourtNumbers();
+        }
+        $onScreen = function (array $m) use ($courtIds, $courtNumbers): bool {
+            if ($courtIds) {
+                return in_array((int) ($m['court']['court_id'] ?? 0), $courtIds, true);
+            }
+            if ($courtNumbers) {
+                preg_match('/\d+/', (string) ($m['court']['name'] ?? ''), $n);
+
+                return in_array((int) ($n[0] ?? 0), $courtNumbers, true);
+            }
+
+            return true;
+        };
 
         return response()->json([
             'matches' => $base['matches'],
             'synced_at' => $base['synced_at'],
-            'courts' => $courts,
-            'places' => ($tournament?->tv_show_place ?? true) ? (object) self::tvPlaces($base['matches'], $payload['places'] ?? [], $courts) : (object) [],
+            // the TV takes its clock from here: old TVs often have the wrong time or time zone
+            'server_ms' => (int) round(microtime(true) * 1000),
+            'tz_offset_min' => now('Europe/Vilnius')->utcOffset(),
+            'court_ids' => $courtIds,
+            'courts' => $courtNumbers,
+            'places' => ($tournament?->tv_show_place ?? true) ? (object) self::tvPlaces($base['matches'], $payload['places'] ?? [], $onScreen) : (object) [],
             // ?colai=65&m=3 lets a TV of another size / distance override the admin values
             'font_share' => Tournament::tvFontShare(
                 (int) ($request->query('colai') ?: ($tournament?->tv_screen_inch ?? 55)),
@@ -259,7 +333,7 @@ class ScheduleController extends Controller
      * Only the places of people on the screen right now (the day shown, the
      * courts shown) — never the whole tournament's list.
      */
-    private static function tvPlaces(array $matches, array $places, array $courts): array
+    private static function tvPlaces(array $matches, array $places, callable $onScreen): array
     {
         if (! $places) {
             return [];
@@ -271,8 +345,7 @@ class ScheduleController extends Controller
 
         $out = [];
         foreach ($matches as $m) {
-            preg_match('/\d+/', (string) ($m['court']['name'] ?? ''), $n);
-            if (($m['date'] ?? null) !== $day || ($courts && ! in_array((int) ($n[0] ?? 0), $courts, true))) {
+            if (($m['date'] ?? null) !== $day || ! $onScreen($m)) {
                 continue;
             }
             foreach ($m['participants'] ?? [] as $p) {

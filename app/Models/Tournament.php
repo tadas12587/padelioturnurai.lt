@@ -17,6 +17,7 @@ class Tournament extends Model
         'show_schedule',
         'push_enabled',
         'tv_courts',
+        'tv_screens',
         'tv_show_place',
         'tv_screen_inch',
         'tv_distance_m',
@@ -47,6 +48,7 @@ class Tournament extends Model
             'show_schedule'       => 'boolean',
             'push_enabled'        => 'boolean',
             'tv_show_place'       => 'boolean',
+            'tv_screens'          => 'array',
             'participants_auto'   => 'boolean',
         ];
     }
@@ -89,6 +91,15 @@ class Tournament extends Model
         }
 
         return null;
+    }
+
+    /** The TV screens set in admin, each with a name and its Tournated court IDs. */
+    public function tvScreens(): array
+    {
+        return array_values(array_filter(array_map(fn ($s) => [
+            'name' => trim((string) ($s['name'] ?? '')),
+            'courts' => array_values(array_map('intval', (array) ($s['courts'] ?? []))),
+        ], (array) $this->tv_screens), fn ($s) => $s['courts'] !== []));
     }
 
     /** "1, 3,4" -> [1, 3, 4]; empty = every court of the day. */
