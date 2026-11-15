@@ -200,6 +200,40 @@ class ScheduleController extends Controller
         ]);
     }
 
+    /**
+     * padelioturnyrai.lt/tv — short enough to type with a TV remote. On a
+     * tournament day it opens that tournament's TV schedule straight away;
+     * otherwise a list with big buttons (incl. the demo mode).
+     */
+    public function tvHome()
+    {
+        $withSchedule = ScheduleSnapshot::pluck('tournament_external_id')->all();
+        $today = now('Europe/Vilnius')->toDateString();
+        $all = Tournament::with('translations')
+            ->whereNotNull('tournated_id')->where('show_schedule', true)
+            ->whereIn('tournated_id', $withSchedule)
+            ->get()
+            ->map(function (Tournament $t) use ($today) {
+                $start = $t->date_start?->toDateString();
+                $end = ($t->date_end ?? $t->date_start)?->toDateString();
+                $t->setAttribute('tv_phase', $end && $end < $today ? 'past' : ($start && $start > $today ? 'upcoming' : 'live'));
+
+                return $t;
+            });
+
+        $live = $all->where('tv_phase', 'live')->values();
+        if ($live->count() === 1) {
+            return redirect()->route('schedule.tv', $live->first()->tournated_id);
+        }
+
+        $list = $live
+            ->concat($all->where('tv_phase', 'upcoming')->sortBy('date_start'))
+            ->concat($all->where('tv_phase', 'past')->sortByDesc('date_start')->take(4))
+            ->values();
+
+        return view('pages.tv-home', ['tournaments' => $list]);
+    }
+
     public function tvData(Request $request, string $tournamentExternalId): JsonResponse
     {
         $base = $this->data($tournamentExternalId)->getData(true);

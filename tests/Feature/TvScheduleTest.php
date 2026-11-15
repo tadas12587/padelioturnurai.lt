@@ -63,4 +63,14 @@ class TvScheduleTest extends TestCase
         $this->assertLessThan($near, Tournament::tvFontShare(65, 2.0));      // bigger TV -> smaller share
         $this->assertGreaterThanOrEqual(6, Tournament::tvMaxCourts(55, 2.0));
     }
+
+    public function test_short_tv_address_opens_todays_tournament_or_lists_them(): void
+    {
+        $this->seedSnapshot();
+        Tournament::create(['slug' => 't', 'tournated_id' => '700', 'status' => 'upcoming', 'date_start' => now()->addDays(3)->toDateString(), 'location' => 'X']);
+        $this->get('/tv')->assertOk()->assertSee('/tv/700', false)->assertSee('Rodyti');
+
+        Tournament::where('tournated_id', '700')->update(['date_start' => now('Europe/Vilnius')->toDateString()]);
+        $this->get('/tv')->assertRedirect('/tv/700');
+    }
 }

@@ -74,6 +74,7 @@ class TournamentTournatedLinkTest extends TestCase
         $this->actingAs(User::factory()->create());
 
         $this->get('/admin/tournaments')->assertOk()->assertSee('Veikia');
-        $this->get("/admin/tournaments/{$t->id}/edit")->assertOk()->assertSee('Mačų: <b>72</b>', false)->assertSee('Tournated turnyro ID');
+        $this->get("/admin/tournaments/{$t->id}/edit")->assertOk()->assertSee('Mačų: <b>72</b>', false)->assertSee('Tournated turnyro ID')
+            ->assertSee('TV ekranas')->assertSee('trumpas adresas televizoriui');
     }
 }

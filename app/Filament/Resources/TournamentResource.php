@@ -107,6 +107,29 @@ class TournamentResource extends Resource
                             ])
                             ->visible(fn ($get) => filled($get('tournated_id'))),
 
+                        \Filament\Forms\Components\Fieldset::make('TV ekranas')
+                            ->schema([
+                                TextInput::make('tv_courts')
+                                    ->label('Kortai ekrane')
+                                    ->placeholder('pvz. 1,2,3,4,5,6')
+                                    ->maxLength(100)
+                                    ->helperText('Kortų numeriai ta tvarka, kaip rodyti. Tuščia = visi tos dienos kortai. Viename ekrane gerai telpa iki 6.'),
+                                Toggle::make('tv_show_place')->label('Prie žaidėjo rodyti klubą / miestą')->default(true)
+                                    ->helperText('Klubų turnyre – klubas, kitur – miestas arba užsienio šalis (jei žinomi Tournated).'),
+                                TextInput::make('tv_screen_inch')->label('Televizoriaus įstrižainė (coliai)')
+                                    ->numeric()->minValue(24)->maxValue(120)->default(55)->live(onBlur: true),
+                                TextInput::make('tv_distance_m')->label('Atstumas iki žiūrovų (m)')
+                                    ->numeric()->minValue(1)->maxValue(10)->step(0.5)->default(2)->live(onBlur: true)
+                                    ->helperText(fn ($get) => 'Pagal tai parenkamas teksto dydis. Šiam dydžiui ir atstumui telpa iki '
+                                        .Tournament::tvMaxCourts((int) ($get('tv_screen_inch') ?: 55), (float) ($get('tv_distance_m') ?: 2)).' kortų.'),
+                                Placeholder::make('tv_link')
+                                    ->label('Nuoroda televizoriui')
+                                    ->columnSpanFull()
+                                    ->content(fn ($get) => new HtmlString(self::tvLinksHtml(Tournament::parseTournatedId($get('tournated_id')), (string) $get('tv_courts')))),
+                            ])
+                            ->columns(2)
+                            ->visible(fn ($get) => filled($get('tournated_id'))),
+
                         Placeholder::make('tournated_status')
                             ->label('Būsena')
                             ->content(fn (?Tournament $record) => new HtmlString(self::syncStatusHtml($record)))
@@ -483,5 +506,27 @@ class TournamentResource extends Resource
             'create' => Pages\CreateTournament::route('/create'),
             'edit'   => Pages\EditTournament::route('/{record}/edit'),
         ];
+    }
+
+    /** Links for the venue TVs: the short address first, then this tournament's own. */
+    private static function tvLinksHtml(?string $id, string $courts): string
+    {
+        if (! $id) {
+            return '';
+        }
+        $a = fn (string $href, string $text) => '<a href="'.e($href).'" target="_blank" rel="noopener" style="text-decoration:underline">'.e($text).'</a>';
+        $short = route('schedule.tv.home');
+        $url = route('schedule.tv', $id);
+        $html = '<b>'.$a($short, preg_replace('~^https?://~', '', $short)).'</b> – trumpas adresas televizoriui: turnyro dieną atsidaro šis turnyras, kitomis dienomis – sąrašas.'
+            .'<br><small>Tiesioginė nuoroda: '.$a($url, $url).' · išbandyti be turnyro: '.$a($url.'?demo=1', 'bandomasis režimas')
+            .'. Televizoriuje įjunk viso ekrano režimą; grafikas atsinaujina pats kas 15 s.</small>';
+        preg_match_all('/\d+/', $courts, $m);
+        if (count($m[0]) > 6) {
+            $half = array_chunk($m[0], (int) ceil(count($m[0]) / 2));
+            $html .= '<br><small>Dviem televizoriams: '.$a($url.'?kortai='.implode(',', $half[0]), 'kortai '.implode(',', $half[0]))
+                .' ir '.$a($url.'?kortai='.implode(',', $half[1]), 'kortai '.implode(',', $half[1])).'</small>';
+        }
+
+        return $html;
     }
 }
