@@ -88,12 +88,16 @@ class TvScheduleTest extends TestCase
             'places' => ['ana x' => 'Klaipėda', 'bea x' => 'Vilnius'],
         ]]);
         Tournament::create(['slug' => 'd', 'tournated_id' => '800', 'status' => 'active', 'date_start' => $day, 'location' => 'X',
-            'tv_screens' => [['name' => 'Vidus', 'courts' => ['11']], ['name' => 'Skycop', 'courts' => [21]]]]);
+            'tv_screen_inch' => 55, 'tv_distance_m' => 2.0,
+            'tv_screens' => [['name' => 'Vidus', 'courts' => ['11']], ['name' => 'Skycop', 'courts' => [21], 'inch' => '75', 'distance' => '4']]]);
 
         $one = $this->getJson('/tv/800/data?ekranas=1')->assertOk()->json();
         $this->assertSame([11], $one['court_ids']);
         $this->assertSame(['ana x' => 'Klaipėda'], $one['places']);       // Skycop 1 is not on this screen
-        $this->assertSame([21], $this->getJson('/tv/800/data?ekranas=2')->json('court_ids'));
+        $two = $this->getJson('/tv/800/data?ekranas=2')->json();
+        $this->assertSame([21], $two['court_ids']);
+        $this->assertEqualsWithDelta(Tournament::tvFontShare(55, 2.0), $one['font_share'], 1e-9);   // screen 1: tournament default
+        $this->assertEqualsWithDelta(Tournament::tvFontShare(75, 4.0), $two['font_share'], 1e-9);   // screen 2: its own size + distance
         $this->assertIsInt($one['server_ms']);
 
         // short addresses for the TVs on the tournament day

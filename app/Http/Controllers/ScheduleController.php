@@ -292,8 +292,9 @@ class ScheduleController extends Controller
         $courtNumbers = [];
         $screen = (int) $request->query('ekranas', 0);
         $override = $request->query('kortai');
+        $screenCfg = $screen > 0 && $tournament ? ($tournament->tvScreens()[$screen - 1] ?? null) : null;
         if ($screen > 0 && $tournament) {
-            $courtIds = $tournament->tvScreens()[$screen - 1]['courts'] ?? [];
+            $courtIds = $screenCfg['courts'] ?? [];
         } elseif (is_string($override) && $override !== '') {
             $courtNumbers = (new Tournament)->tvCourtNumbers($override);
         } elseif ($tournament && ! $tournament->tvScreens()) {
@@ -321,10 +322,10 @@ class ScheduleController extends Controller
             'court_ids' => $courtIds,
             'courts' => $courtNumbers,
             'places' => ($tournament?->tv_show_place ?? true) ? (object) self::tvPlaces($base['matches'], $payload['places'] ?? [], $onScreen) : (object) [],
-            // ?colai=65&m=3 lets a TV of another size / distance override the admin values
+            // size / distance: ?colai=&m= on the URL, else this screen's, else the tournament's
             'font_share' => Tournament::tvFontShare(
-                (int) ($request->query('colai') ?: ($tournament?->tv_screen_inch ?? 55)),
-                (float) ($request->query('m') ?: ($tournament?->tv_distance_m ?? 2.0)),
+                (int) ($request->query('colai') ?: ($screenCfg['inch'] ?? null) ?: ($tournament?->tv_screen_inch ?? 55)),
+                (float) ($request->query('m') ?: ($screenCfg['distance'] ?? null) ?: ($tournament?->tv_distance_m ?? 2.0)),
             ),
         ])->header('Cache-Control', 'no-store');
     }

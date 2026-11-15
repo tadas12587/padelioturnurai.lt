@@ -99,6 +99,9 @@ class Tournament extends Model
         return array_values(array_filter(array_map(fn ($s) => [
             'name' => trim((string) ($s['name'] ?? '')),
             'courts' => array_values(array_map('intval', (array) ($s['courts'] ?? []))),
+            // empty = the tournament's own TV size / distance
+            'inch' => (int) ($s['inch'] ?? 0) ?: null,
+            'distance' => (float) ($s['distance'] ?? 0) ?: null,
         ], (array) $this->tv_screens), fn ($s) => $s['courts'] !== []));
     }
 

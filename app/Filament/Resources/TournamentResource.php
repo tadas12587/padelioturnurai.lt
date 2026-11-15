@@ -114,7 +114,19 @@ class TournamentResource extends Resource
                                     ->columnSpanFull()
                                     ->helperText('Kiekvienam televizoriui – savo kortai. Televizoriuje įvesk padelioturnyrai.lt/tv/1, /tv/2 … (eilės tvarka kaip čia). Jei ekranų nesukuri – rodomi visi tos dienos kortai.')
                                     ->schema([
-                                        TextInput::make('name')->label('Pavadinimas')->placeholder('pvz. Vidus')->maxLength(40),
+                                        \Filament\Forms\Components\Grid::make(3)->schema([
+                                            TextInput::make('name')->label('Pavadinimas')->placeholder('pvz. Vidus')->maxLength(40),
+                                            TextInput::make('inch')->label('Įstrižainė (coliai)')
+                                                ->numeric()->minValue(24)->maxValue(120)->live(onBlur: true)
+                                                ->placeholder(fn ($get) => (string) ($get('../../tv_screen_inch') ?: 55)),
+                                            TextInput::make('distance')->label('Atstumas (m)')
+                                                ->numeric()->minValue(1)->maxValue(10)->step(0.5)->live(onBlur: true)
+                                                ->placeholder(fn ($get) => (string) ($get('../../tv_distance_m') ?: 2))
+                                                ->helperText(fn ($get) => 'Telpa iki '.Tournament::tvMaxCourts(
+                                                    (int) ($get('inch') ?: $get('../../tv_screen_inch') ?: 55),
+                                                    (float) ($get('distance') ?: $get('../../tv_distance_m') ?: 2),
+                                                ).' kortų. Tuščia – kaip turnyro nustatymuose.'),
+                                        ]),
                                         \Filament\Forms\Components\CheckboxList::make('courts')
                                             ->label('Kortai')
                                             ->options(fn ($get) => \App\Http\Controllers\ScheduleController::courtNames((string) Tournament::parseTournatedId($get('../../tournated_id'))))
@@ -129,9 +141,9 @@ class TournamentResource extends Resource
                                     ->defaultItems(0),
                                 Toggle::make('tv_show_place')->label('Prie žaidėjo rodyti klubą / miestą')->default(true)
                                     ->helperText('Klubų turnyre – klubas, kitur – miestas arba užsienio šalis (jei žinomi Tournated).'),
-                                TextInput::make('tv_screen_inch')->label('Televizoriaus įstrižainė (coliai)')
+                                TextInput::make('tv_screen_inch')->label('Įstrižainė (coliai), numatyta visiems ekranams')
                                     ->numeric()->minValue(24)->maxValue(120)->default(55)->live(onBlur: true),
-                                TextInput::make('tv_distance_m')->label('Atstumas iki žiūrovų (m)')
+                                TextInput::make('tv_distance_m')->label('Atstumas iki žiūrovų (m), numatytas visiems ekranams')
                                     ->numeric()->minValue(1)->maxValue(10)->step(0.5)->default(2)->live(onBlur: true)
                                     ->helperText(fn ($get) => 'Pagal tai parenkamas teksto dydis. Šiam dydžiui ir atstumui telpa iki '
                                         .Tournament::tvMaxCourts((int) ($get('tv_screen_inch') ?: 55), (float) ($get('tv_distance_m') ?: 2)).' kortų.'),

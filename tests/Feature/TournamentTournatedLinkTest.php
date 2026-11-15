@@ -69,12 +69,12 @@ class TournamentTournatedLinkTest extends TestCase
 
     public function test_admin_list_and_edit_pages_render_with_sync_status(): void
     {
-        $t = $this->tournament(['tournated_id' => '11532']);
+        $t = $this->tournament(['tournated_id' => '11532', 'tv_screens' => [['name' => 'Vidus', 'courts' => [1], 'inch' => 65, 'distance' => 3]]]);
         TournatedSync::where('tournament_external_id', '11532')->update(['last_attempt_at' => now(), 'last_success_at' => now(), 'match_count' => 72, 'last_source' => 'graphql']);
         $this->actingAs(User::factory()->create());
 
         $this->get('/admin/tournaments')->assertOk()->assertSee('Veikia');
         $this->get("/admin/tournaments/{$t->id}/edit")->assertOk()->assertSee('Mačų: <b>72</b>', false)->assertSee('Tournated turnyro ID')
-            ->assertSee('TV ekranas')->assertSee('trumpas adresas televizoriui');
+            ->assertSee('TV ekranas')->assertSee('Vidus')->assertSee('Telpa iki')->assertSee('/tv/1', false);
     }
 }
