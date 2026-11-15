@@ -31,7 +31,7 @@ body {
 .top img { width: 1.7em; height: 1.7em; }
 .top h1 { font-size: 1.15em; font-weight: 900; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .clock { font-size: 1.6em; font-weight: 900; color: var(--ball); line-height: 1; }
-.fresh { color: var(--muted); font-size: .6em; text-align: right; font-family: Inter, sans-serif; }
+.fresh { color: var(--muted); font-size: .7em; text-align: right; font-family: Inter, sans-serif; }
 .fresh.bad { color: var(--warn); }
 
 .board { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: .45em; }
@@ -52,7 +52,7 @@ body {
 /* already played: smaller, people only glance at the score */
 .slot.done { background: transparent; font-size: .72em; }
 .slot.live { background: #14444A; border: .12em solid var(--ball); }
-.slot.call { background: var(--ball); color: var(--ball-ink); border-color: transparent; }
+.slot.call { background: var(--ball); color: var(--ball-ink); border: .12em solid transparent; }
 .slot.empty { color: var(--muted); border-style: dashed; background: transparent; font-size: .8em; }
 /* status + time: the line people look for first */
 .lab { display: flex; align-items: baseline; gap: .4em; white-space: nowrap; overflow: hidden; font-family: Archivo, Inter, sans-serif; font-weight: 900; text-transform: uppercase; }
@@ -70,6 +70,11 @@ body {
 .grp .st { font-family: Archivo, Inter, sans-serif; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; color: var(--ink); }
 .live .grp .st { color: var(--ball); }
 .call .grp .st { color: var(--ball-ink); }
+.grp .g::before { content: " · "; }
+/* on the cards people act on, the group gets its own line instead of being cut */
+.live .grp, .call .grp { display: flex; flex-direction: column; line-height: 1.15; }
+.live .grp .g, .call .grp .g { overflow: hidden; text-overflow: ellipsis; }
+.live .grp .g::before, .call .grp .g::before { content: none; }
 .call .grp { color: #33440f; }
 .dot { display: inline-block; width: .55em; height: .55em; border-radius: 50%; background: var(--ball); margin-right: .3em; animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .35; } }
@@ -86,11 +91,12 @@ body {
 .call .p .pl, .call .club { color: #33440f; }
 .club { font-size: .72em; font-weight: 800; color: var(--ball); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .done .p .n { font-weight: 700; color: var(--soft); }
+.done .p .pl { font-size: .85em; }
 .done .win .n { color: var(--ink); }
-.sc { display: flex; gap: .3em; font-family: Archivo, Inter, sans-serif; font-weight: 900; color: var(--muted); }
-.sc i { font-style: normal; min-width: .65em; text-align: center; }
+.sc { display: flex; gap: .15em; font-family: Archivo, Inter, sans-serif; font-weight: 900; color: var(--muted); }
+.sc i { font-style: normal; min-width: 1.25em; text-align: right; }
 .win .sc { color: var(--ball); }
-.foot { white-space: nowrap; overflow: hidden; display: flex; justify-content: space-between; gap: 1em; color: var(--muted); font-size: .5em; font-weight: 600; }
+.foot { white-space: nowrap; overflow: hidden; display: flex; justify-content: space-between; gap: 1em; color: var(--muted); font-size: .6em; font-weight: 600; }
 .foot .warn { color: var(--warn); }
 .msg { margin: auto; text-align: center; color: var(--soft); font-size: 1.2em; max-width: 30em; }
 
@@ -185,16 +191,19 @@ body {
     });
   }
 
-  function person(name, place) {
-    return `<div class="p"><span class="n">${esc(short(name))}</span>${place ? `<span class="pl">${esc(place)}</span>` : ''}</div>`;
+  // "Jonas Augustas" + "Kliukas" -> "J. Kliukas": the first initial and the full surname
+  function person(p, place) {
+    const first = String(p.name || '').trim();
+    const shown = first && p.surname ? `${first[0]}. ${p.surname}` : short(`${first} ${p.surname || ''}`.trim());
+    return `<div class="p"><span class="n">${esc(shown)}</span>${place ? `<span class="pl">${esc(place)}</span>` : ''}</div>`;
   }
 
   function sideHtml(m, side, places) {
     const team = side === 1 ? m.team1 : m.team2;
-    const names = (m.participants || []).filter(p => p.side === side).map(p => `${p.name || ''} ${p.surname || ''}`.trim()).filter(Boolean);
+    const people = (m.participants || []).filter(p => p.side === side && (p.name || p.surname));
     const club = team && team.title;
-    const who = names.length
-      ? (club ? `<div class="club">${esc(club)}</div>` : '') + names.map(nm => person(nm, club ? '' : places[key(nm)])).join('')
+    const who = people.length
+      ? (club ? `<div class="club">${esc(club)}</div>` : '') + people.map(p => person(p, club ? '' : places[key(`${p.name || ''} ${p.surname || ''}`)])).join('')
       : `<div class="p"><span class="n">${esc(club || 'Nepaskelbta')}</span></div>`;
     const games = played(m) ? (m.sets || []).map(s => `<i>${side === 1 ? s.side1 : s.side2}</i>`).join('') : '';
     const won = m.winner_side === side;
@@ -220,7 +229,7 @@ body {
     const status = { done: 'Baigta', live: '<span class="dot"></span>Žaidžia', call: 'Ruoškitės', next: 'Toliau' }[s.kind];
     const g = group(m);
     return `<div class="slot ${s.kind}" style="view-transition-name:m${+m.match_id}">`
-      + `<div class="grp"><b class="st">${status}</b>${g ? ` · ${esc(g)}` : ''}</div>`
+      + `<div class="grp"><b class="st">${status}</b>${g ? `<span class="g">${esc(g)}</span>` : ''}</div>`
       + (time ? `<div class="lab"><span class="t">${time}</span>${late}</div>` : '')
       + sideHtml(m, 1, places) + sideHtml(m, 2, places) + '</div>';
   }
@@ -235,10 +244,10 @@ body {
         if (full || s.getBoundingClientRect().bottom > bottom + 1) { s.hidden = true; full = true; }
       }
     }
-    // a place cut down to "Pl…" says nothing — then leave it out
+    // a cut place ("Klai…") reads wrong from afar — show it whole or not at all
     for (const pl of board.querySelectorAll('.pl')) {
       pl.hidden = false;
-      if (pl.scrollWidth > pl.clientWidth + 1 && pl.clientWidth < pl.scrollWidth * 0.75) pl.hidden = true;
+      if (pl.scrollWidth > pl.clientWidth + 1) pl.hidden = true;
     }
   }
 
