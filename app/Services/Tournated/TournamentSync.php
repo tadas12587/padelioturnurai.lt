@@ -80,6 +80,14 @@ class TournamentSync
             'title' => $t['team_name'] ?? null,
         ], $this->api->list('teams', $tournamentId)));
 
+        // city / country per player for the TV screen — slow-changing, refreshed every 30 min
+        $places = $existing['places'] ?? [];
+        $placesAt = $existing['places_at'] ?? null;
+        if (! $placesAt || CarbonImmutable::parse($placesAt)->diffInMinutes(now(), true) >= 30) {
+            $places = $part('places', fn () => $this->places($tournamentId));
+            $placesAt = now()->toIso8601String();
+        }
+
         [$matches, $source] = $this->matches($tournamentId, ! empty($teams), $warnings);
         $matches = self::stampResults($matches, $existing['matches'] ?? [], ! empty($existing));
         $pushOn = Tournament::where('tournated_id', $tournamentId)->value('push_enabled') ?? true;
@@ -106,6 +114,8 @@ class TournamentSync
                 'draws' => $draws,
                 'standings' => $standings,
                 'teams' => $teams,
+                'places' => $places,
+                'places_at' => $placesAt,
                 'court_delays' => $existing['court_delays'] ?? [],
                 'source' => $source,
                 'synced_at' => now()->toIso8601String(),
@@ -223,5 +233,72 @@ class TournamentSync
         }
 
         return [$matches, 'api'];
+    }
+
+    /**
+     * "jonas petraitis" => "Klaipėda" (or a foreign country, e.g. "Latvija").
+     * Only the place is kept — never e-mails, phones or birthdates.
+     */
+    private function places(string $tournamentId): array
+    {
+        $city = [];
+        foreach ($this->api->list('players', $tournamentId) as $p) {
+            if (! empty($p['player_id'])) {
+                $city[$p['player_id']] = self::cityName((string) ($p['city'] ?? ''));
+            }
+        }
+        $t = $this->api->get("/tournaments/{$tournamentId}", ['include' => 'participants']);
+        $out = [];
+        foreach (($t['data'] ?? $t)['participants'] ?? [] as $p) {
+            $key = self::personKey(trim(($p['name'] ?? '').' '.($p['surname'] ?? '')));
+            $place = ($city[$p['player_id'] ?? 0] ?? null) ?: self::foreignCountry($p['country'] ?? null);
+            if ($key !== '' && $place) {
+                $out[$key] = $place;
+            }
+        }
+
+        return $out;
+    }
+
+    /** Lower-case, no diacritics, single spaces — the key the TV page looks names up by. */
+    public static function personKey(string $name): string
+    {
+        return trim(preg_replace('/\s+/', ' ', mb_strtolower(\Illuminate\Support\Str::ascii($name))));
+    }
+
+    private const CITIES = [
+        'klaipeda' => 'Klaipėda', 'klp' => 'Klaipėda', 'vilnius' => 'Vilnius', 'vln' => 'Vilnius', 'kaunas' => 'Kaunas',
+        'siauliai' => 'Šiauliai', 'panevezys' => 'Panevėžys', 'palanga' => 'Palanga', 'plunge' => 'Plungė',
+        'mazeikiai' => 'Mažeikiai', 'gargzdai' => 'Gargždai', 'telsiai' => 'Telšiai', 'kretinga' => 'Kretinga',
+        'silute' => 'Šilutė', 'marijampole' => 'Marijampolė', 'alytus' => 'Alytus', 'utena' => 'Utena',
+        'neringa' => 'Neringa', 'jonava' => 'Jonava', 'kedainiai' => 'Kėdainiai', 'taurage' => 'Tauragė',
+    ];
+
+    private static function cityName(string $raw): ?string
+    {
+        $raw = trim($raw);
+        if ($raw === '' || mb_strlen($raw) > 40) {
+            return null;
+        }
+        $k = self::personKey($raw);
+
+        return self::CITIES[$k] ?? mb_convert_case($raw, MB_CASE_TITLE);
+    }
+
+    private const COUNTRIES = [
+        'LV' => 'Latvija', 'EE' => 'Estija', 'PL' => 'Lenkija', 'DE' => 'Vokietija', 'ES' => 'Ispanija', 'FI' => 'Suomija',
+        'SE' => 'Švedija', 'NO' => 'Norvegija', 'DK' => 'Danija', 'GB' => 'D. Britanija', 'UA' => 'Ukraina', 'IT' => 'Italija',
+        'FR' => 'Prancūzija', 'NL' => 'Nyderlandai', 'BY' => 'Baltarusija', 'US' => 'JAV', 'PT' => 'Portugalija',
+    ];
+
+    /** Only a foreign country says something on a Lithuanian tournament screen. */
+    private static function foreignCountry(mixed $c): ?string
+    {
+        $c = strtoupper(trim((string) (is_array($c) ? ($c['code'] ?? $c['iso2'] ?? '') : $c)));
+        if ($c === '' || $c === 'LT' || $c === 'LITHUANIA') {
+            return null;
+        }
+
+        return self::COUNTRIES[$c] ?? (strlen($c) === 2 ? $c : mb_convert_case(strtolower($c), MB_CASE_TITLE));
     }
 }

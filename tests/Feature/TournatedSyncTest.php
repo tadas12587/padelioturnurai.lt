@@ -42,6 +42,9 @@ class TournatedSyncTest extends TestCase
             'api.test/api/v2/draws*' => Http::response($this->fixture('draws-10210')),
             'api.test/api/v2/standings*' => Http::response($this->fixture('standings-10210')),
             'api.test/api/v2/teams*' => Http::response($teams ? ['data' => $teams, 'meta' => ['totalPages' => 1]] : $this->empty()),
+            'api.test/api/v2/players*' => Http::response(['data' => [
+                ['player_id' => 1, 'player_name' => 'Jonas Žukas', 'city' => 'klaipeda', 'player_email' => 'x@y.lt', 'player_phone_number' => '+370'],
+            ], 'meta' => ['totalPages' => 1]]),
             'api.test/api/v2/matches*' => $matchesFail
                 ? Http::response('<!DOCTYPE html><title>502: Bad gateway</title>', 502)
                 : Http::response($matches ?? $this->fixture('matches-10210')),

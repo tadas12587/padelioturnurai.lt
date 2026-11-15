@@ -181,6 +181,45 @@ class ScheduleController extends Controller
         ]);
     }
 
+    /**
+     * Full-screen TV schedule for the venue: every chosen court side by side —
+     * last result, playing now, next two (with the automatic start estimate).
+     * ?kortai=4,5,6 overrides the admin's court list (a second TV).
+     */
+    public function tv(Request $request, string $tournamentExternalId)
+    {
+        $snapshot = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->first();
+        abort_if(! $snapshot, 404);
+        $tournament = Tournament::with('translations')->where('tournated_id', $tournamentExternalId)->first();
+
+        return view('pages.tv', [
+            'id' => $tournamentExternalId,
+            'title' => $tournament?->translation('lt')?->title ?? ($snapshot->payload['tournament']['name'] ?? 'Turnyras'),
+            // per-TV overrides travel on to the data URL: ?kortai=4,5,6&colai=65&m=3
+            'dataQuery' => http_build_query(array_filter($request->only(['kortai', 'colai', 'm']), fn ($v) => is_string($v) && $v !== '')),
+        ]);
+    }
+
+    public function tvData(Request $request, string $tournamentExternalId): JsonResponse
+    {
+        $base = $this->data($tournamentExternalId)->getData(true);
+        $payload = ScheduleSnapshot::where('tournament_external_id', $tournamentExternalId)->value('payload') ?? [];
+        $tournament = Tournament::where('tournated_id', $tournamentExternalId)->first();
+        $override = $request->query('kortai');
+
+        return response()->json([
+            'matches' => $base['matches'],
+            'synced_at' => $base['synced_at'],
+            'courts' => (new Tournament(['tv_courts' => $tournament?->tv_courts]))->tvCourtNumbers(is_string($override) && $override !== '' ? $override : null),
+            'places' => ($tournament?->tv_show_place ?? true) ? (object) ($payload['places'] ?? []) : (object) [],
+            // ?colai=65&m=3 lets a TV of another size / distance override the admin values
+            'font_share' => Tournament::tvFontShare(
+                (int) ($request->query('colai') ?: ($tournament?->tv_screen_inch ?? 55)),
+                (float) ($request->query('m') ?: ($tournament?->tv_distance_m ?? 2.0)),
+            ),
+        ])->header('Cache-Control', 'no-store');
+    }
+
     private const ADMIN_COOKIE = 'overlay_admin_token';
 
     /**
