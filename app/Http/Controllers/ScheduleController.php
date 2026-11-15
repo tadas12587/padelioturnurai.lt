@@ -218,6 +218,7 @@ class ScheduleController extends Controller
             'id' => $tournamentExternalId,
             'title' => ($tournament?->translation('lt')?->title ?? ($snapshot->payload['tournament']['name'] ?? 'Turnyras')).($screenName !== '' ? ' · '.$screenName : ''),
             'dataQuery' => http_build_query($query),
+            'logo' => $snapshot->payload['tournament']['logo'] ?? null,
         ]);
     }
 

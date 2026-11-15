@@ -54,7 +54,7 @@ class TournatedApi
 
     public function tournament(string $id): array
     {
-        return $this->get("/tournaments/{$id}", ['include' => 'courts,categories', 'fields' => 'show_oop,is_groups_enabled,is_draws_enabled,updated_at']);
+        return $this->get("/tournaments/{$id}", ['include' => 'courts,categories', 'fields' => 'show_oop,is_groups_enabled,is_draws_enabled,updated_at,logo']);
     }
 
     public function list(string $resource, string $tournamentId, array $query = []): array

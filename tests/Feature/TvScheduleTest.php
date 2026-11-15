@@ -105,4 +105,13 @@ class TvScheduleTest extends TestCase
         $this->get('/tv')->assertOk()->assertSee('ekranas=1', false)->assertSee('Vidus');   // 2 screens: a chooser, not a redirect
         $this->assertSame([21 => 'Skycop 1', 11 => 'Vidus 1'], ScheduleController::courtNames('800')); // natural name order
     }
+
+    public function test_header_shows_the_tournament_logo_when_tournated_has_one(): void
+    {
+        ScheduleSnapshot::create(['tournament_external_id' => '900', 'payload' => ['tournament' => ['name' => 'Su logo', 'logo' => 'https://ik.imagekit.io/x/logo.png'], 'matches' => []]]);
+        ScheduleSnapshot::create(['tournament_external_id' => '901', 'payload' => ['tournament' => ['name' => 'Be logo'], 'matches' => []]]);
+
+        $this->get('/tv/900')->assertOk()->assertSee('src="https://ik.imagekit.io/x/logo.png"', false);
+        $this->get('/tv/901')->assertOk()->assertDontSee('class="logo"', false)->assertSee('data:image/png;base64,', false);
+    }
 }

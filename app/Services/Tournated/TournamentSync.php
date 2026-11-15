@@ -197,6 +197,8 @@ class TournamentSync
             'courts' => array_map(fn ($c) => ['court_id' => $c['court_id'], 'name' => $c['name']], $t['courts'] ?? []),
             'categories' => array_map(fn ($c) => ['category_id' => $c['category_id'] ?? $c['id'] ?? null, 'name' => $c['category_name'] ?? $c['name'] ?? null], $t['categories'] ?? []),
             'show_oop' => $t['show_oop'] ?? null,
+            // the organiser's logo, if one was uploaded in Tournated (shown on the TV schedule)
+            'logo' => is_string($t['logo'] ?? null) && str_starts_with($t['logo'], 'https://') ? $t['logo'] : null,
         ];
     }
 
