@@ -291,10 +291,11 @@ body {
   function demo(d) {
     const n = now();
     const counts = {};
-    for (const m of d.matches) if (m.date && m.time && m.court) counts[m.date] = (counts[m.date] || 0) + 1;
+    for (const m of d.matches) if (m.date && m.time && m.court && toMin(m.time) >= 7 * 60) counts[m.date] = (counts[m.date] || 0) + 1;
     const day = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
     if (!day) return d;
-    const list = d.matches.filter(m => m.date === day && m.time && m.court);
+    // placeholder times like 00:00 would throw the whole day off
+    const list = d.matches.filter(m => m.date === day && m.time && m.court && toMin(m.time) >= 7 * 60);
     const first = Math.min(...list.map(m => toMin(m.time)));
     if (demoShift === null) demoShift = n.min - 100 - first; // fixed once, so the demo day moves on with the clock
     const hm = v => `${String(Math.floor(((v % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((v % 60) + 60) % 60).padStart(2, '0')}`;
