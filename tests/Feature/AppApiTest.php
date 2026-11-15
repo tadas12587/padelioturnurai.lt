@@ -57,6 +57,31 @@ class AppApiTest extends TestCase
         $this->getJson('/api/app/v1/tournaments/900')->assertOk()->assertJsonStructure(['matches', 'court_delays']);
     }
 
+    public function test_home_lists_every_tournament_with_schedule_id_only_when_viewable(): void
+    {
+        $this->snapshot('900');
+        $this->snapshot('902');
+        $today = now('Europe/Vilnius')->toDateString();
+        Tournament::create(['slug' => 'senas', 'tournated_id' => '900', 'status' => 'past', 'date_start' => '2026-01-10', 'location' => 'Klaipėda', 'results_text' => '1. Ana / Bea']);
+        Tournament::create(['slug' => 'vyksta', 'tournated_id' => '902', 'status' => 'active', 'date_start' => $today, 'location' => 'Vilnius']);
+        Tournament::create(['slug' => 'greitai', 'status' => 'upcoming', 'date_start' => now()->addDays(20)->toDateString(), 'location' => 'Kaunas',
+            'registration_active' => true, 'registration_url' => 'https://example.lt/reg', 'participants_count' => 28, 'cover_image' => 'tournaments/a.jpg']);
+        Tournament::create(['slug' => 'paslepta', 'tournated_id' => '903', 'show_schedule' => false, 'status' => 'upcoming', 'date_start' => now()->addDays(5)->toDateString(), 'location' => 'X']);
+
+        $list = collect($this->getJson('/api/app/v1/home')->assertOk()->json('tournaments'))->keyBy('slug');
+
+        $this->assertSame(['vyksta', 'paslepta', 'greitai', 'senas'], $list->keys()->all());
+        $this->assertSame('live', $list['vyksta']['phase']);
+        $this->assertSame('902', $list['vyksta']['scheduleId']);
+        $this->assertNull($list['paslepta']['scheduleId']);          // schedule hidden
+        $this->assertNull($list['greitai']['scheduleId']);           // no Tournated
+        $this->assertTrue($list['greitai']['registrationActive']);
+        $this->assertSame(28, $list['greitai']['participantsCount']);
+        $this->assertStringEndsWith('/storage/tournaments/a.jpg', $list['greitai']['cover']);
+        $this->assertSame('1. Ana / Bea', $list['senas']['resultsText']);
+        $this->assertFalse($list['senas']['registrationActive']);
+    }
+
     public function test_register_device_validates_and_upserts(): void
     {
         $this->snapshot();

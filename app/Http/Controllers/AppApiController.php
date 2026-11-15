@@ -9,6 +9,7 @@ use App\Models\Tournament;
 use App\Services\Push\ExpoPush;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * JSON API for the "Padelio turnyrai" app (Expo). The schedule itself is the
@@ -40,6 +41,51 @@ class AppApiController extends Controller
                 ];
             })
             ->sortBy(fn ($t) => [['live' => 0, 'upcoming' => 1, 'past' => 2][$t['phase']], $t['phase'] === 'past' ? -strtotime($t['dateStart']) : strtotime($t['dateStart'])])
+            ->values();
+
+        return response()->json(['tournaments' => $list]);
+    }
+
+    /**
+     * App home (v1.1+): every tournament we organise, like the website list —
+     * running first, then upcoming (soonest first), then past (latest first).
+     * `scheduleId` is set only when the app can open the live schedule for it.
+     */
+    public function home(): JsonResponse
+    {
+        $snapshots = ScheduleSnapshot::pluck('tournament_external_id')->flip();
+        $today = now('Europe/Vilnius')->toDateString();
+
+        $list = Tournament::with(['translations'])->withCount('photos')->get()
+            ->map(function (Tournament $t) use ($snapshots, $today) {
+                $start = $t->date_start?->toDateString();
+                $end = ($t->date_end ?? $t->date_start)?->toDateString();
+                $phase = $end && $end < $today ? 'past' : ($start && $start > $today ? 'upcoming' : 'live');
+                $tr = $t->translation('lt');
+                $hasSchedule = $t->tournated_id && $t->show_schedule && isset($snapshots[$t->tournated_id]);
+
+                return [
+                    'slug' => $t->slug,
+                    'name' => $tr?->title ?? $t->slug,
+                    'description' => $tr?->description ? trim(strip_tags($tr->description)) : null,
+                    'dateStart' => $start,
+                    'dateEnd' => $end,
+                    'location' => $t->location,
+                    'phase' => $phase,
+                    'cover' => $t->cover_image ? url(Storage::url($t->cover_image)) : null,
+                    'participantsCount' => (int) $t->participants_count,
+                    'registrationActive' => (bool) ($t->registration_active && $t->registration_url && $phase === 'upcoming'),
+                    'registrationUrl' => $t->registration_url,
+                    'resultsText' => $tr?->results_text ?: ($t->results_text ?: null),
+                    'resultsUrl' => $t->results_link ?: ($t->results_url ?: null),
+                    'galleryUrl' => $t->gallery_url,
+                    'photosCount' => (int) $t->photos_count,
+                    'url' => route('tournament.show', $t->slug),
+                    'scheduleId' => $hasSchedule ? (string) $t->tournated_id : null,
+                    'pushEnabled' => (bool) $t->push_enabled,
+                ];
+            })
+            ->sortBy(fn ($t) => [['live' => 0, 'upcoming' => 1, 'past' => 2][$t['phase']], $t['phase'] === 'past' ? -strtotime((string) $t['dateStart']) : strtotime((string) $t['dateStart'])])
             ->values();
 
         return response()->json(['tournaments' => $list]);

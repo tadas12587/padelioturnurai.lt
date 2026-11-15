@@ -60,6 +60,7 @@ Route::get('/grafikas-icon/{size}.png', [PushController::class, 'icon'])->whereN
 // "Padelio turnyrai" mobile app (Expo).
 Route::prefix('api/app/v1')->middleware('throttle:120,1')->group(function () {
     Route::get('/tournaments', [AppApiController::class, 'tournaments'])->name('app.tournaments');
+    Route::get('/home', [AppApiController::class, 'home'])->name('app.home');
     Route::get('/tournaments/{tournament}', [ScheduleController::class, 'data'])->name('app.tournament');
     Route::post('/devices', [AppApiController::class, 'registerDevice'])->middleware('throttle:20,1')->name('app.devices.store');
     Route::post('/devices/delete', [AppApiController::class, 'deleteDevice'])->middleware('throttle:20,1')->name('app.devices.delete');
