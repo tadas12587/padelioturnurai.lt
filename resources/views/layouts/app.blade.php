@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- iPhone Safari's own "Padelio turnyrai – Atidaryti/Gauti" bar --}}
+    <meta name="apple-itunes-app" content="app-id=6833871129">
     <title>@yield('title', 'Padelio Turnyrai')</title>
 
     {{-- SEO & Social Sharing (Open Graph + Twitter Cards) --}}

@@ -20,6 +20,8 @@
 <link rel="apple-touch-icon" href="{{ route('push.icon', 192) }}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Grafikas">
+{{-- iPhone Safari's own "Padelio turnyrai – Atidaryti/Gauti" bar at the top --}}
+<meta name="apple-itunes-app" content="app-id=6833871129">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
@@ -120,6 +122,49 @@
   }
   .notify-btn.on { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
   .notify-note { font-size: 0.78rem; color: var(--muted); line-height: 1.45; margin-top: 8px; }
+
+  /* ---------- iPhone: invite to the App Store app (push works there without home-screen tricks) ---------- */
+  .app-ic {
+    flex: none; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    background: rgba(217,244,90,0.12); color: var(--ball);
+  }
+  .app-ic svg { width: 20px; height: 20px; }
+  .app-get {
+    display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; border-radius: 14px;
+    background: var(--ball); color: var(--ball-ink); font-weight: 700; font-size: 1rem; text-decoration: none; border: 0; cursor: pointer;
+  }
+  .app-get svg { width: 18px; height: 18px; }
+  .app-inline { margin-top: 14px; padding: 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid rgba(217,244,90,0.3); }
+  .app-inline .h { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 0.95rem; line-height: 1.25; }
+  .app-inline p { font-size: 0.84rem; color: var(--ink-soft); line-height: 1.45; margin: 8px 0 12px; }
+  .app-inline .alt { font-size: 0.76rem; color: var(--muted); text-align: center; margin: 10px 0 0; line-height: 1.4; }
+
+  .app-dim { position: fixed; inset: 0; z-index: 40; background: rgba(3,14,16,0.55); }
+  dialog.app-sheet {
+    position: fixed; z-index: 41; inset: auto 8px calc(8px + env(safe-area-inset-bottom)) 8px; margin: 0 auto;
+    width: auto; max-width: 560px; max-height: calc(100% - 24px); overflow-y: auto; overscroll-behavior: contain;
+    padding: 18px 18px 14px; color: var(--ink); text-align: left;
+    background: linear-gradient(170deg, #16464C, var(--surface) 60%);
+    border: 1px solid rgba(217,244,90,0.35); border-radius: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+  }
+  dialog.app-sheet[open] { animation: app-sheet-in 0.32s cubic-bezier(.2,.8,.2,1); }
+  @keyframes app-sheet-in { from { transform: translateY(24px); opacity: 0; } }
+  .app-sheet .head { display: flex; gap: 12px; align-items: center; padding-right: 36px; }
+  .app-sheet .head img { width: 56px; height: 56px; border-radius: 13px; flex: none; }
+  .app-sheet h2 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 1.25rem; line-height: 1.15; text-wrap: balance; }
+  .app-sheet .sub { font-size: 0.8rem; color: var(--ink-soft); margin-top: 3px; }
+  .app-sheet .x {
+    position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer;
+    background: rgba(255,255,255,0.08); color: var(--ink-soft); display: flex; align-items: center; justify-content: center;
+  }
+  .app-sheet .x svg { width: 18px; height: 18px; }
+  .app-sheet ul { list-style: none; padding: 0; margin: 16px 0; display: flex; flex-direction: column; gap: 12px; }
+  .app-sheet li { display: flex; gap: 12px; align-items: flex-start; font-size: 0.86rem; line-height: 1.4; color: var(--ink-soft); }
+  .app-sheet li b { display: block; color: var(--ink); font-size: 0.94rem; }
+  .app-later {
+    display: block; width: 100%; min-height: 44px; margin-top: 6px; background: none; border: 0; cursor: pointer;
+    color: var(--muted); font-size: 0.88rem; font-weight: 600;
+  }
 
   .section {
     font-family: var(--display); font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase;
@@ -406,6 +451,81 @@
   </footer>
 </div>
 
+{{-- iPhone in Safari: once, a few seconds in, explain why the App Store app is handier.
+     Not shown in the home-screen web app, nor when the app itself opened this page (?app=1). --}}
+<div class="app-dim" id="app-dim" hidden></div>
+<dialog class="app-sheet" id="app-sheet" aria-labelledby="app-sheet-title">
+  <button type="button" class="x" data-app-close aria-label="Uždaryti">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </button>
+  <div class="head">
+    <img src="{{ route('push.icon', 192) }}" alt="" width="56" height="56">
+    <div><h2 id="app-sheet-title">Turnyras patogiau programėlėje</h2><div class="sub">Padelio turnyrai · nemokama</div></div>
+  </div>
+  <ul>
+    <li><span class="app-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>
+      <span><b>Pranešimas, kai tavo eilė</b>Telefonas pasakys, į kurį kortą eiti – nereikia sekti grafiko.</span></li>
+    <li><span class="app-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/></svg></span>
+      <span><b>Tavo mačai iškart</b>Pasirink save vieną kartą – matysi tik savo mačus ir laiką.</span></li>
+    <li><span class="app-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>
+      <span><b>Visi turnyrai vienoje vietoje</b>Rezultatai tiesiogiai ir artėjantys turnyrai – be nuorodų paieškos.</span></li>
+  </ul>
+  <a class="app-get" data-app-get href="https://apps.apple.com/lt/app/padelio-turnyrai/id6833871129" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Atsisiųsti iš App Store</a>
+  <button type="button" class="app-later" data-app-close>Ne dabar, žiūrėsiu naršyklėje</button>
+</dialog>
+
+<script>
+window.AppPromo = (function () {
+  var URL = 'https://apps.apple.com/lt/app/padelio-turnyrai/id6833871129';
+  var KEY = 'appPromo:until';
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  // the app opens this page with ?app=1 – remember it for the rest of that browser session
+  var fromApp = /[?&]app=1(&|$)/.test(location.search);
+  try { if (fromApp) sessionStorage.setItem('fromApp', '1'); else fromApp = sessionStorage.getItem('fromApp') === '1'; } catch (e) {}
+  var active = isIOS && !standalone && !fromApp;
+
+  function snooze(days) { try { localStorage.setItem(KEY, String(Date.now() + days * 864e5)); } catch (e) {} }
+  function snoozed() { try { return Date.now() < Number(localStorage.getItem(KEY) || 0); } catch (e) { return false; } }
+
+  var sheet = document.getElementById('app-sheet'), dim = document.getElementById('app-dim');
+  function close(days) {
+    if (sheet.open) sheet.close();
+    dim.hidden = true;
+    snooze(days);
+  }
+  if (active && !snoozed() && typeof sheet.show === 'function') {
+    setTimeout(function () {
+      if (snoozed()) return;
+      dim.hidden = false;
+      sheet.show();
+    }, 4000);
+  }
+  dim.addEventListener('click', function () { close(14); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && sheet.open) close(14); });
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-app-close]')) close(14);
+    // tapped "download": don't nag again for two months (the Safari bar switches to "Atidaryti")
+    else if (e.target.closest('[data-app-get]')) close(60);
+  });
+
+  return {
+    active: active,
+    // the "Mano" card: shown where the "notify me" button would be
+    inline: function () {
+      return '<div class="app-inline"><div class="h"><span class="app-ic">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>' +
+        '</span>Gauk pranešimą, kai tavo eilė</div>' +
+        '<p>Programėlėje „Padelio turnyrai“ telefonas pats praneš, kada ir į kurį kortą eiti. Nemokama, užtrunka minutę.</p>' +
+        '<a class="app-get" data-app-get href="' + URL + '" target="_blank" rel="noopener">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Atsisiųsti iš App Store</a>' +
+        '<p class="alt">Arba be programėlės: „Safari“ spausk Bendrinti → „Į pradžios ekraną“ ir atsidaryk grafiką iš ten.</p></div>';
+    }
+  };
+})();
+</script>
+
 <script>
 // Phone notifications ("Tavo eilė! Eik į Kortą 4"): one subscription per
 // phone, tied to the player chosen on the "Mano" tab.
@@ -434,11 +554,12 @@ window.PushUI = (function () {
 
   function render(el, who) {
     slot = el || slot; player = who || player;
-    if (!slot || !VAPID) return;
+    if (!slot) return;
+    // iPhone in Safari: the App Store app is the easy way to get "your turn" alerts
+    if (isIOS && !standalone && window.AppPromo && window.AppPromo.active) { slot.innerHTML = window.AppPromo.inline(); return; }
+    if (!VAPID) return;
     if (!supported) {
-      slot.innerHTML = isIOS && !standalone
-        ? '<p class="notify-note">🔔 Norėdamas gauti pranešimą, kai tavo eilė: „Safari“ spausk <b>Bendrinti</b> → <b>Į pradžios ekraną</b>, tada atsidaryk grafiką iš ten.</p>'
-        : '';
+      slot.innerHTML = '';
       return;
     }
     if (Notification.permission === 'denied') {
