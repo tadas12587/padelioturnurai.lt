@@ -196,7 +196,7 @@
   .court-tag { font-family: var(--display); font-weight: 700; font-size: 0.86rem; color: var(--ink); }
   .badges { display: flex; gap: 6px; flex-wrap: wrap; margin: -2px 0 8px; }
   .badge {
-    font-family: var(--display); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+    font-family: var(--display); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.02em;
     padding: 3px 9px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line);
     color: var(--ink-soft); white-space: nowrap;
   }
@@ -233,7 +233,7 @@
   .court h3 { font-family: var(--display); font-size: 1.02rem; margin: 0 0 6px; }
   .crow { display: grid; grid-template-columns: 70px 1fr; gap: 10px; padding: 7px 0; align-items: start; }
   .crow + .crow { border-top: 1px solid var(--line); }
-  .crow .k { font-family: var(--display); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; padding-top: 3px; }
+  .crow .k { font-family: var(--display); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; padding-top: 3px; }
   .crow .k.live { color: var(--ball); }
   .crow .v { font-size: 0.88rem; line-height: 1.45; min-width: 0; }
   .crow .v .tt { font-family: var(--display); font-weight: 700; font-size: 1.02rem; font-variant-numeric: tabular-nums; margin-right: 6px; }
@@ -269,7 +269,7 @@
   .standing-rank.top { color: var(--ball); }
   .standing-club { flex: 1; min-width: 0; font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .standing-stats { display: flex; gap: 10px; font-family: var(--display); font-size: 0.8rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; flex: none; }
-  .standing-stats em { font-style: normal; color: var(--muted); font-size: 0.64rem; display: block; text-align: center; }
+  .standing-stats em { font-style: normal; color: var(--muted); font-size: 0.75rem; display: block; text-align: center; }
   .standing-diff { min-width: 34px; text-align: right; }
   .standing-diff.pos { color: var(--ball); }
 
@@ -286,13 +286,14 @@
   .seg button.active { background: var(--surface-2); color: var(--ink); font-weight: 600; }
   .champ { margin: 0 0 12px; background: linear-gradient(160deg, #15444a, var(--surface)); border: 1px solid rgba(217,244,90,.35);
     border-radius: 16px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; }
-  .champ .cup { font-size: 1.5rem; }
-  .champ .l { font-size: 0.68rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ball); font-weight: 700; }
+  .champ .cup { display: inline-flex; color: var(--ball); flex-shrink: 0; }
+  .champ .cup svg { width: 26px; height: 26px; }
+  .champ .l { font-size: 0.75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ball); font-weight: 700; }
   .champ .n { font-family: var(--display); font-weight: 700; font-size: 1rem; }
   .bracket-scroll { overflow-x: auto; margin: 0 -14px; padding: 0 14px 8px; scrollbar-width: thin; scroll-behavior: smooth; }
   .bracket { display: flex; gap: 18px; width: max-content; }
   .bcol { width: 190px; flex: none; }
-  .bhead { font-size: 0.68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; height: 22px; white-space: nowrap; }
+  .bhead { font-size: 0.75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; height: 22px; white-space: nowrap; }
   .pairbox { position: relative; }
   .pairbox.joined::after { content: ""; position: absolute; right: -10px; top: 25%; bottom: 25%; width: 10px;
     border: 2px solid rgba(234,243,241,0.16); border-left: 0; border-radius: 0 6px 6px 0; }
@@ -301,7 +302,7 @@
   .bcol:not(.first) .bm::before { content: ""; position: absolute; left: -10px; top: 50%; width: 9px; border-top: 2px solid rgba(234,243,241,0.16); }
   .bm.mine { border-color: rgba(217,244,90,.55); box-shadow: 0 0 0 1px rgba(217,244,90,.15) inset; }
   .bm.live { border-color: var(--ball); }
-  .bmeta { font-size: 0.64rem; color: var(--muted); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bmeta { font-size: 0.75rem; color: var(--muted); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bs { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-size: 0.76rem; line-height: 1.5; color: var(--ink-soft); }
   .bs .bn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .bs.won { color: var(--ink); font-weight: 700; }
@@ -315,7 +316,7 @@
   .placement .bhead { height: auto; margin-bottom: 4px; }
   .gtable { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
   .gtable-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-  .gtable th { font-size: 0.64rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; text-align: center; padding: 8px 6px; }
+  .gtable th { font-size: 0.75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; text-align: center; padding: 8px 6px; }
   .gtable th:nth-child(2) { text-align: left; }
   .gtable td { padding: 8px 6px; border-top: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; font-family: var(--display); }
   .gtable td.pn { text-align: left; font-family: inherit; min-width: 140px; }
@@ -340,7 +341,7 @@
   }
   .nav-btn {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    background: none; border: none; color: var(--ink-soft); font-size: 0.68rem; font-weight: 600;
+    background: none; border: none; color: var(--ink-soft); font-size: 0.75rem; font-weight: 600;
     min-height: 52px; padding: 4px 2px; cursor: pointer; border-radius: 12px;
   }
   .nav-btn svg { width: 22px; height: 22px; }
@@ -1224,7 +1225,7 @@ window.PushUI = (function () {
     if (last.length !== 1 || !last[0].winner) return '';
     var names = last[0].sides[last[0].winner - 1];
     if (!names.length) return '';
-    return '<div class="champ"><span class="cup">🏆</span><div><div class="l">Nugalėtojai</div><div class="n">' + esc(names.join(' / ')) + '</div></div></div>';
+    return '<div class="champ"><span class="cup" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span><div><div class="l">Nugalėtojai</div><div class="n">' + esc(names.join(' / ')) + '</div></div></div>';
   }
   function groupTableHtml(g) {
     var byId = matchesById(), rows = {};
