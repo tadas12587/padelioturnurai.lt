@@ -66,7 +66,7 @@
     padding: 14px 0 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
   }
   .brand { font-family: var(--display); font-weight: 700; font-size: 0.9rem; line-height: 1.25; min-width: 0; }
-  .brand small { display: block; font-family: var(--sans); font-weight: 500; font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+  .brand small { display: block; font-family: var(--sans); font-weight: 500; font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
   .fresh { display: flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--muted); white-space: nowrap; flex: none; }
   .fresh .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ball); box-shadow: 0 0 0 3px rgba(217,244,90,0.18); }
   .fresh.stale { color: var(--warn); }
@@ -121,6 +121,19 @@
     font-weight: 600; font-size: 0.92rem;
   }
   .notify-btn.on { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
+  .ni { width: 1.1em; height: 1.1em; flex-shrink: 0; vertical-align: -0.18em; }
+  .notify-btn .ni { margin-right: 8px; }
+  .notify-note .ni { margin-right: 4px; }
+  .next .done .ni { color: var(--ball); margin-right: 8px; }
+  /* A score that changed since the last refresh glows lime once. */
+  @media (prefers-reduced-motion: no-preference) {
+    .set-scores.flash .set-cell { animation: score-flash 1.6s cubic-bezier(.16,1,.3,1); }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 160ms; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .set-scores.flash { outline: 2px solid var(--ball); outline-offset: 3px; border-radius: 6px; }
+  }
+  @keyframes score-flash { 0%, 35% { color: var(--ball-ink); background: var(--ball); } 100% { background: transparent; } }
   .notify-note { font-size: 0.78rem; color: var(--muted); line-height: 1.45; margin-top: 8px; }
 
   /* ---------- iPhone: invite to the App Store app (push works there without home-screen tricks) ---------- */
@@ -259,6 +272,7 @@
 
   /* ---------- standings ---------- */
   .division-block { margin-bottom: 26px; }
+  .legend { font-size: 0.8rem; color: var(--muted); line-height: 1.5; margin: -4px 0 22px; }
   .division-title { font-family: var(--display); font-size: 1rem; font-weight: 700; margin: 0 0 10px; }
   .standings-list { display: flex; flex-direction: column; gap: 6px; }
   .standing-row {
@@ -564,12 +578,12 @@ window.PushUI = (function () {
       return;
     }
     if (Notification.permission === 'denied') {
-      slot.innerHTML = '<p class="notify-note">🔕 Pranešimai šiai svetainei užblokuoti telefono nustatymuose.</p>';
+      slot.innerHTML = '<p class="notify-note"><svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></svg> Pranešimai šiai svetainei užblokuoti telefono nustatymuose.</p>';
       return;
     }
     var on = get() === player && Notification.permission === 'granted';
     slot.innerHTML = '<button class="notify-btn' + (on ? ' on' : '') + '" id="notify-btn"' + (busy ? ' disabled' : '') + '>' +
-      (busy ? 'Palauk…' : (on ? '🔔 Pranešimai įjungti · išjungti' : '🔔 Pranešti man, kai mano eilė')) + '</button>' +
+      (busy ? 'Palauk…' : (on ? '<svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Pranešimai įjungti · išjungti' : '<svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>Pranešti man, kai mano eilė')) + '</button>' +
       '<p class="notify-note">' + (on
         ? 'Gausi žinutę, kai bus tavo eilė eiti į kortą, ir jei pasikeis kortas, laikas ar poros.'
         : 'Žinutė ateis, kai prieš tave esantis mačas baigsis – tada laikas eiti į kortą.') + '</p>';
@@ -754,7 +768,7 @@ window.PushUI = (function () {
     if (m.division) badges += '<span class="badge division">' + esc(m.division) + '</span>';
     if (m.is_walkover) badges += '<span class="badge">Be žaidimo (W.O.)</span>';
     var cls = 'match' + (me && sideOf(m, me) ? ' mine' : '') + (isScheduled(m) ? '' : ' unsched');
-    return '<div class="' + cls + '">' +
+    return '<div class="' + cls + '" data-m="' + esc(String(m.match_id || '')) + '">' +
       '<div class="match-top">' + whenHtml(m) + '<span class="spacer"></span><span class="court-tag">' + esc(isScheduled(m) ? courtLabel(m) : 'Laikas nepaskirtas') + '</span></div>' +
       (badges ? '<div class="badges">' + badges + '</div>' : '') +
       matchRow(m, 1, me) + matchRow(m, 2, me) +
@@ -901,7 +915,7 @@ window.PushUI = (function () {
       '</div>';
     } else {
       html += '<div class="next"><div class="label">Tavo mačai</div><div class="done">' +
-        (played.length ? 'Visi tavo mačai sužaisti 🎾' : 'Mačų kol kas nėra') + '</div></div>';
+        (played.length ? '<svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Visi tavo mačai sužaisti' : 'Mačų kol kas nėra') + '</div></div>';
     }
 
     if (upcoming.length > 1) {
@@ -1096,8 +1110,10 @@ window.PushUI = (function () {
       return;
     }
     if (!state.matches.length) { box.innerHTML = '<p class="empty">Grupės pasirodys, kai bus paskelbti mačai.</p>'; return; }
-    var overall = (state.groups && state.groups[0] && state.groups[0].name) || 'Bendra';
-    var html = standingsTableHtml(overall, tallyMatches(state.matches), tiePointsByClub(state.matches));
+    // "Klubų įskaita" – not the Tournated group name ("Bendra"), which also
+    // exists as a category and made two tables with the same title.
+    var html = standingsTableHtml('Klubų įskaita', tallyMatches(state.matches), tiePointsByClub(state.matches)) +
+      '<p class="legend">tšk. – klubo taškai · laim.–pral. – laimėti ir pralaimėti mačai · setai – laimėtų ir pralaimėtų setų skirtumas</p>';
     var byDivision = {};
     state.matches.forEach(function (m) { if (m.division) (byDivision[divisionGroup(m.division)] = byDivision[divisionGroup(m.division)] || []).push(m); });
     Object.keys(byDivision).sort().forEach(function (d) { html += standingsTableHtml(d, tallyMatches(byDivision[d])); });
@@ -1364,6 +1380,16 @@ window.PushUI = (function () {
     renderHeader(); renderMano(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets();
   }
 
+  var TABS = Array.prototype.map.call(document.querySelectorAll('.nav-btn'), function (b) { return b.dataset.tab; });
+  function tabFromHash() { var t = location.hash.replace('#', ''); return TABS.indexOf(t) >= 0 ? t : 'mano'; }
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function goTab(tab) {
+    if (tab === tabFromHash()) { window.scrollTo(0, 0); return; }
+    try { var u = new URL(location.href); u.hash = tab === 'mano' ? '' : tab; history.pushState({ tab: tab }, '', u); } catch (e) {}
+    if (document.startViewTransition && !reduceMotion) document.startViewTransition(function () { switchTab(tab); });
+    else switchTab(tab);
+  }
+  window.addEventListener('popstate', function () { switchTab(tabFromHash()); });
   function switchTab(tab) {
     document.querySelectorAll('.nav-btn').forEach(function (b) {
       var on = b.dataset.tab === tab;
@@ -1374,7 +1400,19 @@ window.PushUI = (function () {
     window.scrollTo(0, 0);
     if (tab === 'lenteles') focusBracket();
   }
-  document.querySelectorAll('.nav-btn').forEach(function (btn) { btn.addEventListener('click', function () { switchTab(btn.dataset.tab); }); });
+  document.querySelectorAll('.nav-btn').forEach(function (btn) { btn.addEventListener('click', function () { goTab(btn.dataset.tab); }); });
+
+  function scoreMap(list) {
+    var map = {};
+    (list || []).forEach(function (m) { if (m.match_id) map[m.match_id] = JSON.stringify(m.sets || []) + '|' + (m.winner_side || ''); });
+    return map;
+  }
+  function flashChanged(before, after) {
+    Object.keys(after).forEach(function (id) {
+      if (!(id in before) || before[id] === after[id]) return;
+      document.querySelectorAll('[data-m="' + id + '"] .set-scores').forEach(function (el) { el.classList.add('flash'); });
+    });
+  }
 
   // Re-render only when the data really changed (no flicker every 45 s);
   // refresh at once when the phone comes back to the page.
@@ -1385,12 +1423,14 @@ window.PushUI = (function () {
       if (body === lastBody) { renderHeader(); return; }
       lastBody = body;
       var json = JSON.parse(body);
+      var before = scoreMap(state.matches);
       state.matches = json.matches || [];
       state.groups = json.groups || state.groups;
       state.draws = json.draws || state.draws;
       state.syncedAt = json.synced_at;
       var typing = document.activeElement && document.activeElement.id === 'me-search';
       if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets(); } else renderAll();
+      flashChanged(before, scoreMap(state.matches));
     }).catch(function () { state.lastFetchOk = false; renderHeader(); });
   }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refresh(); });
@@ -1398,6 +1438,7 @@ window.PushUI = (function () {
   setInterval(function () { renderHeader(); renderDabar(); }, 30000);
 
   renderAll();
+  if (tabFromHash() !== 'mano') switchTab(tabFromHash());
 })();
 </script>
 </body>

@@ -114,4 +114,14 @@ return [
     'news_read_more'        => 'Skaityti →',
     'news_empty'            => 'Naujienų dar nėra',
     'news_tournament_news'  => 'Turnyro naujienos',
+    // Home page (2026-11 redesign)
+    'home_starts_in'        => 'Iki pradžios',
+    'home_days'             => 'd.',
+    'home_hours'            => 'val.',
+    'home_minutes'          => 'min.',
+    'home_live_now'         => 'Vyksta dabar',
+    'home_coming_soon'      => 'Netrukus',
+    'home_open_schedule'    => 'Atidaryti grafiką',
+    'home_past_tournaments' => 'Įvykę turnyrai',
+    'home_sponsors'         => 'Rėmėjai',
 ];

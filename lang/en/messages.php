@@ -114,4 +114,14 @@ return [
     'news_read_more'        => 'Read more →',
     'news_empty'            => 'No news yet',
     'news_tournament_news'  => 'Tournament news',
+    // Home page (2026-11 redesign)
+    'home_starts_in'        => 'Starts in',
+    'home_days'             => 'd',
+    'home_hours'            => 'h',
+    'home_minutes'          => 'min',
+    'home_live_now'         => 'Live now',
+    'home_coming_soon'      => 'Coming soon',
+    'home_open_schedule'    => 'Open the schedule',
+    'home_past_tournaments' => 'Past tournaments',
+    'home_sponsors'         => 'Sponsors',
 ];

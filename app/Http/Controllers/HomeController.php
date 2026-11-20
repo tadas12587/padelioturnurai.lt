@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Sponsor;
 use App\Models\Stat;
 use App\Models\Tournament;
+use Illuminate\Support\Carbon;
 
 class HomeController extends Controller
 {
@@ -13,7 +14,6 @@ class HomeController extends Controller
         $stats = Stat::all();
 
         $globalSponsors = Sponsor::where('is_general', true)->where('is_active', true)->orderBy('sort_order')->get();
-        $goldSponsors = $globalSponsors->where('category', 'gold');
 
         $heroDir = rtrim(env('PUBLIC_STORAGE_PATH', public_path('storage')), '/') . '/herofoto';
         $heroPhotos = collect(glob($heroDir . '/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', GLOB_BRACE))
@@ -21,12 +21,30 @@ class HomeController extends Controller
             ->shuffle()
             ->values();
 
-        $tournaments = Tournament::with(['translations'])
-            ->orderByRaw("FIELD(status, 'active', 'upcoming', 'past')")
+        $today = Carbon::now('Europe/Vilnius')->startOfDay();
+
+        // The next tournament that hasn't finished yet (today counts), soonest first.
+        $nextTournament = Tournament::with(['translations'])
+            ->whereIn('status', ['active', 'upcoming'])
+            ->where(fn($q) => $q->whereDate('date_end', '>=', $today)
+                ->orWhere(fn($q) => $q->whereNull('date_end')->whereDate('date_start', '>=', $today)))
+            ->orderBy('date_start')
+            ->first();
+
+        $isLive = false;
+        if ($nextTournament) {
+            $start = $nextTournament->date_start->copy()->startOfDay();
+            $end = ($nextTournament->date_end ?? $nextTournament->date_start)->copy()->startOfDay();
+            $isLive = $today->betweenIncluded($start, $end);
+        }
+
+        $pastTournaments = Tournament::with(['translations'])
+            ->when($nextTournament, fn($q) => $q->where('id', '!=', $nextTournament->id))
+            ->whereDate('date_start', '<', $today)
             ->orderBy('date_start', 'desc')
-            ->limit(6)
+            ->limit(4)
             ->get();
 
-        return view('pages.home', compact('stats', 'globalSponsors', 'goldSponsors', 'tournaments', 'heroPhotos'));
+        return view('pages.home', compact('stats', 'globalSponsors', 'nextTournament', 'isLive', 'pastTournaments', 'heroPhotos'));
     }
 }

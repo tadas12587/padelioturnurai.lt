@@ -11,10 +11,44 @@
 @section('content')
 
 @php
-$featuredTournament = $tournaments->first(
-    fn($t) => $t->status === 'active' && $t->registration_active && $t->registration_url
-);
-$featuredTrans = $featuredTournament?->translation(app()->getLocale());
+$locale = app()->getLocale();
+
+// Tournament titles are often typed in ALL CAPS in the admin; show them in
+// sentence case but keep Roman numerals (III etapas) upper-case.
+$niceTitle = function (?string $title) {
+    $title = trim((string) $title);
+    if ($title === '' || $title !== mb_strtoupper($title)) return $title;
+    $s = mb_strtolower($title);
+    $s = mb_strtoupper(mb_substr($s, 0, 1)) . mb_substr($s, 1);
+    return preg_replace_callback('/\b(i{1,3}|iv|vi{0,3}|ix|x)\b/u', fn($m) => mb_strtoupper($m[0]), $s);
+};
+
+// "Lapkričio 27–28 d." / "2025 m. liepos 26–27 d." / "Nov 27–28, 2025"
+$dateRange = function ($start, $end) use ($locale) {
+    $end = $end ?? $start;
+    $showYear = $start->year !== now('Europe/Vilnius')->year;
+    if ($locale === 'en') {
+        $s = $start->format('M j');
+        $e = $start->isSameMonth($end) ? $end->format('j') : $end->format('M j');
+        $txt = $start->isSameDay($end) ? $s : $s . '–' . $e;
+        return $txt . ($showYear ? ', ' . $start->year : '');
+    }
+    $m = ['sausio', 'vasario', 'kovo', 'balandžio', 'gegužės', 'birželio', 'liepos', 'rugpjūčio', 'rugsėjo', 'spalio', 'lapkričio', 'gruodžio'];
+    $sm = $m[$start->month - 1];
+    if ($start->isSameDay($end))       $txt = "$sm {$start->day} d.";
+    elseif ($start->isSameMonth($end)) $txt = "$sm {$start->day}–{$end->day} d.";
+    else                               $txt = "$sm {$start->day} d. – " . $m[$end->month - 1] . " {$end->day} d.";
+    return $showYear ? "{$start->year} m. $txt" : mb_strtoupper(mb_substr($txt, 0, 1)) . mb_substr($txt, 1);
+};
+
+$next      = $nextTournament;
+$nextTrans = $next?->translation($locale);
+$nextTitle = $niceTitle($nextTrans?->title ?? $next?->slug);
+$hasSchedule = $next && $next->tournated_id && $next->show_schedule;
+$canRegister = $next && $next->registration_active && $next->registration_url;
+$heroImage = $heroPhotos->first() ?? ($next?->cover_image ? Storage::url($next->cover_image) : null);
+$startsAt  = $next ? \Illuminate\Support\Carbon::parse($next->date_start->format('Y-m-d') . ' 00:00', 'Europe/Vilnius') : null;
+$left      = $startsAt ? max(0, now()->diffInMinutes($startsAt, false)) : 0;
 @endphp
 
 {{-- Structured data: Organization + WebSite --}}
@@ -33,345 +67,217 @@ $featuredTrans = $featuredTournament?->translation(app()->getLocale());
             '@id'       => url('/') . '#website',
             'name'      => 'Padelio Turnyrai',
             'url'       => url('/'),
-            'inLanguage' => app()->getLocale() === 'en' ? 'en' : 'lt',
+            'inLanguage' => $locale === 'en' ? 'en' : 'lt',
             'publisher' => ['@id' => url('/') . '#organization'],
         ],
     ],
 ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}
 </script>
 
-@if($featuredTournament)
-{{-- Featured Tournament Header (same card style as /turnyrai page) --}}
-<section class="pt-24 pb-16 bg-dark">
-    <div class="max-w-6xl mx-auto px-4">
-        {{-- Label --}}
-        <div class="flex items-center gap-3 mb-6" data-aos="fade-up">
-            <span class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-gold opacity-60"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold"></span>
-            </span>
-            <span class="text-gold text-xs font-bold tracking-[0.25em] uppercase">{{ __('messages.featured_tournament') }}</span>
-            <div class="flex-1 h-px bg-gold/20"></div>
-        </div>
+@push('styles')
+<style>
+    .home-hero-img { filter: grayscale(1) brightness(.62); }
+    .home-hero-shade { background: linear-gradient(to bottom, rgba(10,10,15,.55) 0%, rgba(10,10,15,.15) 35%, rgba(10,10,15,.82) 72%, #0A0A0F 100%); }
+    .home-title { text-wrap: balance; letter-spacing: -0.02em; }
+    .tabular { font-variant-numeric: tabular-nums; }
 
-        {{-- Card --}}
-        <div class="grid md:grid-cols-2 border border-gold/50 hover:border-gold/80 transition-colors" data-aos="fade-up">
-            {{-- Cover image --}}
-            <div class="relative overflow-hidden min-h-[260px] md:min-h-[380px]">
-                @if($featuredTournament->cover_image)
-                    <img src="{{ Storage::url($featuredTournament->cover_image) }}"
-                         alt="{{ $featuredTrans?->title }}"
-                         class="absolute inset-0 w-full h-full object-cover">
-                @else
-                    <div class="absolute inset-0 bg-dark-card flex items-center justify-center">
-                        <svg class="w-20 h-20 text-gold/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                        </svg>
-                    </div>
-                @endif
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark/60"></div>
-                <div class="absolute top-4 left-4">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-bold uppercase tracking-wider">
-                        <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                        {{ __('messages.tournament_status_active') }}
-                    </span>
-                </div>
-            </div>
-
-            {{-- Info --}}
-            <div class="bg-dark-card p-8 md:p-12 flex flex-col justify-center">
-                <h2 class="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
-                    {{ $featuredTrans?->title ?? $featuredTournament->slug }}
-                </h2>
-                <div class="space-y-2 mb-6">
-                    <div class="flex items-center gap-2 text-gray-400 text-sm">
-                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        {{ $featuredTournament->date_start->format('Y-m-d') }}
-                        @if($featuredTournament->date_end) &mdash; {{ $featuredTournament->date_end->format('Y-m-d') }} @endif
-                    </div>
-                    <div class="flex items-center gap-2 text-gray-400 text-sm">
-                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        {{ $featuredTournament->location }}
-                    </div>
-                    @if($featuredTournament->participants_count > 0)
-                    <div class="flex items-center gap-2 text-gray-400 text-sm">
-                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <span class="text-gold font-bold">{{ $featuredTournament->participants_count }}</span>
-                        &nbsp;{{ __('messages.participants') }}
-                    </div>
-                    @endif
-                </div>
-                @if($featuredTrans?->description)
-                    <p class="text-gray-300 mb-8 leading-relaxed text-sm">
-                        {{ Str::limit($featuredTrans->description, 220) }}
-                    </p>
-                @endif
-                <div class="flex flex-wrap gap-3">
-                    <a href="{{ $featuredTournament->registration_url }}" target="_blank"
-                       class="px-8 py-4 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-base">
-                        {{ __('messages.register_btn') }} &rarr;
-                    </a>
-                    <a href="{{ lroute('tournament.show', ['slug' => $featuredTournament->slug]) }}"
-                       class="px-8 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-base">
-                        {{ __('messages.learn_more') }}
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-@else
-{{-- Default Hero Section (no active tournament) --}}
-<section class="relative min-h-screen flex items-center justify-center overflow-hidden">
-
-    {{-- Background photos slideshow --}}
-    @if($heroPhotos->count() > 0)
-        <div class="absolute inset-0 z-0" id="hero-slider">
-            @foreach($heroPhotos as $i => $photo)
-                <div class="hero-slide absolute inset-0 transition-opacity duration-[2000ms] ease-in-out {{ $i === 0 ? 'opacity-100' : 'opacity-0' }}">
-                    <img src="{{ $photo }}" alt=""
-                         class="w-full h-full object-cover object-center scale-105"
-                         style="transform-origin: center;">
-                </div>
-            @endforeach
-        </div>
-    @endif
-
-    {{-- Dark overlay --}}
-    <div class="absolute inset-0 z-10" style="background: linear-gradient(to bottom, rgba(10,10,15,0.65) 0%, rgba(10,10,15,0.45) 50%, rgba(10,10,15,0.85) 100%);"></div>
-
-    {{-- Decorative diagonal gold lines --}}
-    <div class="absolute inset-0 z-10 opacity-10 overflow-hidden pointer-events-none">
-        <svg class="absolute w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <line x1="0" y1="100%" x2="60%" y2="0" stroke="#C9A84C" stroke-width="1"/>
-            <line x1="30%" y1="100%" x2="90%" y2="0" stroke="#C9A84C" stroke-width="0.5"/>
-            <line x1="50%" y1="100%" x2="100%" y2="20%" stroke="#C9A84C" stroke-width="0.5"/>
-        </svg>
-    </div>
-
-    {{-- Content --}}
-    <div class="relative z-20 text-center px-4 max-w-5xl mx-auto" id="hero-content">
-        <div class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-4">Lietuva &middot; Padelis &middot; Turnyrai</div>
-        <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none drop-shadow-2xl">
-            PADELIO<br><span class="text-gold">TURNYRAI</span>
-        </h1>
-        <p class="text-xl md:text-2xl text-gray-300 mb-10 font-light drop-shadow-lg">{{ __('messages.hero_tagline') }}</p>
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ lroute('tournaments') }}" class="px-8 py-4 bg-gold text-dark font-bold rounded-none hover:bg-gold-light transition-colors text-lg">
-                {{ __('messages.all_tournaments') }}
-            </a>
-            <a href="{{ lroute('contact') }}" class="px-8 py-4 border border-gold text-gold font-bold rounded-none hover:bg-gold hover:text-dark transition-colors text-lg">
-                {{ __('messages.nav_contact') }}
-            </a>
-        </div>
-    </div>
-
-    {{-- Scroll indicator --}}
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 cursor-pointer" onclick="document.getElementById('stats-section').scrollIntoView({behavior:'smooth'})">
-        <div class="flex flex-col items-center gap-1 text-gold opacity-70 hover:opacity-100 transition-opacity">
-            <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
-            </svg>
-            <svg class="w-5 h-5 animate-bounce" style="animation-delay:0.15s" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"/>
-            </svg>
-        </div>
-    </div>
-</section>
-
-@push('scripts')
-<script>
-(function() {
-    const slides = document.querySelectorAll('.hero-slide');
-    if (slides.length < 2) return;
-    let current = 0;
-    setInterval(() => {
-        slides[current].classList.remove('opacity-100');
-        slides[current].classList.add('opacity-0');
-        current = (current + 1) % slides.length;
-        slides[current].classList.remove('opacity-0');
-        slides[current].classList.add('opacity-100');
-    }, 5000);
-})();
-</script>
+    /* The page's one authored moment: the hero copy settles in once. */
+    @media (prefers-reduced-motion: no-preference) {
+        .hero-in > * {
+            animation: hero-in 700ms cubic-bezier(.16, 1, .3, 1) backwards;
+            animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+        }
+        .live-dot::after { animation: live-ring 1.6s ease-out 3; }
+    }
+    @keyframes hero-in { from { opacity: 0; translate: 0 14px; } }
+    .live-dot { position: relative; }
+    .live-dot::after { content: ""; position: absolute; inset: 0; border-radius: 9999px; background: currentColor; opacity: 0; }
+    @keyframes live-ring { from { opacity: .55; scale: 1; } to { opacity: 0; scale: 2.6; } }
+</style>
 @endpush
-@endif
 
-{{-- Stats Section --}}
-<section id="stats-section" class="py-24 bg-dark-card border-y border-dark-border">
-    <div class="max-w-6xl mx-auto px-4">
-        <h2 class="text-center text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-16">{{ __('messages.stats_section_title') }}</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-            @foreach($stats as $stat)
-            <div class="text-center" data-aos="fade-up" data-aos-delay="{{ $loop->index * 100 }}">
-                <div class="text-6xl md:text-7xl font-black text-white mb-3" data-target="{{ $stat->display_value }}">0</div>
-                <div class="text-gold text-sm font-semibold tracking-widest uppercase">
-                    {{ app()->getLocale() === 'en' ? $stat->label_en : $stat->label_lt }}
+{{-- ===================== HERO ===================== --}}
+<section class="relative isolate overflow-hidden min-h-[640px] md:min-h-[88vh] flex items-end">
+    @if($heroImage)
+        <img src="{{ $heroImage }}" alt="" fetchpriority="high"
+             class="home-hero-img absolute inset-0 -z-20 w-full h-full object-cover object-center">
+    @endif
+    <div class="home-hero-shade absolute inset-0 -z-10"></div>
+
+    <div class="w-full max-w-6xl mx-auto px-4 pt-32 pb-12 md:pb-20">
+        @if($next)
+            <div class="hero-in max-w-3xl">
+                <h1 class="home-title text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.05] mb-5" style="--i:0">
+                    {{ $nextTitle }}
+                </h1>
+
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-gray-200 text-base mb-7" style="--i:1">
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="w-[18px] h-[18px] text-gold" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                        {{ $dateRange($next->date_start, $next->date_end) }}
+                    </span>
+                    @if($next->location)
+                    <span class="inline-flex items-center gap-2">
+                        <svg class="w-[18px] h-[18px] text-gold" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                        {{ $next->location }}
+                    </span>
+                    @endif
+                    @if($isLive)
+                        <span class="inline-flex items-center gap-2 px-3 py-1 border border-gold/60 text-gold text-sm font-bold">
+                            <span class="live-dot w-2 h-2 rounded-full bg-gold text-gold"></span>{{ __('messages.home_live_now') }}
+                        </span>
+                    @elseif($canRegister)
+                        <span class="px-3 py-1 border border-gold/60 text-gold text-sm font-bold">{{ __('messages.tournament_status_active') }}</span>
+                    @endif
                 </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-</section>
 
-{{-- Gold Sponsors Block (after stats) --}}
-@if($goldSponsors->count() > 0)
-<section class="py-16 bg-dark border-b border-dark-border">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="flex flex-wrap justify-center items-center gap-10 md:gap-20" data-aos="fade-up">
-            @foreach($goldSponsors as $sponsor)
-                <a href="{{ $sponsor->url ?: '#' }}" target="{{ $sponsor->url ? '_blank' : '_self' }}"
-                   class="opacity-70 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0">
-                    <img src="{{ Storage::url($sponsor->logo) }}" alt="{{ $sponsor->name }}"
-                         class="h-14 md:h-20 w-auto object-contain max-w-[200px]">
-                </a>
-            @endforeach
-        </div>
-    </div>
-</section>
-@endif
-
-{{-- Tournaments Section --}}
-@if($tournaments->count() > 0)
-<section class="py-24 bg-dark">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-16 text-center" data-aos="fade-up">
-            {{ __('messages.featured_tournament') }}
-        </div>
-        <div class="space-y-8">
-            @foreach($tournaments as $tournament)
-            @php $trans = $tournament->translation(app()->getLocale()); @endphp
-            <div class="grid md:grid-cols-2 gap-0 items-center" data-aos="fade-up" data-aos-delay="{{ $loop->index * 80 }}">
-                @if($loop->even)
-                {{-- Image left --}}
-                <div class="relative overflow-hidden aspect-[4/3]">
-                    @if($tournament->cover_image)
-                        <img src="{{ Storage::url($tournament->cover_image) }}" alt="" class="w-full h-full object-cover">
-                    @else
-                        <div class="w-full h-full bg-dark-card flex items-center justify-center min-h-[240px]">
-                            <svg class="w-16 h-16 text-gold opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
+                @unless($isLive)
+                <div class="mb-8" style="--i:2">
+                    <p class="text-gray-300 text-sm mb-2">{{ __('messages.home_starts_in') }}</p>
+                    <div class="flex gap-2" data-countdown="{{ $startsAt->toIso8601String() }}">
+                        @foreach(['d' => [intdiv($left, 1440), 'home_days'], 'h' => [intdiv($left % 1440, 60), 'home_hours'], 'm' => [$left % 60, 'home_minutes']] as $unit => [$val, $label])
+                        <div class="w-[72px] py-2 text-center border border-gold/40 bg-dark/50">
+                            <b class="tabular block text-2xl font-black text-white" data-unit="{{ $unit }}">{{ str_pad($val, 2, '0', STR_PAD_LEFT) }}</b>
+                            <span class="text-xs text-gray-400">{{ __('messages.' . $label) }}</span>
                         </div>
-                    @endif
-                    <div class="absolute inset-0 bg-gradient-to-r from-transparent to-dark/40"></div>
-                </div>
-                <div class="bg-dark-card p-10 md:p-12 border border-dark-border">
-                @else
-                {{-- Text left --}}
-                <div class="bg-dark-card p-10 md:p-12 border border-dark-border order-2 md:order-1">
-                @endif
-                    <div class="text-gold text-xs tracking-widest uppercase mb-4">
-                        @if($tournament->status === 'active') {{ __('messages.tournament_status_active') }}
-                        @elseif($tournament->status === 'upcoming') {{ __('messages.tournament_status_upcoming') }}
-                        @else {{ __('messages.tournament_status_past') }}
-                        @endif
-                    </div>
-                    <h2 class="text-2xl md:text-3xl font-black text-white mb-4">{{ $trans?->title ?? $tournament->slug }}</h2>
-                    <div class="text-gray-400 mb-2 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        {{ $tournament->date_start->format('Y-m-d') }}
-                        @if($tournament->date_end) &mdash; {{ $tournament->date_end->format('Y-m-d') }} @endif
-                    </div>
-                    <div class="text-gray-400 mb-6 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-gold flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        {{ $tournament->location }}
-                    </div>
-                    @if($trans?->description)
-                        <p class="text-gray-300 mb-6 leading-relaxed">{{ Str::limit($trans->description, 160) }}</p>
-                    @endif
-                    <div class="flex gap-4 flex-wrap items-center">
-                        @if($tournament->registration_active && $tournament->registration_url)
-                            <a href="{{ $tournament->registration_url }}" target="_blank" class="px-6 py-3 bg-gold text-dark font-bold hover:bg-gold-light transition-colors">
-                                {{ __('messages.register_btn') }}
-                            </a>
-                        @endif
-                        <a href="{{ lroute('tournament.show', ['slug' => $tournament->slug]) }}" class="px-6 py-3 border border-gold text-gold hover:bg-gold hover:text-dark transition-colors font-semibold">
-                            {{ __('messages.learn_more') }}
-                        </a>
-                        @if($tournament->notify_enabled && $tournament->status === 'upcoming' && !$tournament->registration_active)
-                            @include('partials.notify-btn', [
-                                'tournamentId'   => $tournament->id,
-                                'tournamentName' => $trans?->title ?? $tournament->slug,
-                                'compact'        => false,
-                            ])
-                        @endif
-                    </div>
-                </div>
-                @if($loop->odd)
-                <div class="relative overflow-hidden aspect-[4/3] order-1 md:order-2">
-                    @if($tournament->cover_image)
-                        <img src="{{ Storage::url($tournament->cover_image) }}" alt="" class="w-full h-full object-cover">
-                    @else
-                        <div class="w-full h-full bg-dark-card flex items-center justify-center min-h-[240px]">
-                            <svg class="w-16 h-16 text-gold opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                            </svg>
-                        </div>
-                    @endif
-                    <div class="absolute inset-0 bg-gradient-to-l from-transparent to-dark/40"></div>
-                </div>
-                @endif
-            </div>
-            @endforeach
-        </div>
-
-        {{-- All Tournaments Button --}}
-        <div class="text-center mt-16" data-aos="fade-up">
-            <a href="{{ lroute('tournaments') }}" class="px-10 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-lg tracking-widest uppercase">
-                {{ __('messages.all_tournaments') }}
-            </a>
-        </div>
-    </div>
-</section>
-@endif
-
-{{-- Global Sponsors Section --}}
-@if($globalSponsors->count() > 0)
-<section class="py-24 bg-dark-card border-t border-dark-border">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="text-center mb-16" data-aos="fade-up">
-            <div class="text-gold text-sm font-semibold tracking-[0.3em] uppercase mb-3">{{ __('messages.sponsors_section_title') }}</div>
-            <p class="text-gray-500">{{ __('messages.sponsors_section_subtitle') }}</p>
-        </div>
-
-        @php
-            $grouped = $globalSponsors->groupBy('category');
-            $order = ['gold', 'silver', 'bronze', 'general'];
-            $categoryLabels = [
-                'gold' => 'Auksiniai r&#279;m&#279;jai',
-                'silver' => 'Sidabriniai r&#279;m&#279;jai',
-                'bronze' => 'Bronziniai r&#279;m&#279;jai',
-            ];
-        @endphp
-
-        @foreach($order as $cat)
-            @if(isset($grouped[$cat]) && $grouped[$cat]->count() > 0)
-                <div class="mb-10" data-aos="fade-up">
-                    <div class="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-                        @foreach($grouped[$cat] as $sponsor)
-                            <a href="{{ $sponsor->url ?: '#' }}" target="{{ $sponsor->url ? '_blank' : '_self' }}"
-                               class="opacity-60 hover:opacity-100 transition-opacity duration-300 grayscale hover:grayscale-0">
-                                <img src="{{ Storage::url($sponsor->logo) }}" alt="{{ $sponsor->name }}"
-                                     class="h-12 md:h-16 w-auto object-contain max-w-[160px]">
-                            </a>
                         @endforeach
                     </div>
-                    @if(!$loop->last)
-                        <div class="border-t border-dark-border mt-10"></div>
+                </div>
+                @endunless
+
+                <div class="flex flex-col sm:flex-row gap-3" style="--i:3">
+                    @if($isLive && $hasSchedule)
+                        <a href="{{ route('schedule.show', $next->tournated_id) }}"
+                           class="px-8 py-4 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-center text-base">
+                            {{ __('messages.home_open_schedule') }} &rarr;
+                        </a>
+                    @elseif($canRegister)
+                        <a href="{{ $next->registration_url }}" target="_blank" rel="noopener"
+                           class="px-8 py-4 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-center text-base">
+                            {{ __('messages.register_btn') }} &rarr;
+                        </a>
+                    @endif
+                    <a href="{{ lroute('tournament.show', ['slug' => $next->slug]) }}"
+                       class="px-8 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-center text-base">
+                        {{ __('messages.learn_more') }}
+                    </a>
+                    @if(!$canRegister && !$isLive && $next->notify_enabled)
+                        @include('partials.notify-btn', ['tournamentId' => $next->id, 'tournamentName' => $nextTitle, 'compact' => false])
                     @endif
                 </div>
+            </div>
+        @else
+            <div class="hero-in max-w-3xl">
+                <h1 class="home-title text-5xl md:text-7xl font-black text-white leading-none mb-5" style="--i:0">
+                    Padelio <span class="text-gold">turnyrai</span>
+                </h1>
+                <p class="text-xl md:text-2xl text-gray-200 mb-8" style="--i:1">{{ __('messages.hero_tagline') }}</p>
+                <div class="flex flex-col sm:flex-row gap-3" style="--i:2">
+                    <a href="{{ lroute('tournaments') }}" class="px-8 py-4 bg-gold text-dark font-bold hover:bg-gold-light transition-colors text-center">{{ __('messages.all_tournaments') }}</a>
+                    <a href="{{ lroute('contact') }}" class="px-8 py-4 border border-gold text-gold font-bold hover:bg-gold hover:text-dark transition-colors text-center">{{ __('messages.nav_contact') }}</a>
+                </div>
+            </div>
+        @endif
+    </div>
+</section>
+
+{{-- ===================== STATS ===================== --}}
+@if($stats->count() > 0)
+<section class="bg-dark border-t border-dark-border">
+    <h2 class="sr-only">{{ __('messages.stats_section_title') }}</h2>
+    <dl class="max-w-6xl mx-auto px-4 py-10 grid grid-cols-3 gap-4">
+        @foreach($stats as $stat)
+        <div>
+            <dd class="tabular text-3xl md:text-5xl font-black text-white">{{ number_format($stat->display_value, 0, ',', ' ') }}</dd>
+            <dt class="text-sm text-gray-400 mt-1">{{ $locale === 'en' ? $stat->label_en : $stat->label_lt }}</dt>
+        </div>
+        @endforeach
+    </dl>
+</section>
+@endif
+
+{{-- ===================== PAST TOURNAMENTS ===================== --}}
+@if($pastTournaments->count() > 0)
+<section class="bg-dark border-t border-dark-border">
+    <div class="max-w-6xl mx-auto px-4 py-14 md:py-20">
+        <div class="flex items-baseline justify-between gap-4 mb-6">
+            <h2 class="text-2xl md:text-3xl font-black text-white">{{ __('messages.home_past_tournaments') }}</h2>
+            <a href="{{ lroute('tournaments') }}" class="text-gold font-semibold hover:text-gold-light transition-colors whitespace-nowrap">{{ __('messages.all_tournaments') }} &rarr;</a>
+        </div>
+        <ul class="grid md:grid-cols-2 gap-x-10">
+            @foreach($pastTournaments as $t)
+            @php $tTitle = $niceTitle($t->translation($locale)?->title ?? $t->slug); @endphp
+            <li class="border-b border-dark-border">
+                <a href="{{ lroute('tournament.show', ['slug' => $t->slug]) }}" class="group flex items-center gap-4 py-4">
+                    @if($t->cover_image)
+                        <img src="{{ Storage::url($t->cover_image) }}" alt="" loading="lazy" width="96" height="72"
+                             class="w-24 h-[72px] object-cover flex-shrink-0">
+                    @else
+                        <span class="w-24 h-[72px] flex-shrink-0 bg-dark-card border border-dark-border"></span>
+                    @endif
+                    <span class="min-w-0">
+                        <span class="block font-bold text-white group-hover:text-gold transition-colors leading-snug">{{ $tTitle }}</span>
+                        <span class="block text-sm text-gray-400 mt-1">{{ $dateRange($t->date_start, $t->date_end) }}@if($t->location) · {{ $t->location }}@endif</span>
+                    </span>
+                </a>
+            </li>
+            @endforeach
+        </ul>
+    </div>
+</section>
+@endif
+
+{{-- ===================== SPONSORS (full colour, once) ===================== --}}
+@if($globalSponsors->count() > 0)
+@php
+    $tiers = $globalSponsors->sortBy(fn($s) => ['gold' => 0, 'silver' => 1, 'bronze' => 2][$s->category] ?? 3)->groupBy(fn($s) => $s->category === 'gold' ? 'top' : 'rest');
+@endphp
+<section class="bg-dark-card border-t border-dark-border">
+    <div class="max-w-6xl mx-auto px-4 py-14 md:py-20">
+        <h2 class="text-2xl md:text-3xl font-black text-white mb-2">{{ __('messages.home_sponsors') }}</h2>
+        <p class="text-gray-400 mb-8">{{ __('messages.sponsors_section_subtitle') }}</p>
+        @foreach(['top' => 'grid-cols-2 md:grid-cols-4 mb-3', 'rest' => 'grid-cols-3 md:grid-cols-6'] as $tier => $cols)
+            @if(isset($tiers[$tier]))
+            <ul class="grid {{ $cols }} gap-3">
+                @foreach($tiers[$tier] as $sponsor)
+                <li>
+                    @php $tag = $sponsor->url ? 'a' : 'div'; @endphp
+                    <{{ $tag }} @if($sponsor->url) href="{{ $sponsor->url }}" target="_blank" rel="noopener" @endif
+                        class="flex items-center justify-center {{ $tier === 'top' ? 'h-24 md:h-28 p-5' : 'h-16 md:h-20 p-3' }} bg-dark border border-dark-border {{ $sponsor->url ? 'hover:border-gold/60 transition-colors' : '' }}">
+                        <img src="{{ Storage::url($sponsor->logo) }}" alt="{{ $sponsor->name }}" loading="lazy"
+                             class="max-h-full max-w-full w-auto object-contain">
+                    </{{ $tag }}>
+                </li>
+                @endforeach
+            </ul>
             @endif
         @endforeach
     </div>
 </section>
+@endif
+
+@if($next && !$isLive)
+@push('scripts')
+<script>
+// Countdown: the server already rendered the right numbers; this only keeps
+// them ticking once a minute (no seconds, so nothing on the page flickers).
+(function () {
+    var box = document.querySelector('[data-countdown]');
+    if (!box) return;
+    var target = new Date(box.dataset.countdown).getTime();
+    var cells = { d: box.querySelector('[data-unit="d"]'), h: box.querySelector('[data-unit="h"]'), m: box.querySelector('[data-unit="m"]') };
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+        var mins = Math.max(0, Math.floor((target - Date.now()) / 60000));
+        cells.d.textContent = pad(Math.floor(mins / 1440));
+        cells.h.textContent = pad(Math.floor(mins % 1440 / 60));
+        cells.m.textContent = pad(mins % 60);
+    }
+    tick();
+    setInterval(tick, 30000);
+})();
+</script>
+@endpush
 @endif
 
 @endsection
