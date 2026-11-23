@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Padelio Turnyrai - ' . __('messages.nav_home'))
+@section('title', __('messages.home_seo_title'))
 
 @section('og_title', 'Padelio Turnyrai — Oficialus Lietuvos Padelio Turnyrai')
 @section('og_description', 'Lietuvos padelio turnyrai – registracija, tvarkaraštis, rezultatai, reitingai ir naujienos viename puslapyje. Tapkite dalimi!')
@@ -13,15 +13,7 @@
 @php
 $locale = app()->getLocale();
 
-// Tournament titles are often typed in ALL CAPS in the admin; show them in
-// sentence case but keep Roman numerals (III etapas) upper-case.
-$niceTitle = function (?string $title) {
-    $title = trim((string) $title);
-    if ($title === '' || $title !== mb_strtoupper($title)) return $title;
-    $s = mb_strtolower($title);
-    $s = mb_strtoupper(mb_substr($s, 0, 1)) . mb_substr($s, 1);
-    return preg_replace_callback('/\b(i{1,3}|iv|vi{0,3}|ix|x)\b/u', fn($m) => mb_strtoupper($m[0]), $s);
-};
+$niceTitle = fn (?string $t) => nice_title($t);
 
 // "Lapkričio 27–28 d." / "2025 m. liepos 26–27 d." / "Nov 27–28, 2025"
 $dateRange = function ($start, $end) use ($locale) {
@@ -106,10 +98,11 @@ $left      = $startsAt ? max(0, now()->diffInMinutes($startsAt, false)) : 0;
 
     <div class="w-full max-w-6xl mx-auto px-4 pt-32 pb-12 md:pb-20">
         @if($next)
+            <h1 class="sr-only">{{ __('messages.home_seo_h1') }}</h1>
             <div class="hero-in max-w-3xl">
-                <h1 class="home-title text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.05] mb-5" style="--i:0">
+                <h2 class="home-title text-4xl sm:text-5xl md:text-6xl font-black text-white leading-[1.05] mb-5" style="--i:0">
                     {{ $nextTitle }}
-                </h1>
+                </h2>
 
                 <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-gray-200 text-base mb-7" style="--i:1">
                     <span class="inline-flex items-center gap-2">

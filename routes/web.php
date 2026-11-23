@@ -18,6 +18,7 @@ Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 
 
 // Sitemap for search engines
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
 
 // Which tournaments the push bridge should fetch (token-protected). Must be
 // declared before the /overlay/{overlay} wildcard so it isn't treated as a token.

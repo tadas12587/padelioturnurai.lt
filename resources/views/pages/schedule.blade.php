@@ -14,7 +14,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Grafikas · {{ $tName }}</title>
+<title>{{ $tName }} – grafikas ir rezultatai</title>
+@php
+  $seoDesc = $tName . ' – mačų grafikas, rezultatai' . ($hasGroupsTab ? ', grupės' : '') . ($hasDraws ? ', tinkleliai' : '') . ' gyvai'
+    . ($stats['courts'] ? ' · ' . $stats['courts'] . ' kortai' : '') . ($stats['matches'] ? ' · ' . $stats['matches'] . ' mačai' : '') . '.';
+@endphp
+<meta name="description" content="{{ $seoDesc }}">
+<link rel="canonical" href="{{ route('schedule.show', $tournamentId) }}">
+<meta property="og:title" content="{{ $tName }} – grafikas ir rezultatai">
+<meta property="og:description" content="{{ $seoDesc }}">
+<meta property="og:url" content="{{ route('schedule.show', $tournamentId) }}">
+<meta property="og:type" content="website">
 <meta name="theme-color" content="#0A2226">
 <link rel="manifest" href="{{ route('push.manifest', $tournamentId) }}">
 <link rel="apple-touch-icon" href="{{ route('push.icon', 192) }}">
@@ -65,7 +75,7 @@
   header.top {
     padding: 14px 0 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
   }
-  .brand { font-family: var(--display); font-weight: 700; font-size: 0.9rem; line-height: 1.25; min-width: 0; }
+  .brand { font-family: var(--display); font-weight: 700; font-size: 0.9rem; line-height: 1.25; min-width: 0; margin: 0; }
   .brand small { display: block; font-family: var(--sans); font-weight: 500; font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
   .fresh { display: flex; align-items: center; gap: 6px; font-size: 0.74rem; color: var(--muted); white-space: nowrap; flex: none; }
   .fresh .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ball); box-shadow: 0 0 0 3px rgba(217,244,90,0.18); }
@@ -378,10 +388,29 @@
 </style>
 </head>
 <body>
+<noscript>
+  <section class="noscript-summary" style="padding:16px">
+    <h2>{{ $tName }} – mačai ir rezultatai</h2>
+    <p>{{ $seoDesc }}</p>
+    @if($divisionList->isNotEmpty())<p>Kategorijos: {{ $divisionList->implode(', ') }}.</p>@endif
+    @if($hasClubs)
+    <ul>
+      @foreach($matches as $m)
+        @php
+          $score = collect($m['sets'] ?? [])->map(fn ($x) => ($x['side1'] ?? 0) . '-' . ($x['side2'] ?? 0))->implode(' ');
+        @endphp
+        @if(!empty($m['team1']['title']) && !empty($m['team2']['title']))
+        <li>{{ trim(($m['date'] ?? '') . ' ' . ($m['time'] ?? '')) }} {{ $m['court']['name'] ?? '' }} · {{ $m['division'] ?? '' }} · {{ $m['team1']['title'] }} – {{ $m['team2']['title'] }}{{ $score ? ' · ' . $score : '' }}</li>
+        @endif
+      @endforeach
+    </ul>
+    @endif
+  </section>
+</noscript>
 <div class="wrap">
 
   <header class="top">
-    <div class="brand">{{ $tName }}<small id="tour-date"></small></div>
+    <h1 class="brand">{{ $tName }}<small id="tour-date"></small></h1>
     <div class="fresh" id="fresh" role="status"><span class="dot"></span><span id="fresh-text"></span></div>
   </header>
 

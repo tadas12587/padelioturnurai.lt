@@ -48,7 +48,9 @@ class NewsResource extends Resource
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->maxLength(255)
-                            ->helperText('Slug bus naudojamas URL, pvz.: vilnius-open-2025-naujienos'),
+                            // Tarpai ir lietuviškos raidės URL'e kenkia SEO – paverčiam į "p9-klinika-tampa-remeju".
+                            ->dehydrateStateUsing(fn (?string $state) => \Illuminate\Support\Str::slug((string) $state))
+                            ->helperText('Slug bus naudojamas URL, pvz.: vilnius-open-2025-naujienos. Tarpai ir lietuviškos raidės pakeičiami automatiškai.'),
 
                         Select::make('status')
                             ->label('Statusas')

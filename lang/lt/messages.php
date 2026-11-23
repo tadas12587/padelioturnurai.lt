@@ -124,4 +124,6 @@ return [
     'home_open_schedule'    => 'Atidaryti grafiką',
     'home_past_tournaments' => 'Įvykę turnyrai',
     'home_sponsors'         => 'Rėmėjai',
+    'home_seo_title'        => 'Padelio turnyrai Lietuvoje – registracija, grafikai ir rezultatai',
+    'home_seo_h1'           => 'Padelio turnyrai Lietuvoje',
 ];

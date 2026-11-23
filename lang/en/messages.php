@@ -124,4 +124,6 @@ return [
     'home_open_schedule'    => 'Open the schedule',
     'home_past_tournaments' => 'Past tournaments',
     'home_sponsors'         => 'Sponsors',
+    'home_seo_title'        => 'Padel tournaments in Lithuania – registration, schedules and results',
+    'home_seo_h1'           => 'Padel tournaments in Lithuania',
 ];

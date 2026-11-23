@@ -74,26 +74,9 @@
     {{-- Google Fonts --}}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-    {{-- Tailwind Play CDN --}}
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    dark: '#0A0A0F',
-                    'dark-card': '#111118',
-                    'dark-border': '#1E1E2E',
-                    gold: '#C9A84C',
-                    'gold-light': '#E5C76B',
-                },
-                fontFamily: {
-                    sans: ['Inter', 'system-ui', 'sans-serif'],
-                }
-            }
-        }
-    }
-    </script>
+    {{-- Tailwind, pre-built (resources/site-css/tailwind.site.config.cjs) --}}
+    <link rel="stylesheet" href="{{ asset('css/site.css') }}?v={{ @filemtime(public_path('css/site.css')) ?: '1' }}">
+    <style>[x-cloak] { display: none !important; }</style>
 
     {{-- AOS CSS --}}
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -285,7 +268,7 @@
     {{-- Scripts --}}
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/glightbox/dist/js/glightbox.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
 
     <script>
         // AOS init — off for people who asked their phone for less motion

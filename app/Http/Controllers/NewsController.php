@@ -32,7 +32,18 @@ class NewsController extends Controller
         $news = News::with(['translations', 'tournament.translations'])
             ->published()
             ->where('slug', $slug)
-            ->firstOrFail();
+            ->first();
+
+        // Old links like "/naujienos/P9 klinika tampa remeju" keep working after
+        // the slug is tidied to "p9-klinika-tampa-remeju": 301 to the new address.
+        if (! $news) {
+            $wanted = \Illuminate\Support\Str::slug($slug);
+            $match = News::published()->get(['id', 'slug'])
+                ->first(fn ($n) => \Illuminate\Support\Str::slug($n->slug) === $wanted);
+            abort_unless($match, 404);
+
+            return redirect(lroute('news.show', ['slug' => $match->slug]), 301);
+        }
 
         $related = News::with(['translations'])
             ->published()

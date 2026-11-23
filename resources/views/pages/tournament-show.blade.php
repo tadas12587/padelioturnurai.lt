@@ -2,7 +2,7 @@
 
 @php
     $trans = $tournament->translation(app()->getLocale());
-    $title = $trans?->title ?? $tournament->slug;
+    $title = nice_title($trans?->title ?? $tournament->slug);
 @endphp
 
 @section('title', $title . ' - Padelio Turnyrai')
