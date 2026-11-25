@@ -658,6 +658,8 @@ window.PushUI = (function () {
     matches: @json(array_values($matches)),
     groups: @json(array_values($groups)),
     draws: @json(array_values($draws)),
+    // club-vs-club rosters: who plays for which club before pairs are published
+    ties: @json(array_values($ties ?? [])),
     syncedAt: @json($syncedAt),
     lastFetchOk: true
   };
@@ -841,6 +843,16 @@ window.PushUI = (function () {
         });
       });
     });
+    // Players whose club hasn't published its pairs yet are only on the roster.
+    (state.ties || []).forEach(function (t) {
+      [1, 2].forEach(function (side) {
+        var team = side === 1 ? t.team1 : t.team2;
+        pairNames(t.players, side).forEach(function (name) {
+          var key = fold(name);
+          if (!map[key]) map[key] = { name: name, club: (team && team.title) || '', division: '', rosterOnly: true };
+        });
+      });
+    });
     return Object.keys(map).map(function (k) { return map[k]; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'lt'); });
   }
   function matcher(query) {
@@ -944,7 +956,9 @@ window.PushUI = (function () {
       '</div>';
     } else {
       html += '<div class="next"><div class="label">Tavo mačai</div><div class="done">' +
-        (played.length ? '<svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Visi tavo mačai sužaisti' : 'Mačų kol kas nėra') + '</div></div>';
+        (played.length ? '<svg class="ni" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Visi tavo mačai sužaisti' : 'Mačų kol kas nėra') + '</div>' +
+        (!mine.length && info.rosterOnly ? '<p class="search-hint" style="margin:8px 0 0">' + (info.club ? esc(info.club) + ' dar' : 'Tavo klubas dar') +
+          ' nepaskelbė porų. Kai jos atsiras Tournated, čia matysi savo mačus, laiką ir kortą.</p>' : '') + '</div>';
     }
 
     if (upcoming.length > 1) {
@@ -1070,7 +1084,8 @@ window.PushUI = (function () {
         (active ? ' style="--chip-c:' + clubColor(c) + '"' : '') + '>' + clubBadge(c, 26) + esc(c) + '</button>';
     }).join('');
     var list = state.matches.filter(function (m) { return (m.team1 && m.team1.title === activeClub) || (m.team2 && m.team2.title === activeClub); });
-    document.getElementById('club-results').innerHTML = gridHtml(list, me) || '<p class="empty">Mačų nerasta.</p>';
+    document.getElementById('club-results').innerHTML = gridHtml(list, me) ||
+      '<p class="empty">' + (state.ties && state.ties.length ? 'Klubas dar nepaskelbė porų.' : 'Mačų nerasta.') + '</p>';
   }
   if (HAS_CLUBS) document.getElementById('club-chips').addEventListener('click', function (e) {
     var btn = e.target.closest('.club-chip');
@@ -1141,7 +1156,14 @@ window.PushUI = (function () {
     if (!state.matches.length) { box.innerHTML = '<p class="empty">Grupės pasirodys, kai bus paskelbti mačai.</p>'; return; }
     // "Klubų įskaita" – not the Tournated group name ("Bendra"), which also
     // exists as a category and made two tables with the same title.
-    var html = standingsTableHtml('Klubų įskaita', tallyMatches(state.matches), tiePointsByClub(state.matches)) +
+    // Clubs that haven't published pairs yet still belong in the table (0 points).
+    var clubTally = tallyMatches(state.matches);
+    (state.ties || []).forEach(function (t) {
+      [t.team1, t.team2].forEach(function (team) {
+        if (team && team.title && !clubTally[team.title]) clubTally[team.title] = { played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0 };
+      });
+    });
+    var html = standingsTableHtml('Klubų įskaita', clubTally, tiePointsByClub(state.matches)) +
       '<p class="legend">tšk. – klubo taškai · laim.–pral. – laimėti ir pralaimėti mačai · setai – laimėtų ir pralaimėtų setų skirtumas</p>';
     var byDivision = {};
     state.matches.forEach(function (m) { if (m.division) (byDivision[divisionGroup(m.division)] = byDivision[divisionGroup(m.division)] || []).push(m); });
@@ -1456,6 +1478,7 @@ window.PushUI = (function () {
       state.matches = json.matches || [];
       state.groups = json.groups || state.groups;
       state.draws = json.draws || state.draws;
+      state.ties = json.ties || state.ties;
       state.syncedAt = json.synced_at;
       var typing = document.activeElement && document.activeElement.id === 'me-search';
       if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets(); } else renderAll();

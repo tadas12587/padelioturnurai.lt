@@ -89,6 +89,8 @@ class TournamentSync
         }
 
         [$matches, $source] = $this->matches($tournamentId, ! empty($teams), $warnings);
+        $ties = array_values(array_map([self::class, 'tieShape'], array_filter($matches, [self::class, 'isTieRow'])));
+        $matches = array_values(array_filter($matches, fn ($m) => ! self::isTieRow($m)));
         $matches = self::stampResults($matches, $existing['matches'] ?? [], ! empty($existing));
         $pushOn = Tournament::where('tournated_id', $tournamentId)->value('push_enabled') ?? true;
         if ($pushOn && ! empty($existing['matches'])) {
@@ -113,6 +115,7 @@ class TournamentSync
                 'groups' => $groups,
                 'draws' => $draws,
                 'standings' => $standings,
+                'ties' => $ties,
                 'teams' => $teams,
                 'places' => $places,
                 'places_at' => $placesAt,
@@ -213,7 +216,7 @@ class TournamentSync
         } catch (Throwable $e) {
             $warnings[] = "matches API: {$e->getMessage()} — naudojamas GraphQL";
             try {
-                return [self::withoutTieContainers($this->graphql->matches($tournamentId)), 'graphql'];
+                return [$this->graphql->matches($tournamentId), 'graphql'];
             } catch (Throwable $g) {
                 throw new RuntimeException("Mačų gauti nepavyko: API ({$e->getMessage()}), GraphQL ({$g->getMessage()})");
             }
@@ -234,22 +237,36 @@ class TournamentSync
             }
         }
 
-        return [self::withoutTieContainers($matches), 'api'];
+        return [$matches, 'api'];
     }
 
     /**
      * Club-league events also carry the club-vs-club "tie" itself as a match row:
      * no time or court, and every player of both clubs as participants (32+).
-     * It is not a game anyone plays, so it must not show up as a player's
-     * "next match". A real padel match has at most two players per side.
+     * Nobody plays it, so it must never be a player's "next match" — but it is
+     * the only place listing a club's players before the club publishes its
+     * pairs, so it is kept apart as a roster. A real padel match has at most
+     * two players per side.
      */
-    private static function withoutTieContainers(array $matches): array
+    public static function isTieRow(array $m): bool
     {
-        return array_values(array_filter($matches, function ($m) {
-            $perSide = array_count_values(array_map(fn ($p) => (string) ($p['side'] ?? ''), $m['participants'] ?? []));
+        $perSide = array_count_values(array_map(fn ($p) => (string) ($p['side'] ?? ''), $m['participants'] ?? []));
 
-            return ($perSide ? max($perSide) : 0) <= 2;
-        }));
+        return ($perSide ? max($perSide) : 0) > 2;
+    }
+
+    /** Roster view of a tie row: the two clubs and their players (names only). */
+    private static function tieShape(array $m): array
+    {
+        return [
+            'match_id' => $m['match_id'] ?? null,
+            'team1' => $m['team1'] ?? null,
+            'team2' => $m['team2'] ?? null,
+            'players' => array_values(array_map(
+                fn ($p) => ['side' => $p['side'] ?? null, 'name' => $p['name'] ?? '', 'surname' => $p['surname'] ?? ''],
+                $m['participants'] ?? [],
+            )),
+        ];
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Tournated\TournamentSync;
 use App\Models\EntryList;
 use App\Models\ScheduleSnapshot;
 use App\Models\Tournament;
@@ -102,7 +103,8 @@ class ScheduleController extends Controller
             ->unique()
             ->sort()
             ->values();
-        $clubs = collect($matches)
+        $ties = self::publicTies($payload);
+        $clubs = collect(array_merge($matches, $ties))
             ->flatMap(fn ($m) => [$m['team1']['title'] ?? null, $m['team2']['title'] ?? null])
             ->filter()
             ->unique()
@@ -116,6 +118,7 @@ class ScheduleController extends Controller
             'matches'      => $matches,
             'groups'       => $groups,
             'draws'        => $draws,
+            'ties'         => $ties,
             'syncedAt'     => $payload['synced_at'] ?? null,
             'stats'        => [
                 'courts'    => $courts->count(),
@@ -176,6 +179,7 @@ class ScheduleController extends Controller
             'matches'      => $matches,
             'groups'       => self::publicGroups($payload),
             'draws'        => self::publicDraws($payload),
+            'ties'         => self::publicTies($payload),
             'synced_at'    => $payload['synced_at'] ?? null,
             'court_delays' => $courtDelays,
         ]);
@@ -532,9 +536,27 @@ class ScheduleController extends Controller
         return $out;
     }
 
+    /**
+     * Club-vs-club rosters (see TournamentSync::isTieRow). Older snapshots
+     * still have the tie rows inside "matches", so they are read from there too.
+     */
+    public static function publicTies(array $payload): array
+    {
+        if (! empty($payload['ties'])) {
+            return array_values($payload['ties']);
+        }
+
+        return array_values(array_map(fn ($m) => [
+            'match_id' => $m['match_id'] ?? null,
+            'team1' => $m['team1'] ?? null,
+            'team2' => $m['team2'] ?? null,
+            'players' => array_values(array_map(fn ($p) => ['side' => $p['side'] ?? null, 'name' => $p['name'] ?? '', 'surname' => $p['surname'] ?? ''], $m['participants'] ?? [])),
+        ], array_filter($payload['matches'] ?? [], [TournamentSync::class, 'isTieRow'])));
+    }
+
     public static function isUsableMatch(array $match): bool
     {
-        if (! empty($match['is_bye'])) {
+        if (! empty($match['is_bye']) || TournamentSync::isTieRow($match)) {
             return false;
         }
         if (! empty($match['time']) && ! empty($match['court']['name'] ?? null)) {
