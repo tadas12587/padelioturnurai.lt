@@ -91,6 +91,7 @@ class TournamentSync
         [$matches, $source] = $this->matches($tournamentId, ! empty($teams), $warnings);
         $ties = array_values(array_map([self::class, 'tieShape'], array_filter($matches, [self::class, 'isTieRow'])));
         $matches = array_values(array_filter($matches, fn ($m) => ! self::isTieRow($m)));
+        $matches = self::inferTieClubs($matches, $ties);
         $matches = self::stampResults($matches, $existing['matches'] ?? [], ! empty($existing));
         $pushOn = Tournament::where('tournated_id', $tournamentId)->value('push_enabled') ?? true;
         if ($pushOn && ! empty($existing['matches'])) {
@@ -251,8 +252,126 @@ class TournamentSync
     public static function isTieRow(array $m): bool
     {
         $perSide = array_count_values(array_map(fn ($p) => (string) ($p['side'] ?? ''), $m['participants'] ?? []));
+        if (($perSide ? max($perSide) : 0) > 2) {
+            return true;
+        }
 
-        return ($perSide ? max($perSide) : 0) > 2;
+        // a tie neither club has filled in yet: two clubs, no players, no date/time/court
+        return ! $perSide && empty($m['date']) && empty($m['time']) && empty($m['court'])
+            && ! empty($m['team1']['title']) && ! empty($m['team2']['title']);
+    }
+
+    /**
+     * In a club league Tournated creates every tie's pair matches up front but
+     * leaves team1/team2 empty until the club publishes its pairs, and the API
+     * has no link from a pair match to its tie. The matches of one tie are
+     * created together (consecutive ids, same count per tie), and a club
+     * can't play two ties at the same time; when that still leaves a
+     * choice, the order the ties were created in decides. Empty sides get that club with `inferred: true`; anything
+     * ambiguous is left as it is.
+     */
+    public static function inferTieClubs(array $matches, array $ties): array
+    {
+        $n = count($ties);
+        if ($n < 2 || $n > 8 || ! $matches || count($matches) % $n !== 0) {
+            return $matches;
+        }
+        $title = fn ($team) => is_array($team) ? ($team['title'] ?? null) : null;
+        $order = array_keys($matches);
+        usort($order, fn ($a, $b) => ($matches[$a]['match_id'] ?? 0) <=> ($matches[$b]['match_id'] ?? 0));
+        $blocks = array_chunk($order, intdiv(count($matches), $n));
+
+        // which ties each block may belong to (known clubs must agree, side by side)
+        $fits = [];
+        foreach ($blocks as $b => $idx) {
+            foreach ($ties as $t => $tie) {
+                $ok = $title($tie['team1'] ?? null) && $title($tie['team2'] ?? null);
+                foreach ($idx as $i) {
+                    $c1 = $title($matches[$i]['team1'] ?? null);
+                    $c2 = $title($matches[$i]['team2'] ?? null);
+                    if (($c1 && $c1 !== $title($tie['team1'])) || ($c2 && $c2 !== $title($tie['team2']))) {
+                        $ok = false;
+                        break;
+                    }
+                }
+                if ($ok) {
+                    $fits[$b][] = $t;
+                }
+            }
+            if (empty($fits[$b])) {
+                return $matches;
+            }
+        }
+        $slots = [];
+        foreach ($blocks as $b => $idx) {
+            foreach ($idx as $i) {
+                $slots[$b][($matches[$i]['date'] ?? '').' '.($matches[$i]['time'] ?? '')] = true;
+            }
+        }
+        $clubs = fn ($t) => [$title($ties[$t]['team1']), $title($ties[$t]['team2'])];
+
+        $solutions = [];
+        $assign = [];
+        $search = function (int $b) use (&$search, &$assign, &$solutions, $blocks, $fits, $slots, $clubs) {
+            if (count($solutions) > 5000) {
+                return;
+            }
+            if ($b === count($blocks)) {
+                $solutions[] = $assign;
+
+                return;
+            }
+            foreach ($fits[$b] as $t) {
+                if (in_array($t, $assign, true)) {
+                    continue;
+                }
+                foreach ($assign as $ob => $ot) {
+                    if (array_intersect_key($slots[$b], $slots[$ob]) && array_intersect($clubs($t), $clubs($ot))) {
+                        continue 2; // a club would be in two places at once
+                    }
+                }
+                $assign[$b] = $t;
+                $search($b + 1);
+                unset($assign[$b]);
+            }
+        };
+        $search(0);
+        if (! $solutions || count($solutions) > 5000) {
+            return $matches;
+        }
+        // Several fits: Tournated creates ties and their matches in the same
+        // order, so prefer the fit closest to id order — only if it is the
+        // single closest one.
+        $tieIds = array_map(fn ($t) => $t['match_id'] ?? 0, $ties);
+        $inversions = function (array $sol) use ($tieIds) {
+            ksort($sol);
+            $ids = array_map(fn ($t) => $tieIds[$t], array_values($sol));
+            $inv = 0;
+            foreach ($ids as $i => $a) {
+                for ($j = $i + 1; $j < count($ids); $j++) {
+                    $inv += $a > $ids[$j] ? 1 : 0;
+                }
+            }
+
+            return $inv;
+        };
+        $scores = array_map($inversions, $solutions);
+        $best = min($scores);
+        if (count(array_keys($scores, $best, true)) !== 1) {
+            return $matches;
+        }
+
+        foreach ($solutions[array_search($best, $scores, true)] as $b => $t) {
+            foreach ($blocks[$b] as $i) {
+                foreach (['team1', 'team2'] as $side) {
+                    if (empty($matches[$i][$side]['title']) && ! empty($ties[$t][$side]['title'])) {
+                        $matches[$i][$side] = $ties[$t][$side] + ['inferred' => true];
+                    }
+                }
+            }
+        }
+
+        return $matches;
     }
 
     /** Roster view of a tie row: the two clubs and their players (names only). */
