@@ -1414,8 +1414,19 @@ window.PushUI = (function () {
   });
 
   /* ---------- header, tabs, refresh ---------- */
+  // One day: "Lapkričio 27 d., penktadienis". Several days: today's label while
+  // it is on, otherwise the span ("Lapkričio 27–28 d.").
+  function tourDateLabel() {
+    var days = state.matches.map(function (m) { return m.date; }).filter(Boolean).sort();
+    var first = days[0] || TOURNAMENT_DATE, last = days[days.length - 1] || TOURNAMENT_DATE;
+    if (first === last) return dayLabel(first);
+    var today = nowLocal().date;
+    if (today >= first && today <= last) return dayLabel(today);
+    var a = dayLabel(first).split(',')[0], b = dayLabel(last).split(',')[0];
+    return first.slice(0, 7) === last.slice(0, 7) ? a.replace(/ d\.$/, '–' + (+last.slice(8)) + ' d.') : a + ' – ' + b;
+  }
   function renderHeader() {
-    if (TOURNAMENT_DATE) document.getElementById('tour-date').textContent = dayLabel(TOURNAMENT_DATE);
+    if (TOURNAMENT_DATE) document.getElementById('tour-date').textContent = tourDateLabel();
     var el = document.getElementById('fresh'), txt = document.getElementById('fresh-text');
     if (!state.syncedAt) { txt.textContent = 'Duomenys dar nesinchronizuoti'; el.classList.add('stale'); return; }
     var mins = Math.max(0, Math.round((Date.now() - new Date(state.syncedAt).getTime()) / 60000));
@@ -1427,7 +1438,7 @@ window.PushUI = (function () {
   }
 
   function renderAll() {
-    indexClubImages(state.matches);
+    indexClubImages(state.matches); indexClubImages(state.ties || []);
     renderHeader(); renderMano(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets();
   }
 
@@ -1435,7 +1446,9 @@ window.PushUI = (function () {
   function tabFromHash() { var t = location.hash.replace('#', ''); return TABS.indexOf(t) >= 0 ? t : 'mano'; }
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function goTab(tab) {
-    if (tab === tabFromHash()) { window.scrollTo(0, 0); return; }
+    // compare with the tab on screen, not the URL: they can differ (old link, back button mid-transition)
+    var shown = document.querySelector('.nav-btn.active');
+    if (shown && shown.dataset.tab === tab) { window.scrollTo(0, 0); return; }
     try { var u = new URL(location.href); u.hash = tab === 'mano' ? '' : tab; history.pushState({ tab: tab }, '', u); } catch (e) {}
     if (document.startViewTransition && !reduceMotion) document.startViewTransition(function () { switchTab(tab); });
     else switchTab(tab);
