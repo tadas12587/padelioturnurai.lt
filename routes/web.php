@@ -13,6 +13,17 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
 
+// Machine-polled JSON / token endpoints (app, TV screens, OBS overlays, the
+// ingest bridge): no cookies or session, so a poll every 15 s doesn't create a
+// new session file each time. None of these controllers read the session.
+$stateless = [
+    \Illuminate\Cookie\Middleware\EncryptCookies::class,
+    \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class,
+];
+
 // Interest notification endpoint (locale-agnostic JSON API)
 Route::post('/registracija-pranesimai', [RegistrationInterestController::class, 'store'])->middleware('throttle:5,10')->name('interest.store');
 
@@ -22,7 +33,7 @@ Route::get('/llms.txt', [SitemapController::class, 'llms'])->name('llms');
 
 // Which tournaments the push bridge should fetch (token-protected). Must be
 // declared before the /overlay/{overlay} wildcard so it isn't treated as a token.
-Route::get('/overlay/wanted', [OverlayController::class, 'wanted'])->name('overlay.wanted');
+Route::get('/overlay/wanted', [OverlayController::class, 'wanted'])->name('overlay.wanted')->withoutMiddleware($stateless);
 
 // Simplified control panel (OBS browser dock) — token-authorised, CSRF-exempt.
 // Declared before the /overlay/{overlay} wildcard so "control" isn't a token.
@@ -35,35 +46,35 @@ Route::post('/overlay/{overlay}/score', [OverlayController::class, 'scoreAction'
 
 // Broadcast overlays (public, polled by OBS browser sources)
 Route::get('/overlay/{overlay}',      [OverlayController::class, 'show'])->name('overlay.show');
-Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data');
+Route::get('/overlay/{overlay}/data', [OverlayController::class, 'data'])->name('overlay.data')->withoutMiddleware($stateless);
 
 // Snapshot ingest — external bridge pushes Tournated data here (token-protected,
 // CSRF-exempt; see bootstrap/app.php).
-Route::post('/overlay/ingest', [OverlayController::class, 'ingest'])->name('overlay.ingest');
+Route::post('/overlay/ingest', [OverlayController::class, 'ingest'])->name('overlay.ingest')->withoutMiddleware($stateless);
 
 // Public schedule / results / group-tables page (for participants & guests).
 // Fed the same way as overlays: an external bridge pushes Tournated data in
 // (production host can't reach api.tournated.com — see docs/overlays.md).
-Route::post('/grafikas/ingest', [ScheduleController::class, 'ingest'])->name('schedule.ingest');
-Route::get('/grafikas/{tournament}/data', [ScheduleController::class, 'data'])->name('schedule.data');
+Route::post('/grafikas/ingest', [ScheduleController::class, 'ingest'])->name('schedule.ingest')->withoutMiddleware($stateless);
+Route::get('/grafikas/{tournament}/data', [ScheduleController::class, 'data'])->name('schedule.data')->withoutMiddleware($stateless);
 Route::get('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysForm'])->name('schedule.delays.form');
 Route::post('/grafikas/{tournament}/velavimai', [ScheduleController::class, 'delaysSave'])->name('schedule.delays.save');
 Route::get('/grafikas/{tournament}', [ScheduleController::class, 'show'])->name('schedule.show');
 Route::get('/tv', [ScheduleController::class, 'tvHome'])->name('schedule.tv.home');
 Route::get('/tv/{screen}', [ScheduleController::class, 'tvScreen'])->where('screen', '[1-9]')->name('schedule.tv.screen');
 Route::get('/tv/{tournament}', [ScheduleController::class, 'tv'])->name('schedule.tv');
-Route::get('/tv/{tournament}/data', [ScheduleController::class, 'tvData'])->name('schedule.tv.data');
+Route::get('/tv/{tournament}/data', [ScheduleController::class, 'tvData'])->name('schedule.tv.data')->withoutMiddleware($stateless);
 
 // Phone notifications for the schedule page ("Tavo eilė! Eik į Kortą 4").
 Route::post('/grafikas/{tournament}/push/subscribe', [PushController::class, 'subscribe'])->middleware('throttle:20,1')->name('push.subscribe');
 Route::get('/grafikas/{tournament}/manifest.webmanifest', [PushController::class, 'manifest'])->name('push.manifest');
 Route::post('/push/unsubscribe', [PushController::class, 'unsubscribe'])->middleware('throttle:20,1')->name('push.unsubscribe');
-Route::post('/push/dispatch', [PushController::class, 'dispatch'])->name('push.dispatch');
+Route::post('/push/dispatch', [PushController::class, 'dispatch'])->name('push.dispatch')->withoutMiddleware($stateless);
 Route::get('/sw.js', [PushController::class, 'serviceWorker'])->name('push.sw');
 Route::get('/grafikas-icon/{size}.png', [PushController::class, 'icon'])->whereNumber('size')->name('push.icon');
 
 // "Padelio turnyrai" mobile app (Expo).
-Route::prefix('api/app/v1')->middleware('throttle:120,1')->group(function () {
+Route::prefix('api/app/v1')->middleware('throttle:120,1')->withoutMiddleware($stateless)->group(function () {
     Route::get('/tournaments', [AppApiController::class, 'tournaments'])->name('app.tournaments');
     Route::get('/home', [AppApiController::class, 'home'])->name('app.home');
     Route::get('/tournaments/{tournament}', [ScheduleController::class, 'data'])->name('app.tournament');

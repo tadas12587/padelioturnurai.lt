@@ -114,7 +114,7 @@ class SeoSettingsPage extends Page implements HasForms
      */
     private function webrootPath(string $file): string
     {
-        $storagePath = env('PUBLIC_STORAGE_PATH');
+        $storagePath = config('app.public_storage_path');
         $root = $storagePath ? dirname(rtrim($storagePath, '/')) : public_path();
 
         return rtrim($root, '/') . '/' . ltrim($file, '/');
@@ -201,7 +201,7 @@ class SeoSettingsPage extends Page implements HasForms
         $checks[] = ['label' => 'Struktūrizuoti duomenys (JSON-LD)', 'status' => 'ok', 'note' => 'Turnyrai (SportsEvent), naujienos (NewsArticle), organizacija'];
 
         // 11. Hero photos (home og:image)
-        $heroDir = rtrim(env('PUBLIC_STORAGE_PATH', public_path('storage')), '/') . '/herofoto';
+        $heroDir = rtrim(config('app.public_storage_path') ?: public_path('storage'), '/') . '/herofoto';
         $heroPhotos = glob($heroDir . '/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}', GLOB_BRACE) ?: [];
         if (count($heroPhotos) > 0) {
             $checks[] = ['label' => 'Dalinimosi nuotrauka (pagrindinis)', 'status' => 'ok', 'note' => count($heroPhotos) . ' herofoto nuotraukos'];

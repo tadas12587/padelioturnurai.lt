@@ -33,14 +33,14 @@ class MailSettingsPage extends Page implements HasForms
     public function mount(): void
     {
         $this->form->fill([
-            'admin_email'       => Setting::get('admin_email', env('ADMIN_EMAIL', '')),
+            'admin_email'       => Setting::get('admin_email', config('app.admin_email') ?? ''),
             'mail_mailer'       => Setting::get('mail_mailer', 'phpmail'),
             'mail_host'         => Setting::get('mail_host', 'smtp.gmail.com'),
             'mail_port'         => Setting::get('mail_port', '587'),
             'mail_username'     => Setting::get('mail_username', ''),
             'mail_password'     => Setting::get('mail_password', ''),
             'mail_encryption'   => Setting::get('mail_encryption', 'tls'),
-            'mail_from_address' => Setting::get('mail_from_address', env('MAIL_FROM_ADDRESS', '')),
+            'mail_from_address' => Setting::get('mail_from_address', config('mail.from.address') ?? ''),
             'mail_from_name'    => Setting::get('mail_from_name', 'Padelio Turnyrai'),
         ]);
     }

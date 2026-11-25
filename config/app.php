@@ -67,6 +67,12 @@ return [
 
     'timezone' => 'UTC',
 
+    // Shared hosting: public/ is copied to a separate web root, so uploads live
+    // outside public_path(). Read via config() so it survives config:cache.
+    'public_storage_path' => env('PUBLIC_STORAGE_PATH'),
+
+    'admin_email' => env('ADMIN_EMAIL'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

@@ -26,7 +26,7 @@ class ContactController extends Controller
         $contact = Contact::create($validated);
 
         // Send notification to admin (from DB settings or fallback to env)
-        $adminEmail = Setting::get('admin_email', env('ADMIN_EMAIL', config('mail.from.address')));
+        $adminEmail = Setting::get('admin_email', config('app.admin_email') ?: config('mail.from.address'));
         try {
             Mail::to($adminEmail)->send(new \App\Mail\ContactMail($contact));
         } catch (\Exception $e) {
