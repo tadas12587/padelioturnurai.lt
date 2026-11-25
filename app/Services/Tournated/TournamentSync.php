@@ -213,7 +213,7 @@ class TournamentSync
         } catch (Throwable $e) {
             $warnings[] = "matches API: {$e->getMessage()} — naudojamas GraphQL";
             try {
-                return [$this->graphql->matches($tournamentId), 'graphql'];
+                return [self::withoutTieContainers($this->graphql->matches($tournamentId)), 'graphql'];
             } catch (Throwable $g) {
                 throw new RuntimeException("Mačų gauti nepavyko: API ({$e->getMessage()}), GraphQL ({$g->getMessage()})");
             }
@@ -234,7 +234,22 @@ class TournamentSync
             }
         }
 
-        return [$matches, 'api'];
+        return [self::withoutTieContainers($matches), 'api'];
+    }
+
+    /**
+     * Club-league events also carry the club-vs-club "tie" itself as a match row:
+     * no time or court, and every player of both clubs as participants (32+).
+     * It is not a game anyone plays, so it must not show up as a player's
+     * "next match". A real padel match has at most two players per side.
+     */
+    private static function withoutTieContainers(array $matches): array
+    {
+        return array_values(array_filter($matches, function ($m) {
+            $perSide = array_count_values(array_map(fn ($p) => (string) ($p['side'] ?? ''), $m['participants'] ?? []));
+
+            return ($perSide ? max($perSide) : 0) <= 2;
+        }));
     }
 
     /**

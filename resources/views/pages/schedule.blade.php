@@ -239,7 +239,7 @@
   .row-text span { display: block; font-size: 0.86rem; color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
   .match-row.winner .row-text b { color: var(--ink); }
   .match-row.winner .row-text span { color: var(--ink-soft); }
-  .row-text .me-name { color: var(--ball); font-weight: 600; }
+  .row-text .me-name { display: inline; color: var(--ball); font-weight: 600; }
   .set-scores { display: flex; gap: 9px; flex: none; padding: 0 4px; }
   .set-cell {
     font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--ink-soft);
