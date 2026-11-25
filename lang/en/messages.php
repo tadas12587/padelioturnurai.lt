@@ -38,6 +38,7 @@ return [
     'filter_active' => 'Active',
     'filter_past' => 'Past',
     'footer_rights' => 'All rights reserved',
+    'footer_main_partner' => 'Main partner',
     'featured_tournament' => 'Featured tournament',
     'all_tournaments' => 'All tournaments',
     'back_to_tournaments' => '← Back to tournaments',

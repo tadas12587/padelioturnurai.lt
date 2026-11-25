@@ -262,6 +262,14 @@
                 </div>
                 @endif
             </div>
+
+            {{-- Main partner: one line, brand name as the anchor text --}}
+            <p class="mt-10 pt-8 border-t border-dark-border text-center text-sm text-gray-400">
+                {{ __('messages.footer_main_partner') }} –
+                <a href="{{ app()->getLocale() === 'en' ? 'https://finalset.eu/en/' : 'https://finalset.eu/lt/' }}"
+                   target="_blank" rel="noopener"
+                   class="font-semibold text-gray-300 hover:text-gold transition-colors">FinalSet.eu</a>
+            </p>
         </div>
     </footer>
 

@@ -38,6 +38,7 @@ return [
     'filter_active' => 'Aktyvūs',
     'filter_past' => 'Praeję',
     'footer_rights' => 'Visos teisės saugomos',
+    'footer_main_partner' => 'Pagrindinis partneris',
     'featured_tournament' => 'Pagrindinis turnyras',
     'all_tournaments' => 'Visi turnyrai',
     'back_to_tournaments' => '← Grįžti į turnyrų sąrašą',
