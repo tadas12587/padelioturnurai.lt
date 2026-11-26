@@ -220,8 +220,8 @@ class TournatedSyncTest extends TestCase
 
         $json = $this->getJson('/grafikas/777/data')->assertOk()->json();
         $m = collect($json['matches'])->keyBy('match_id');
-        $this->assertSame('11:07', $m[2]['eta']);   // automatic
-        $this->assertSame(17, $json['court_delays']['Court 1']);
+        $this->assertSame('11:02', $m[2]['eta']);   // automatic
+        $this->assertSame(12, $json['court_delays']['Court 1']);
         $this->assertSame('11:20', $m[4]['eta']);   // manual 30 min overrides
         $this->assertSame(30, $json['court_delays']['Court 2']);
     }

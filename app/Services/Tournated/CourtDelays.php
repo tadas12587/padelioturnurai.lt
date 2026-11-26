@@ -7,9 +7,10 @@ use Carbon\CarbonImmutable;
 /**
  * Automatic per-court schedule estimate for today's matches.
  *
- * When the referee enters a result, the next match on that court is
- * expected to start at (moment the result appeared) + changeover, and every
- * later match keeps its planned gap from the previous one. A match still
+ * When the referee enters a result, the next match on that court is shown as
+ * started at that moment (results reach the desk a few minutes after the end,
+ * by which time the next pair is already playing), and every later match
+ * keeps its planned gap from the previous one. A match still
  * running past its planned slot pushes the next one live (now + changeover).
  *
  * Breaks: a planned gap noticeably longer than the court's normal slot (e.g. a
@@ -20,12 +21,13 @@ use Carbon\CarbonImmutable;
  *
  * Safeguards: results we did not see arrive live (first sync, or several on
  * one court in the same minute = entered in a batch) are not trusted, so that
- * court gets no estimate; an estimate is never more than EARLY_CAP minutes
- * before the planned time, nor more than LATE_CAP after.
+ * court gets no estimate; apart from the match that has just started, an
+ * estimate is never more than EARLY_CAP minutes before the planned time, nor
+ * more than LATE_CAP after.
  */
 class CourtDelays
 {
-    public const CHANGEOVER = 5;
+    public const CHANGEOVER = 0;
 
     public const EARLY_CAP = 15;
 
@@ -106,7 +108,10 @@ class CourtDelays
                         $e = max($e, $nowMin + self::CHANGEOVER);
                     }
                 }
-                $e = max($e, $planned - self::EARLY_CAP);
+                $startedNow = $n === 0 && $anchor !== null; // next pair is on court already
+                if (! $startedNow) {
+                    $e = max($e, $planned - self::EARLY_CAP);
+                }
                 $e = min($e, $planned + self::LATE_CAP);
 
                 $delay = $e - $planned;

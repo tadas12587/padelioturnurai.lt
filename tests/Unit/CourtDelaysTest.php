@@ -34,7 +34,7 @@ class CourtDelaysTest extends TestCase
         return array_column($out['matches'], null, 'match_id');
     }
 
-    public function test_next_match_starts_five_minutes_after_result_and_chain_keeps_planned_gaps(): void
+    public function test_next_match_starts_when_result_is_entered_and_chain_keeps_planned_gaps(): void
     {
         // slot 50 min; result of the 10:00 match entered 11:02
         $out = CourtDelays::apply([
@@ -45,11 +45,11 @@ class CourtDelaysTest extends TestCase
         ], $this->at('11:03'), self::TZ);
 
         $m = $this->byId($out);
-        $this->assertSame('11:07', $m[2]['eta']);
-        $this->assertSame(17, $m[2]['eta_delay']);
-        $this->assertSame('11:57', $m[3]['eta']);
-        $this->assertSame('12:47', $m[4]['eta']);
-        $this->assertSame(17, $out['courts']['Court 1']);
+        $this->assertSame('11:02', $m[2]['eta']);
+        $this->assertSame(12, $m[2]['eta_delay']);
+        $this->assertSame('11:52', $m[3]['eta']);
+        $this->assertSame('12:42', $m[4]['eta']);
+        $this->assertSame(12, $out['courts']['Court 1']);
         $this->assertArrayNotHasKey('eta', $m[1]); // played match keeps its own time
     }
 
@@ -63,26 +63,28 @@ class CourtDelaysTest extends TestCase
         ], $this->at('11:46'), self::TZ);
 
         $m = $this->byId($out);
-        $this->assertSame('11:50', $m[3]['eta']);
-        $this->assertSame(10, $m[3]['eta_delay']);
-        $this->assertSame('12:40', $m[4]['eta']);
+        $this->assertSame('11:45', $m[3]['eta']);
+        $this->assertSame(5, $m[3]['eta_delay']);
+        $this->assertSame('12:35', $m[4]['eta']);
     }
 
-    public function test_never_shows_more_than_fifteen_minutes_early(): void
+    public function test_next_starts_at_once_but_later_ones_are_never_more_than_fifteen_minutes_early(): void
     {
         $out = CourtDelays::apply([
             $this->match(1, '10:00', seenLocal: '10:20'), // very quick match
             $this->match(2, '10:50'),
+            $this->match(3, '11:40'),
         ], $this->at('10:21'), self::TZ);
 
         $m = $this->byId($out);
-        $this->assertSame('10:35', $m[2]['eta']); // 10:25 would be 25 min early → capped at −15
-        $this->assertSame(-15, $m[2]['eta_delay']);
+        $this->assertSame('10:20', $m[2]['eta']); // already on court
+        $this->assertSame(-30, $m[2]['eta_delay']);
+        $this->assertSame('11:25', $m[3]['eta']); // 11:10 would be 30 min early → capped at −15
     }
 
     public function test_a_running_match_past_its_slot_pushes_the_next_one_live(): void
     {
-        // match 2 should start 11:07 and end ~11:52; at 12:10 it is still running
+        // match 2 started 11:02 and should end ~11:52; at 12:10 it is still running
         $out = CourtDelays::apply([
             $this->match(1, '10:00', seenLocal: '11:02'),
             $this->match(2, '10:50'),
@@ -91,10 +93,10 @@ class CourtDelaysTest extends TestCase
         ], $this->at('12:10'), self::TZ);
 
         $m = $this->byId($out);
-        $this->assertSame('12:15', $m[3]['eta']); // now + 5
-        $this->assertSame(35, $m[3]['eta_delay']);
-        $this->assertSame('13:05', $m[4]['eta']);
-        $this->assertSame(35, $out['courts']['Court 1']);
+        $this->assertSame('12:10', $m[3]['eta']); // now
+        $this->assertSame(30, $m[3]['eta_delay']);
+        $this->assertSame('13:00', $m[4]['eta']);
+        $this->assertSame(30, $out['courts']['Court 1']);
     }
 
     public function test_results_entered_in_a_batch_or_seen_before_tracking_are_not_trusted(): void
@@ -125,8 +127,8 @@ class CourtDelaysTest extends TestCase
             $tomorrow,
         ], $this->at('11:03'), self::TZ);
 
-        $this->assertSame(17, $out['courts']['Court 1']);
-        $this->assertSame(7, $out['courts']['Court 2']);
+        $this->assertSame(12, $out['courts']['Court 1']);
+        $this->assertSame(2, $out['courts']['Court 2']);
         $this->assertArrayNotHasKey('eta', $this->byId($out)[9]);
     }
 
@@ -148,8 +150,8 @@ class CourtDelaysTest extends TestCase
         ], $this->at('14:36'), self::TZ);
 
         $m = $this->byId($out);
-        $this->assertSame('14:40', $m[2]['eta']);
-        $this->assertArrayNotHasKey('eta', $m[3]); // 14:40 + 50 = 15:30 < 16:00 → on time
+        $this->assertSame('14:35', $m[2]['eta']);
+        $this->assertArrayNotHasKey('eta', $m[3]); // 14:35 + 50 = 15:25 < 16:00 → on time
         $this->assertArrayNotHasKey('eta', $m[4]);
     }
 
@@ -162,9 +164,9 @@ class CourtDelaysTest extends TestCase
         ], $this->at('15:31'), self::TZ);
 
         $m = $this->byId($out);
-        $this->assertSame('15:35', $m[2]['eta']);
-        $this->assertSame('16:25', $m[3]['eta']); // 15:35 + 50
-        $this->assertSame(25, $m[3]['eta_delay']);
+        $this->assertSame('15:30', $m[2]['eta']);
+        $this->assertSame('16:20', $m[3]['eta']); // 15:30 + 50
+        $this->assertSame(20, $m[3]['eta_delay']);
     }
 
     public function test_a_late_result_before_the_break_does_not_pull_the_next_session_early_or_late(): void
