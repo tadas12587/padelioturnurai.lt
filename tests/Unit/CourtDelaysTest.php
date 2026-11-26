@@ -136,4 +136,56 @@ class CourtDelaysTest extends TestCase
         $this->assertSame('Robertas', MatchShape::person(1, 'Robertas ', 'Šimkus')['name']);
         $this->assertSame('Jonas', MatchShape::person(2, 'Jonas', 'Jonas')['name']); // single-word profile untouched
     }
+
+    public function test_a_reserve_hour_absorbs_the_delay_for_the_next_session(): void
+    {
+        // 50-min slots, 14:10 is the last before the reserve hour, then 16:00
+        $out = CourtDelays::apply([
+            $this->match(1, '13:20', seenLocal: '14:35'), // 25 min late
+            $this->match(2, '14:10'),
+            $this->match(3, '16:00'),
+            $this->match(4, '16:50'),
+        ], $this->at('14:36'), self::TZ);
+
+        $m = $this->byId($out);
+        $this->assertSame('14:40', $m[2]['eta']);
+        $this->assertArrayNotHasKey('eta', $m[3]); // 14:40 + 50 = 15:30 < 16:00 → on time
+        $this->assertArrayNotHasKey('eta', $m[4]);
+    }
+
+    public function test_an_overrun_longer_than_the_break_still_pushes_the_next_session(): void
+    {
+        $out = CourtDelays::apply([
+            $this->match(1, '13:20', seenLocal: '15:30'), // 85 min late
+            $this->match(2, '14:10'),
+            $this->match(3, '16:00'),
+        ], $this->at('15:31'), self::TZ);
+
+        $m = $this->byId($out);
+        $this->assertSame('15:35', $m[2]['eta']);
+        $this->assertSame('16:25', $m[3]['eta']); // 15:35 + 50
+        $this->assertSame(25, $m[3]['eta_delay']);
+    }
+
+    public function test_a_late_result_before_the_break_does_not_pull_the_next_session_early_or_late(): void
+    {
+        $out = CourtDelays::apply([
+            $this->match(0, '13:20', seenLocal: '14:15'),
+            $this->match(1, '14:10', seenLocal: '15:20'),
+            $this->match(2, '16:00'),
+        ], $this->at('15:21'), self::TZ);
+
+        $this->assertArrayNotHasKey('eta', $this->byId($out)[2]);
+    }
+
+    public function test_a_match_running_long_before_the_break_does_not_push_past_the_break(): void
+    {
+        $out = CourtDelays::apply([
+            $this->match(1, '13:20', seenLocal: '14:12'),
+            $this->match(2, '14:10'),
+            $this->match(3, '16:00'),
+        ], $this->at('15:30'), self::TZ); // 14:15 match still going at 15:30
+
+        $this->assertArrayNotHasKey('eta', $this->byId($out)[3]);
+    }
 }

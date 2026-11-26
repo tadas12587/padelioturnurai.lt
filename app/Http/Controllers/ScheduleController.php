@@ -146,19 +146,49 @@ class ScheduleController extends Controller
         $manual = array_filter($payload['court_delays'] ?? [], fn ($v) => (int) $v > 0);
         $auto = CourtDelays::apply($matches, CarbonImmutable::now(), $payload['tournament']['tz'] ?? 'Europe/Vilnius');
 
-        $matches = array_map(function (array $m) use ($manual) {
+        // A manual delay shrinks by the spare time of every planned break on
+        // that court (reserve hour, next day), so a later session isn't pushed.
+        $delayFor = [];
+        $byCourt = [];
+        foreach ($auto['matches'] as $i => $m) {
+            $court = $m['court']['name'] ?? '';
+            if (isset($manual[$court]) && ! empty($m['time'])) {
+                $byCourt[$court][] = $i;
+            }
+        }
+        foreach ($byCourt as $court => $idx) {
+            $key = fn ($i) => ($auto['matches'][$i]['date'] ?? '').' '.substr($auto['matches'][$i]['time'], 0, 5);
+            usort($idx, fn ($a, $b) => strcmp($key($a), $key($b)));
+            $slot = CourtDelays::slot(array_map(fn ($i) => substr($auto['matches'][$i]['time'], 0, 5), $idx));
+            $left = (int) $manual[$court];
+            $prev = null;
+            foreach ($idx as $i) {
+                $at = CarbonImmutable::parse($key($i));
+                if ($prev !== null) {
+                    $gap = (int) $prev->diffInMinutes($at);
+                    if (CourtDelays::isBreak($gap, $slot)) {
+                        $left = max(0, $left - ($gap - $slot));
+                    }
+                }
+                $delayFor[$i] = $left;
+                $prev = $at;
+            }
+        }
+
+        $matches = [];
+        foreach ($auto['matches'] as $i => $m) {
             $court = $m['court']['name'] ?? '';
             if (isset($manual[$court])) {
                 unset($m['eta'], $m['eta_delay']);
-                if (! $this->isPlayed($m) && ! empty($m['time'])) {
-                    $t = CarbonImmutable::createFromFormat('H:i', substr($m['time'], 0, 5))->addMinutes((int) $manual[$court]);
+                $d = $delayFor[$i] ?? 0;
+                if ($d > 0 && ! $this->isPlayed($m) && ! empty($m['time'])) {
+                    $t = CarbonImmutable::createFromFormat('H:i', substr($m['time'], 0, 5))->addMinutes($d);
                     $m['eta'] = $t->format('H:i');
-                    $m['eta_delay'] = (int) $manual[$court];
+                    $m['eta_delay'] = $d;
                 }
             }
-
-            return $m;
-        }, $auto['matches']);
+            $matches[$i] = $m;
+        }
 
         return [$matches, array_replace($auto['courts'], $manual)];
     }

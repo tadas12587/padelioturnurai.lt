@@ -12,6 +12,12 @@ use Carbon\CarbonImmutable;
  * later match keeps its planned gap from the previous one. A match still
  * running past its planned slot pushes the next one live (now + changeover).
  *
+ * Breaks: a planned gap noticeably longer than the court's normal slot (e.g. a
+ * reserve hour between sessions) absorbs the delay — the match after the
+ * break is expected at max(planned time, previous expected start + slot), so
+ * players of a later session keep their planned time unless the earlier
+ * session overruns by more than the break.
+ *
  * Safeguards: results we did not see arrive live (first sync, or several on
  * one court in the same minute = entered in a batch) are not trusted, so that
  * court gets no estimate; an estimate is never more than EARLY_CAP minutes
@@ -46,6 +52,7 @@ class CourtDelays
         $courts = [];
         foreach ($byCourt as $court => $idx) {
             usort($idx, fn ($a, $b) => strcmp($matches[$a]['time'], $matches[$b]['time']));
+            $slot = self::slot(array_map(fn ($i) => $matches[$i]['time'], $idx));
 
             $anchor = null;
             foreach ($idx as $k => $i) {
@@ -76,15 +83,25 @@ class CourtDelays
 
             $prevPlanned = null;
             $prevEta = null;
+            if ($anchor !== null) {
+                $anchorPlanned = self::minutes($matches[$idx[$anchor]]['time']);
+                if (self::isBreak(self::minutes($matches[$pending[0]]['time']) - $anchorPlanned, $slot)) {
+                    // the result came in before a break: the next session keeps its planned start
+                    $eta = max(self::minutes($matches[$pending[0]]['time']), $eta);
+                }
+            }
             $courtDelay = null;
             foreach ($pending as $n => $i) {
                 $planned = self::minutes($matches[$i]['time']);
                 if ($n === 0) {
                     $e = $eta ?? $planned;
                 } else {
-                    $e = $prevEta + ($planned - $prevPlanned);
+                    $gap = $planned - $prevPlanned;
+                    $e = self::isBreak($gap, $slot)
+                        ? max($planned, $prevEta + $slot)
+                        : $prevEta + $gap;
                     // previous match already started and is running past its slot
-                    $prevExpectedEnd = $prevEta + ($planned - $prevPlanned) - self::CHANGEOVER;
+                    $prevExpectedEnd = $prevEta + min($gap, $slot) - self::CHANGEOVER;
                     if ($nowMin >= $prevEta && $nowMin > $prevExpectedEnd) {
                         $e = max($e, $nowMin + self::CHANGEOVER);
                     }
@@ -107,6 +124,31 @@ class CourtDelays
         }
 
         return ['matches' => $matches, 'courts' => $courts];
+    }
+
+    /**
+     * The court's normal slot: the smallest gap between consecutive planned
+     * times (50 min when it can't be told).
+     *
+     * @param  list<string>  $times  sorted HH:MM
+     */
+    public static function slot(array $times): int
+    {
+        $gaps = [];
+        for ($k = 1; $k < count($times); $k++) {
+            $g = self::minutes($times[$k]) - self::minutes($times[$k - 1]);
+            if ($g > 0) {
+                $gaps[] = $g;
+            }
+        }
+
+        return $gaps ? min($gaps) : 50;
+    }
+
+    /** A planned gap of more than 1.5 slots is a break that absorbs delay. */
+    public static function isBreak(int $gap, int $slot): bool
+    {
+        return $gap > $slot * 1.5;
     }
 
     private static function played(array $m): bool
