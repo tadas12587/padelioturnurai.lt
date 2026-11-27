@@ -17,6 +17,8 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; background: #0A2226; color: #F2F7F5; overflow: hidden; }
+/* the keep-awake video fills the screen behind everything (LG webOS skips its screensaver only for full-screen video) */
+body { background: transparent; }
 body {
   /* set from the TV size and viewing distance (ADA 703.5.5), see fit() */
   font-size: 26px;
@@ -105,7 +107,7 @@ body {
 .compact .grp .t small { font-size: .62em; font-weight: 800; color: #C3D8D3; }
 .compact .p.pair .n { white-space: normal; }
 .compact .side + .side { padding-top: .05em; }
-.awake { position: fixed; right: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; }
+.awake { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%; z-index: -1; -o-object-fit: cover; object-fit: cover; pointer-events: none; background: #0A2226; }
 
 /* newer browsers: a court's cards slide up one place when a result comes in */
 :root { view-transition-name: none; }
@@ -140,7 +142,7 @@ body {
   <span>Telefone: padelioturnyrai.lt · programėlė „Padelio turnyrai“</span>
 </footer>
 {{-- a tiny silent looping video keeps many TVs from dimming or starting the screensaver --}}
-<video class="awake" id="awake" muted loop playsinline autoplay src="data:video/mp4;base64,{{ base64_encode(file_get_contents(resource_path('images/keepawake.mp4'))) }}"></video>
+<video class="awake" id="awake" muted loop playsinline autoplay src="data:video/mp4;base64,{{ base64_encode(file_get_contents(resource_path('images/keepawake-full.mp4'))) }}"></video>
 <script>
 (function () {
   'use strict';
@@ -404,6 +406,15 @@ body {
     try { if (v && v.paused) { var p = v.play(); if (p && p['catch']) p['catch'](function () {}); } } catch (e) { /* no video here */ }
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { wake(); load(); } });
+  // one press of OK on the remote (or a click) puts the page in full screen: no browser bar, and the
+  // background video then really covers the whole screen
+  function goFull() {
+    var el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen;
+    if (f && !(document.fullscreenElement || document.webkitFullscreenElement)) { try { var p = f.call(el); if (p && p['catch']) p['catch'](function () {}); } catch (e) { /* not allowed */ } }
+    wake();
+  }
+  document.addEventListener('keydown', function (e) { if (e.keyCode === 13) goFull(); });
+  document.addEventListener('click', goFull);
   window.addEventListener('resize', function () { lastKey = ''; render(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { if (data) trim(); });
 
