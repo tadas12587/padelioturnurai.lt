@@ -89,7 +89,9 @@ body {
 .done .p .pl { font-size: .85em; }
 .done .win .n { color: #F2F7F5; }
 .sc { font-family: Archivo, Inter, Arial, sans-serif; font-weight: 900; color: #9DB7B1; white-space: nowrap; margin-left: .3em; }
-.sc i { font-style: normal; display: inline-block; min-width: 1.25em; text-align: right; }
+.sc i { font-style: normal; display: inline-block; min-width: 1.6em; text-align: right; }
+/* a tie-break score (11, 10) fills its cell: keep a gap so it doesn't run into the set before it */
+.sc i + i { margin-left: .2em; }
 .win .sc { color: #D9F45A; }
 .foot { white-space: nowrap; overflow: hidden; display: -webkit-flex; display: flex; -webkit-justify-content: space-between; justify-content: space-between; color: #9DB7B1; font-size: .6em; font-weight: 600; margin-top: .3em; }
 .foot .warn { color: #F5B54A; }
