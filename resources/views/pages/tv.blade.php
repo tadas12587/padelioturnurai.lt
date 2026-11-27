@@ -96,6 +96,13 @@ body {
 .msg { margin: auto; text-align: center; color: #C3D8D3; font-size: 1.2em; max-width: 30em; }
 .demo { position: fixed; bottom: 1.6em; left: 0; right: 0; text-align: center; }
 .demo span { background: #F5B54A; color: #2a1b02; font: 800 14px Inter, Arial, sans-serif; padding: 4px 12px; border-radius: 99px; }
+/* later club matches: time on the status line, each pair on one line (wraps instead of cutting a name) */
+.slot.compact { font-size: .82em; padding: .2em .4em .25em; }
+.compact .grp { font-size: .78em; }
+.compact .grp .t { font-family: Archivo, Inter, Arial, sans-serif; font-weight: 900; color: #F2F7F5; font-size: 1.25em; margin-right: .45em; }
+.compact .grp .t small { font-size: .62em; font-weight: 800; color: #C3D8D3; }
+.compact .p.pair .n { white-space: normal; }
+.compact .side + .side { padding-top: .05em; }
 .awake { position: fixed; right: 0; bottom: 0; width: 2px; height: 2px; opacity: .01; pointer-events: none; }
 
 /* newer browsers: a court's cards slide up one place when a result comes in */
@@ -226,16 +233,25 @@ body {
   }
 
   // "Jonas Augustas" + "Kliukas" -> "J. Kliukas": the first initial and the full surname
-  function person(p, place) {
+  function shortName(p) {
     var first = String(p.name || '').replace(/^\s+|\s+$/g, '');
-    var shown = first && p.surname ? first.charAt(0) + '. ' + p.surname : (first + ' ' + (p.surname || '')).replace(/^\s+|\s+$/g, '');
+    return first && p.surname ? first.charAt(0) + '. ' + p.surname : (first + ' ' + (p.surname || '')).replace(/^\s+|\s+$/g, '');
+  }
+
+  function person(p, place) {
+    var shown = shortName(p);
     return '<div class="p"><span class="n">' + esc(shown) + '</span>' + (place ? '<span class="pl">' + esc(place) + '</span>' : '') + '</div>';
   }
 
-  function sideHtml(m, side, places) {
+  function sideHtml(m, side, places, compact) {
     var team = side === 1 ? m.team1 : m.team2;
     var people = (m.participants || []).filter(function (p) { return p.side === side && (p.name || p.surname); });
     var club = team && team.title;
+    // later club matches: the pair on one line under the club, so more matches fit in the column
+    if (compact && club && people.length) {
+      return '<div class="side"><div class="who"><div class="club">' + esc(club) + '</div><div class="p pair"><span class="n">'
+        + people.map(function (p) { return esc(shortName(p)); }).join(' / ') + '</span></div></div></div>';
+    }
     var who = people.length
       ? (club ? '<div class="club">' + esc(club) + '</div>' : '') + people.map(function (p) { return person(p, club ? '' : places[key((p.name || '') + ' ' + (p.surname || ''))]); }).join('')
       : '<div class="p"><span class="n">' + esc(club || 'Nepaskelbta') + '</span></div>';
@@ -256,6 +272,12 @@ body {
     var time = { done: '', live: '<small>nuo</small> ' + t, call: '<small>apie</small> ' + t, next: '<small>apie</small> ' + t }[s.kind];
     var status = { done: 'Baigta', live: '<span class="dot"></span>Žaidžia', call: 'Ruoškitės', next: 'Toliau' }[s.kind];
     var g = group(m);
+    var compact = s.kind === 'next' && !!(m.team1 && m.team1.title && m.team2 && m.team2.title);
+    if (compact) {
+      return '<div class="slot next compact" style="view-transition-name:m' + (+m.match_id) + '">'
+        + '<div class="grp"><span class="t">' + time + '</span><b class="st">' + status + '</b>' + (g ? '<span class="g"> · ' + esc(g) + '</span>' : '') + '</div>'
+        + sideHtml(m, 1, places, true) + sideHtml(m, 2, places, true) + '</div>';
+    }
     return '<div class="slot ' + s.kind + '" style="view-transition-name:m' + (+m.match_id) + '">'
       + '<div class="grp"><b class="st">' + status + '</b>' + (g ? '<span class="g">' + (s.kind === 'live' || s.kind === 'call' ? '' : ' · ') + esc(g) + '</span>' : '') + '</div>'
       + (time ? '<div class="lab"><span class="t">' + time + '</span>' + late + '</div>' : '')
