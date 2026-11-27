@@ -119,6 +119,7 @@ class ScheduleController extends Controller
             'groups'       => $groups,
             'draws'        => $draws,
             'ties'         => $ties,
+            'leaguePoints' => self::publicLeaguePoints($payload),
             'syncedAt'     => $payload['synced_at'] ?? null,
             'stats'        => [
                 'courts'    => $courts->count(),
@@ -210,6 +211,7 @@ class ScheduleController extends Controller
             'groups'       => self::publicGroups($payload),
             'draws'        => self::publicDraws($payload),
             'ties'         => self::publicTies($payload),
+            'league_points' => self::publicLeaguePoints($payload),
             'synced_at'    => $payload['synced_at'] ?? null,
             'court_delays' => $courtDelays,
         ]);
@@ -570,6 +572,32 @@ class ScheduleController extends Controller
      * Club-vs-club rosters (see TournamentSync::isTieRow). Older snapshots
      * still have the tie rows inside "matches", so they are read from there too.
      */
+    /**
+     * League points a club earned for this stage (12/9/7/4 in the Klaipėda club
+     * league). Tournated publishes them as a "ranking" standing once the stage
+     * is finished; until then nothing is shown.
+     */
+    public static function publicLeaguePoints(array $payload): array
+    {
+        foreach ($payload['standings'] ?? [] as $s) {
+            if (($s['source'] ?? null) !== 'ranking') {
+                continue;
+            }
+            $rows = array_values(array_filter(array_map(fn (array $e) => [
+                'position' => (int) ($e['position'] ?? 0),
+                'club' => (string) ($e['team_name'] ?? ''),
+                'points' => (int) ($e['points'] ?? 0),
+            ], $s['entries'] ?? []), fn (array $r) => $r['club'] !== ''));
+            if ($rows && max(array_column($rows, 'points')) > 0) {
+                usort($rows, fn ($a, $b) => $a['position'] <=> $b['position']);
+
+                return $rows;
+            }
+        }
+
+        return [];
+    }
+
     public static function publicTies(array $payload): array
     {
         if (! empty($payload['ties'])) {

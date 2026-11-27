@@ -381,6 +381,13 @@ class TournamentSync
             'match_id' => $m['match_id'] ?? null,
             'team1' => $m['team1'] ?? null,
             'team2' => $m['team2'] ?? null,
+            // the meeting's own result: matches won per club (Tournated keeps it
+            // in the first "set"); a finished 6:6 has no winner_side
+            'winner_side' => $m['winner_side'] ?? null,
+            'score' => isset($m['sets'][0]) ? [
+                (int) ($m['sets'][0]['side1'] ?? 0),
+                (int) ($m['sets'][0]['side2'] ?? 0),
+            ] : null,
             'players' => array_values(array_map(
                 fn ($p) => ['side' => $p['side'] ?? null, 'name' => $p['name'] ?? '', 'surname' => $p['surname'] ?? ''],
                 $m['participants'] ?? [],

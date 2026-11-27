@@ -296,6 +296,32 @@
   .standing-stats em { font-style: normal; color: var(--muted); font-size: 0.75rem; display: block; text-align: center; }
   .standing-diff { min-width: 34px; text-align: right; }
   .standing-diff.pos { color: var(--ball); }
+  /* club-vs-club meetings (club league "Grupės") */
+  .meetings { display: flex; flex-direction: column; gap: 6px; }
+  .meeting { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .meeting summary { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 4px 10px; padding: 10px 12px; cursor: pointer; list-style: none; }
+  .meeting summary::-webkit-details-marker { display: none; }
+  .meeting-club { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; font-size: 0.88rem; }
+  .meeting-club > span:not(.chip) { min-width: 0; line-height: 1.2; overflow-wrap: anywhere; color: var(--ink-soft); }
+  .meeting-club .win { color: var(--ink); }
+  .meeting-club.right { justify-content: flex-end; text-align: right; }
+  .meeting-score { font-family: var(--display); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .meeting-status { grid-column: 1 / -1; text-align: center; font-size: 0.75rem; color: var(--muted); }
+  .meeting[open] .meeting-status { color: var(--ink-soft); }
+  .meeting-status svg { vertical-align: -2px; transition: transform .2s; }
+  .meeting[open] .meeting-status svg { transform: rotate(180deg); }
+  @media (prefers-reduced-motion: reduce) { .meeting-status svg { transition: none; } }
+  .meeting-matches { list-style: none; margin: 0; padding: 0 12px 10px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .meeting-matches li { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 2px 8px; font-size: 0.8rem; color: var(--muted); }
+  .meeting-matches .mm-div { grid-column: 1 / -1; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .meeting-matches li > span:nth-child(4) { text-align: right; }
+  .meeting-matches .win { color: var(--ink); font-weight: 600; }
+  .mm-sets { font-family: var(--display); font-variant-numeric: tabular-nums; color: var(--ink-soft); white-space: nowrap; }
+  /* club table carries four figures: on a phone they move under the club name */
+  @media (max-width: 480px) {
+    .standing-row.club-row { flex-wrap: wrap; row-gap: 6px; }
+    .standing-row.club-row .standing-stats { flex-basis: 100%; justify-content: space-between; padding-left: 28px; }
+  }
 
   /* ---------- groups & brackets ---------- */
   .cat-chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -14px 10px; padding: 2px 14px 6px; scrollbar-width: none; }
@@ -660,6 +686,8 @@ window.PushUI = (function () {
     draws: @json(array_values($draws)),
     // club-vs-club rosters: who plays for which club before pairs are published
     ties: @json(array_values($ties ?? [])),
+    // league points per stage (12/9/7/4), published by Tournated once the stage ends
+    leaguePoints: @json(array_values($leaguePoints ?? [])),
     syncedAt: @json($syncedAt),
     lastFetchOk: true
   };
@@ -1097,7 +1125,7 @@ window.PushUI = (function () {
     var g = {};
     matches.forEach(function (m) {
       [m.team1, m.team2].forEach(function (team) {
-        if (team && team.title) g[team.title] = g[team.title] || { played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0 };
+        if (team && team.title) g[team.title] = g[team.title] || emptyTally();
       });
       if (!isPlayed(m) || !m.team1 || !m.team2) return;
       var t1 = g[m.team1.title], t2 = g[m.team2.title];
@@ -1108,42 +1136,118 @@ window.PushUI = (function () {
         var a = s.side1 ?? 0, b = s.side2 ?? 0;
         t1.setsWon += a > b ? 1 : 0; t1.setsLost += a < b ? 1 : 0;
         t2.setsWon += b > a ? 1 : 0; t2.setsLost += b < a ? 1 : 0;
+        t1.gamesWon += a; t1.gamesLost += b; t2.gamesWon += b; t2.gamesLost += a;
       });
     });
     return g;
   }
+  function emptyTally() { return { played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0, gamesWon: 0, gamesLost: 0 }; }
+  // won/lost ratio as Tournated shows it (SR, PR); nothing lost ranks above any finite ratio
+  function ratio(won, lost) { return lost ? won / lost : (won ? 1e9 + won : 0); }
   // Tournated's club table scores by TIE (the whole club-vs-club meeting):
   // the club that won more individual matches against an opponent gets 1 point.
-  function tiePointsByClub(matches) {
+  // A drawn meeting (6:6) gives nobody a point — stage I 2026 shows Tournated
+  // ranked it that way. The point shows as soon as a club leads (Tadas, 11-27).
+  // Matches won per club in each club-vs-club meeting. A finished meeting uses
+  // Tournated's own score (it can leave a match out, e.g. stage I BTC–SPK 7:4);
+  // one still being played is counted from the results so far.
+  function meetingScores(matches, ties) {
     var pairs = {};
+    function pair(a, b) { var key = [a, b].sort().join('||'); pairs[key] = pairs[key] || {}; pairs[key][a] = pairs[key][a] || 0; pairs[key][b] = pairs[key][b] || 0; return pairs[key]; }
+    var open = {}; // meetings with a match still to play
     matches.forEach(function (m) {
-      if (!isPlayed(m) || !m.team1 || !m.team2 || !m.winner_side) return;
-      var a = m.team1.title, b = m.team2.title, key = [a, b].sort().join('||');
-      pairs[key] = pairs[key] || {}; pairs[key][a] = pairs[key][a] || 0; pairs[key][b] = pairs[key][b] || 0;
-      if (m.winner_side === 1) pairs[key][a]++; else pairs[key][b]++;
+      if (!m.team1 || !m.team2) return;
+      var key = [m.team1.title, m.team2.title].sort().join('||');
+      if (!isPlayed(m)) { open[key] = true; return; }
+      if (!m.winner_side) return;
+      var p = pair(m.team1.title, m.team2.title);
+      p[m.winner_side === 1 ? m.team1.title : m.team2.title]++;
     });
-    var points = {};
+    (ties || []).forEach(function (t) {
+      if (!t.score || !t.team1 || !t.team2 || open[[t.team1.title, t.team2.title].sort().join('||')]) return;
+      if (!pairs[[t.team1.title, t.team2.title].sort().join('||')]) return; // nothing played yet
+      var p = pair(t.team1.title, t.team2.title);
+      p[t.team1.title] = t.score[0]; p[t.team2.title] = t.score[1];
+    });
+    return pairs;
+  }
+  function tieRecordByClub(pairs) {
+    var rec = {};
+    function bump(club, k) { rec[club] = rec[club] || { won: 0, lost: 0 }; rec[club][k]++; }
     Object.keys(pairs).forEach(function (key) {
       var clubs = key.split('||'), wa = pairs[key][clubs[0]] || 0, wb = pairs[key][clubs[1]] || 0;
-      if (wa > wb) points[clubs[0]] = (points[clubs[0]] || 0) + 1;
-      else if (wb > wa) points[clubs[1]] = (points[clubs[1]] || 0) + 1;
+      if (wa > wb) { bump(clubs[0], 'won'); bump(clubs[1], 'lost'); }
+      else if (wb > wa) { bump(clubs[1], 'won'); bump(clubs[0], 'lost'); }
     });
-    return points;
+    return rec;
   }
-  function standingsTableHtml(title, tally, tiePoints) {
-    var rows = Object.keys(tally).map(function (club) { return Object.assign({ club: club, tiePoints: (tiePoints && tiePoints[club]) || 0 }, tally[club]); });
+  // Club table order, as Tournated ranks it: meetings won, then the won/lost
+  // ratio of matches, then of sets (SR), then of games (PR).
+  function byClubRank(a, b) {
+    return b.tiePoints - a.tiePoints ||
+      ratio(b.wins, b.losses) - ratio(a.wins, a.losses) ||
+      ratio(b.setsWon, b.setsLost) - ratio(a.setsWon, a.setsLost) ||
+      ratio(b.gamesWon, b.gamesLost) - ratio(a.gamesWon, a.gamesLost);
+  }
+  function standingsTableHtml(title, tally, ties) {
+    var rows = Object.keys(tally).map(function (club) {
+      var t = (ties && ties[club]) || { won: 0, lost: 0 };
+      return Object.assign({ club: club, tiePoints: t.won, tieLost: t.lost }, tally[club]);
+    });
     if (!rows.length) return '';
-    rows.sort(tiePoints
-      ? function (a, b) { return b.tiePoints - a.tiePoints || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); }
+    rows.sort(ties ? byClubRank
       : function (a, b) { return b.wins - a.wins || (b.setsWon - b.setsLost) - (a.setsWon - a.setsLost); });
     var html = '<div class="division-block"><h3 class="division-title">' + esc(title) + '</h3><div class="standings-list">';
     rows.forEach(function (r, i) {
       var diff = r.setsWon - r.setsLost;
-      html += '<div class="standing-row"><span class="standing-rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
+      html += '<div class="standing-row' + (ties ? ' club-row' : '') + '"><span class="standing-rank' + (i === 0 ? ' top' : '') + '">' + (i + 1) + '</span>' +
         clubBadge(r.club, 26) + '<span class="standing-club">' + esc(r.club) + '</span><span class="standing-stats">' +
-        (tiePoints ? '<span>' + r.tiePoints + '<em>tšk.</em></span>' : '') +
+        (ties ? '<span>' + r.tiePoints + '<em>tšk.</em></span><span>' + r.tiePoints + '–' + r.tieLost + '<em>susit.</em></span>' : '') +
         '<span>' + r.wins + '–' + r.losses + '<em>laim.–pral.</em></span>' +
         '<span class="standing-diff' + (diff > 0 ? ' pos' : '') + '">' + (diff > 0 ? '+' : '') + diff + '<em>setai</em></span></span></div>';
+    });
+    return html + '</div></div>';
+  }
+  // Every club-vs-club meeting: its score and, folded, the matches behind it.
+  function meetingsHtml(pairs) {
+    var list = [], seen = {};
+    function add(a, b) { var key = [a, b].sort().join('||'); if (seen[key]) return; seen[key] = true; list.push({ a: a, b: b, key: key, matches: [] }); }
+    (state.ties || []).forEach(function (t) { if (t.team1 && t.team2) add(t.team1.title, t.team2.title); });
+    state.matches.forEach(function (m) { if (m.team1 && m.team2) add(m.team1.title, m.team2.title); });
+    var byKey = {}; list.forEach(function (x) { byKey[x.key] = x; });
+    state.matches.forEach(function (m) { if (m.team1 && m.team2) byKey[[m.team1.title, m.team2.title].sort().join('||')].matches.push(m); });
+    if (!list.length) return '';
+    var html = '<div class="division-block"><h3 class="division-title">Susitikimai</h3><div class="meetings">';
+    list.forEach(function (x) {
+      var sc = pairs[x.key] || {}, wa = sc[x.a] || 0, wb = sc[x.b] || 0;
+      var played = x.matches.filter(isPlayed).length, total = x.matches.length;
+      var status = !played ? 'dar nežaista' : played < total ? 'vyksta · ' + played + ' iš ' + total : 'baigtas';
+      x.matches.sort(function (m, n) { return ((m.date || '') + (m.time || '')).localeCompare((n.date || '') + (n.time || '')); });
+      html += '<details class="meeting"><summary>' +
+        '<span class="meeting-club">' + clubBadge(x.a, 24) + '<span' + (played && wa > wb ? ' class="win"' : '') + '>' + esc(x.a) + '</span></span>' +
+        '<span class="meeting-score">' + (played ? wa + ':' + wb : '–') + '</span>' +
+        '<span class="meeting-club right"><span' + (played && wb > wa ? ' class="win"' : '') + '>' + esc(x.b) + '</span>' + clubBadge(x.b, 24) + '</span>' +
+        '<span class="meeting-status">' + status + (total ? ' · mačai <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : '') + '</span></summary><ol class="meeting-matches">';
+      x.matches.forEach(function (m) {
+        var aSide = m.team1.title === x.a ? 1 : 2, bSide = 3 - aSide;
+        var sets = (m.sets || []).map(function (st) { return (aSide === 1 ? st.side1 : st.side2) + ':' + (aSide === 1 ? st.side2 : st.side1); }).join(' ');
+        function names(side) { var n = pairNames(m.participants, side).map(shortName).join(', '); return '<span' + (m.winner_side === side ? ' class="win"' : '') + '>' + esc(n || '—') + '</span>'; }
+        html += '<li><span class="mm-div">' + esc(m.division || '') + '</span>' + names(aSide) +
+          '<span class="mm-sets">' + esc(sets || (m.time ? m.time : '')) + '</span>' + names(bSide) + '</li>';
+      });
+      html += '</ol></details>';
+    });
+    return html + '</div></div>';
+  }
+  // Tournated's stage ranking → league points (12/9/7/4), shown once published.
+  function leaguePointsHtml() {
+    var rows = state.leaguePoints || [];
+    if (!rows.length) return '';
+    var html = '<div class="division-block"><h3 class="division-title">Lygos taškai už etapą</h3><div class="standings-list">';
+    rows.forEach(function (r, i) {
+      html += '<div class="standing-row"><span class="standing-rank' + (i === 0 ? ' top' : '') + '">' + esc(r.position || i + 1) + '</span>' +
+        clubBadge(r.club, 26) + '<span class="standing-club">' + esc(r.club) + '</span><span class="standing-stats">' +
+        '<span>+' + esc(r.points) + '<em>lygos tšk.</em></span></span></div>';
     });
     return html + '</div></div>';
   }
@@ -1160,14 +1264,27 @@ window.PushUI = (function () {
     var clubTally = tallyMatches(state.matches);
     (state.ties || []).forEach(function (t) {
       [t.team1, t.team2].forEach(function (team) {
-        if (team && team.title && !clubTally[team.title]) clubTally[team.title] = { played: 0, wins: 0, losses: 0, setsWon: 0, setsLost: 0 };
+        if (team && team.title && !clubTally[team.title]) clubTally[team.title] = emptyTally();
       });
     });
-    var html = standingsTableHtml('Klubų įskaita', clubTally, tiePointsByClub(state.matches)) +
-      '<p class="legend">tšk. – klubo taškai · laim.–pral. – laimėti ir pralaimėti mačai · setai – laimėtų ir pralaimėtų setų skirtumas</p>';
-    var byDivision = {};
-    state.matches.forEach(function (m) { if (m.division) (byDivision[divisionGroup(m.division)] = byDivision[divisionGroup(m.division)] || []).push(m); });
-    Object.keys(byDivision).sort().forEach(function (d) { html += standingsTableHtml(d, tallyMatches(byDivision[d])); });
+    // club match record = sum over its meetings (so it agrees with Tournated)
+    var pairs = meetingScores(state.matches, state.ties);
+    Object.keys(clubTally).forEach(function (c) { clubTally[c].wins = 0; clubTally[c].losses = 0; });
+    Object.keys(pairs).forEach(function (key) {
+      var clubs = key.split('||');
+      [0, 1].forEach(function (i) {
+        var me = clubs[i], other = clubs[1 - i];
+        if (!clubTally[me]) clubTally[me] = emptyTally();
+        clubTally[me].wins += pairs[key][me] || 0; clubTally[me].losses += pairs[key][other] || 0;
+      });
+    });
+    var html = standingsTableHtml('Klubų įskaita', clubTally, tieRecordByClub(pairs)) +
+      '<p class="legend">tšk. – klubo taškai: 1 už laimėtą susitikimą su kitu klubu (lygiosios 6:6 – 0) · susit. – laimėti ir pralaimėti susitikimai · ' +
+      'laim.–pral. – laimėti ir pralaimėti mačai · setai – laimėtų ir pralaimėtų setų skirtumas. Esant vienodiems taškams lemia mačų, setų ir geimų santykis.</p>' +
+      leaguePointsHtml();
+    // Club league: what matters is club vs club, so the meetings replace the
+    // per-category tables (Tadas, 11-27).
+    html += meetingsHtml(pairs);
     box.innerHTML = html;
   }
 
@@ -1492,6 +1609,7 @@ window.PushUI = (function () {
       state.groups = json.groups || state.groups;
       state.draws = json.draws || state.draws;
       state.ties = json.ties || state.ties;
+      state.leaguePoints = json.league_points || state.leaguePoints;
       state.syncedAt = json.synced_at;
       var typing = document.activeElement && document.activeElement.id === 'me-search';
       if (typing) { renderHeader(); renderDabar(); renderGrid(); renderKlubai(); renderStandings(); renderGroupTables(); renderBrackets(); } else renderAll();
