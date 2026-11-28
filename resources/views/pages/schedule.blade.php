@@ -262,7 +262,11 @@
   .crow .v .tt { font-family: var(--display); font-weight: 700; font-size: 1.02rem; font-variant-numeric: tabular-nums; margin-right: 6px; }
   .crow .v .sub { color: var(--muted); }
   .crow .over { display: block; font-size: 0.78rem; color: var(--warn); margin-top: 2px; }
-  .crow .pp { display: block; font-size: 0.8rem; color: var(--ink-soft); margin-top: 1px; }
+  .dlabel { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 10px 0 6px; font-size: 0.8rem; color: var(--muted); }
+  .dlabel .k { font-family: var(--display); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; color: var(--muted); }
+  .dlabel .k.live { color: var(--ball); }
+  .dlabel .over { flex-basis: 100%; color: var(--warn); }
+  .court .match { background: var(--surface-2); margin-bottom: 4px; }
   .pulse-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ball); margin-right: 6px; vertical-align: middle; animation: pulse 1.6s ease-in-out infinite; }
   .hint { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin: 8px 2px 0; }
 
@@ -1013,14 +1017,7 @@ window.PushUI = (function () {
   });
 
   /* ---------- "Dabar" ---------- */
-  // Club matches: the club line alone does not say who is on court – add the pairs under it.
-  function dabarPlayers(m) {
-    if (!((m.team1 && m.team1.title) || (m.team2 && m.team2.title))) return '';
-    var a = pairNames(m.participants, 1).map(shortName).join(' / ');
-    var b = pairNames(m.participants, 2).map(shortName).join(' / ');
-    if (!a && !b) return '';
-    return '<span class="pp">' + esc(a || 'nepaskelbta') + ' – ' + esc(b || 'nepaskelbta') + '</span>';
-  }
+  // Now / next use the same match card as everywhere else (clubs, pairs, time, scores).
   function renderDabar() {
     var box = document.getElementById('dabar');
     var now = nowLocal();
@@ -1047,21 +1044,16 @@ window.PushUI = (function () {
       var rows = '';
       if (running) {
         var slotEnd = startMin(running) + ((pending[1] ? toMin(pending[1].time) - toMin(running.time) : 50) - 5);
-        rows += '<div class="crow"><span class="k live">Žaidžia</span><span class="v"><span class="pulse-dot"></span>' +
-          esc(sideTitle(running, 1)) + ' – ' + esc(sideTitle(running, 2)) +
-          ' <span class="sub">· ' + (running.division ? esc(running.division) + ' · ' : '') + 'nuo ' + esc(running.eta || running.time) + '</span>' + dabarPlayers(running) +
-          (now.min > slotEnd ? '<span class="over">Užsitęsė: planuota baigti ' + hhmm(slotEnd) + '</span>' : '') + '</span></div>';
+        rows += '<div class="dlabel"><span class="k live"><span class="pulse-dot"></span>Žaidžia</span><span>nuo ' + esc(running.eta || running.time) + '</span>' +
+          (now.min > slotEnd ? '<span class="over">Užsitęsė: planuota baigti ' + hhmm(slotEnd) + '</span>' : '') + '</div>' + matchCard(running, me);
       } else if (pending.length) {
         var last = played[played.length - 1];
         var lastAt = last ? localTimeOf(last.result_seen_at) : null;
         rows += '<div class="crow"><span class="k">Laisvas</span><span class="v">' + (lastAt ? 'Paskutinis baigtas ' + esc(lastAt) : 'Mačas dar neprasidėjo') + '</span></div>';
       }
       if (next) {
-        rows += '<div class="crow"><span class="k">Toliau</span><span class="v"><span class="tt">' +
-          esc(next.eta && next.eta !== next.time ? '~' + next.eta : next.time) + '</span>' +
-          esc(sideTitle(next, 1)) + ' – ' + esc(sideTitle(next, 2)) +
-          ' <span class="sub">' + (next.division ? '· ' + esc(next.division) : '') +
-          (next.eta && next.eta !== next.time ? ' · planuota ' + esc(next.time) + (toMin(next.eta) < toMin(next.time) ? ', gali anksčiau' : '') : '') + '</span>' + dabarPlayers(next) + '</span></div>';
+        rows += '<div class="dlabel"><span class="k">Toliau</span>' +
+          (next.eta && next.eta !== next.time && toMin(next.eta) < toMin(next.time) ? '<span>gali prasidėti anksčiau</span>' : '') + '</div>' + matchCard(next, me);
       }
       if (!pending.length) rows += '<div class="crow"><span class="k">Baigta</span><span class="v sub">Šiame korte šiandien mačų nebeliko</span></div>';
       html += '<div class="court"><h3>' + esc(courtLabel(list[0])) + '</h3>' + rows + '</div>';
