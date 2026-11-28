@@ -262,6 +262,7 @@
   .crow .v .tt { font-family: var(--display); font-weight: 700; font-size: 1.02rem; font-variant-numeric: tabular-nums; margin-right: 6px; }
   .crow .v .sub { color: var(--muted); }
   .crow .over { display: block; font-size: 0.78rem; color: var(--warn); margin-top: 2px; }
+  .crow .pp { display: block; font-size: 0.8rem; color: var(--ink-soft); margin-top: 1px; }
   .pulse-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ball); margin-right: 6px; vertical-align: middle; animation: pulse 1.6s ease-in-out infinite; }
   .hint { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin: 8px 2px 0; }
 
@@ -1012,6 +1013,14 @@ window.PushUI = (function () {
   });
 
   /* ---------- "Dabar" ---------- */
+  // Club matches: the club line alone does not say who is on court – add the pairs under it.
+  function dabarPlayers(m) {
+    if (!((m.team1 && m.team1.title) || (m.team2 && m.team2.title))) return '';
+    var a = pairNames(m.participants, 1).map(shortName).join(' / ');
+    var b = pairNames(m.participants, 2).map(shortName).join(' / ');
+    if (!a && !b) return '';
+    return '<span class="pp">' + esc(a || 'nepaskelbta') + ' – ' + esc(b || 'nepaskelbta') + '</span>';
+  }
   function renderDabar() {
     var box = document.getElementById('dabar');
     var now = nowLocal();
@@ -1040,7 +1049,7 @@ window.PushUI = (function () {
         var slotEnd = startMin(running) + ((pending[1] ? toMin(pending[1].time) - toMin(running.time) : 50) - 5);
         rows += '<div class="crow"><span class="k live">Žaidžia</span><span class="v"><span class="pulse-dot"></span>' +
           esc(sideTitle(running, 1)) + ' – ' + esc(sideTitle(running, 2)) +
-          ' <span class="sub">· ' + (running.division ? esc(running.division) + ' · ' : '') + 'nuo ' + esc(running.eta || running.time) + '</span>' +
+          ' <span class="sub">· ' + (running.division ? esc(running.division) + ' · ' : '') + 'nuo ' + esc(running.eta || running.time) + '</span>' + dabarPlayers(running) +
           (now.min > slotEnd ? '<span class="over">Užsitęsė: planuota baigti ' + hhmm(slotEnd) + '</span>' : '') + '</span></div>';
       } else if (pending.length) {
         var last = played[played.length - 1];
@@ -1052,7 +1061,7 @@ window.PushUI = (function () {
           esc(next.eta && next.eta !== next.time ? '~' + next.eta : next.time) + '</span>' +
           esc(sideTitle(next, 1)) + ' – ' + esc(sideTitle(next, 2)) +
           ' <span class="sub">' + (next.division ? '· ' + esc(next.division) : '') +
-          (next.eta && next.eta !== next.time ? ' · planuota ' + esc(next.time) + (toMin(next.eta) < toMin(next.time) ? ', gali anksčiau' : '') : '') + '</span></span></div>';
+          (next.eta && next.eta !== next.time ? ' · planuota ' + esc(next.time) + (toMin(next.eta) < toMin(next.time) ? ', gali anksčiau' : '') : '') + '</span>' + dabarPlayers(next) + '</span></div>';
       }
       if (!pending.length) rows += '<div class="crow"><span class="k">Baigta</span><span class="v sub">Šiame korte šiandien mačų nebeliko</span></div>';
       html += '<div class="court"><h3>' + esc(courtLabel(list[0])) + '</h3>' + rows + '</div>';
