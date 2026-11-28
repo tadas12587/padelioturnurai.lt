@@ -82,7 +82,9 @@ class TournatedSyncCommand extends Command
 
         $t = ScheduleSnapshot::where('tournament_external_id', $sync->tournament_external_id)->value('payload')['tournament'] ?? [];
         $start = isset($t['start']) ? CarbonImmutable::parse($t['start']) : null;
-        $end = isset($t['end']) ? CarbonImmutable::parse($t['end']) : null;
+        // Tournated's `end` is the START of the last day (local midnight), so the
+        // tournament really ends a day later – otherwise the last day drops to hourly syncs at noon.
+        $end = isset($t['end']) ? CarbonImmutable::parse($t['end'])->addDay() : null;
         $now = CarbonImmutable::now();
 
         $minutes = match (true) {
